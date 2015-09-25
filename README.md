@@ -1,6 +1,6 @@
 ## Introduction
 
-This binding for openHAB has ability to connect DIY devices (based on Arduino or other board with small MCU). C
+This binding for openHAB has ability to connect DIY devices (based on Arduino or other board with small MCU).
 
 Communication is done through serial port, so you can use RS232, RS485 (multiple devices on one bus is supported) or USB with virtual serial port driver. And also it is possible to configure several port not only one. 
 

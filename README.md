@@ -6,6 +6,6 @@ Communication is done through serial port, so you can use RS232, RS485 (multiple
 
 Used protocol is preatty simple. Communication can operate it 2 modes reading data from connected devices - OnScan and OnChange. 
 
-More about this can be found in wiki page: https://github.com/docbender/openHAB-SimpleBinary/wiki
+More about this can be found on wiki page: https://github.com/docbender/openHAB-SimpleBinary/wiki
 
 Compiled binding is inserted into release branch.

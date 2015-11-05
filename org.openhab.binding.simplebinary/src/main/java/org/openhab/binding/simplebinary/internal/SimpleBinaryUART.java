@@ -88,13 +88,17 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	private Timer timer = new Timer();
 	private TimerTask timeoutTask = null;
 	private PoolControl poolControl;
+	private boolean forceRTS;
+	private boolean invertedRTS;
 
-	public SimpleBinaryUART(String deviceName, String port, int baud, PoolControl poolControl) {
+	public SimpleBinaryUART(String deviceName, String port, int baud, PoolControl poolControl, boolean forceRTS, boolean invertedRTS) {
 		this.deviceName = deviceName;
 		this.port = port;
 		this.baud = baud;
 		this.poolControl = poolControl;
-
+		this.forceRTS = forceRTS;
+		this.invertedRTS = invertedRTS;
+		
 		inBuffer.order(ByteOrder.LITTLE_ENDIAN);
 	}
 
@@ -172,10 +176,14 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 			// activate the DATA_AVAILABLE notifier
 			serialPort.notifyOnDataAvailable(true);
+			// OUTPUT_BUFFER_EMPTY
+			serialPort.notifyOnOutputEmpty(true);
 
 			try {
 				// set port parameters
 				serialPort.setSerialPortParams(baud, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+				serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
+				//serialPort.setRTS(false);
 			} catch (UnsupportedCommOperationException e) {
 				logger.error(e.toString());
 
@@ -321,6 +329,13 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		logger.debug("data: {}", SimpleBinaryProtocol.arrayToString(data.getData(), data.getData().length));
 
 		try {
+			//set RTS
+			if(this.forceRTS) {				
+				serialPort.setRTS(invertedRTS ? false : true);
+				
+				logger.debug("RTS set");
+			}
+			
 			// write string to serial port
 			outputStream.write(data.getData());
 			outputStream.flush();
@@ -371,7 +386,14 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		case SerialPortEvent.CTS:
 		case SerialPortEvent.DSR:
 		case SerialPortEvent.RI:
+			break;
 		case SerialPortEvent.OUTPUT_BUFFER_EMPTY:
+			//reset RTS
+			if(this.forceRTS && (serialPort.isRTS() && !invertedRTS || !serialPort.isRTS() && invertedRTS)) {
+				serialPort.setRTS(invertedRTS ? true : false);
+				
+				logger.debug("RTS reset");
+			}
 			break;
 		case SerialPortEvent.DATA_AVAILABLE:
 

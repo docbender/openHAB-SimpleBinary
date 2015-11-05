@@ -12,6 +12,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.openhab.binding.simplebinary.SimpleBinaryBindingProvider;
@@ -87,7 +88,7 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 		// items.clear();
 
 		Pattern rgxKey = Pattern.compile("^port\\d*$");
-		Pattern rgxValue = Pattern.compile("^\\S+:\\d+(;((onscan)|(onchange)))?$");
+		Pattern rgxValue = Pattern.compile("^(\\S+:\\d+)(;((onscan)|(onchange)))?(;((forceRTS)|(forceRTSInv)))?$");
 
 		for (Map.Entry<String, Object> item : configuration.entrySet()) {
 			// logger.debug("key:" + item.getKey() + "/value:" + item.getValue());
@@ -97,35 +98,49 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 				String portString = (String) item.getValue();
 				if (StringUtils.isNotBlank(portString)) {
 					logger.debug("port: " + portString);
+					
+					Matcher matcher = rgxValue.matcher(portString);
 
-					if (!rgxValue.matcher(portString).matches()) {
+					if (!matcher.matches()) {
 						logger.error("{}: Wrong port configuration: {}", item.getKey(), portString);
+						logger.info("Port configuration example: port=COM1:9600 or port=/dev/ttyS1:9600;onchange;forceRTS");
 						setProperlyConfigured(false);
 						return;
 					}
 
 					PoolControl poolControl = PoolControl.ONCHANGE;
-
-					if (portString.contains(";")) {
-						String[] s = portString.split(";");
-						portString = s[0];
-
-						if (s[1].equals("onscan"))
+					int speed = 9600;
+					boolean forceRTS = false;
+					boolean RTSInversion = false;
+					
+					//check group 3
+					if(matcher.group(3) != null) {						
+						
+						if(matcher.group(3).equals("onscan")) {
 							poolControl = PoolControl.ONSCAN;
+						}
+					}
+					//check group 7
+					if(matcher.group(7) != null) {
+						forceRTS = true;
+						
+						if(matcher.group(9) != null) {
+							RTSInversion = true;							
+						}
 					}
 
-					int speed = 9600;
-
-					if (portString.contains(":")) {
-						String[] s = portString.split(":");
+					if (matcher.group(1).contains(":")) {
+						String[] s = matcher.group(1).split(":");
 
 						portString = s[0];
 						speed = Integer.valueOf(s[1]);
 					}
+					else
+						portString = matcher.group(1);
 
-					logger.info("SimpleBinary port={} speed={} mode={}", portString, speed, poolControl);
+					logger.info("SimpleBinary port={} speed={} mode={} forcerts={} rtsInversion={}", portString, speed, poolControl, forceRTS, RTSInversion);
 
-					devices.put(item.getKey(), new SimpleBinaryUART(item.getKey(), portString, speed, poolControl));
+					devices.put(item.getKey(), new SimpleBinaryUART(item.getKey(), portString, speed, poolControl, forceRTS, RTSInversion));
 				} else {
 					logger.error("Blank port configuration");
 					setProperlyConfigured(false);

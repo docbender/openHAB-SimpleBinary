@@ -97,8 +97,19 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 		}
 
 		public String toString() {
-			return item.getName() + " (Device=" + this.device + " BusAddress=" + this.busAddress + " MemAddress=" + this.address + " DataType=" + this.getDataType() + " Direction=" + this.direction + ")";
+			return item.getName() + " (Device=" + this.device + " BusAddress=" + this.busAddress + " MemAddress=" + this.address + " DataType=" + this.getDataType()
+					+ " Direction=" + this.direction + ")";
 		}
+	}
+
+	/**
+	 * This is a helper class holding binding info configuration details
+	 * 
+	 * @author vita
+	 * @since 1.8.0
+	 */
+	class SimpleBinaryInfoBindingConfig implements BindingConfig {
+
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryBinding.class);
@@ -139,7 +150,7 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 
 		super.processBindingConfiguration(context, item, bindingConfig);
 
-		SimpleBinaryBindingConfig config = new SimpleBinaryBindingConfig();
+		BindingConfig commonConfig = null;
 
 		// config
 		//
@@ -156,8 +167,33 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 		Matcher matcher = Pattern.compile("^(port\\d*):(\\d+):(\\d+)((:[a-zA-Z0-9_]*)*)$").matcher(bindingConfig);
 
 		if (!matcher.matches()) {
-			throw new BindingConfigParseException("Illegal config format: " + bindingConfig + ". Correct format: simplebinary=\"port:deviceAddress:itemAddress:dataType:ioDirection\". Example: simplebinary=\"port:1:1:byte:O\"");
+			// look for info config
+			matcher = Pattern.compile("^(port\\d*):info:((connected))$").matcher(bindingConfig);
+			
+			if (!matcher.matches()) {
+				matcher = Pattern.compile("^(port\\d*):(\\d+):info:((connected))$").matcher(bindingConfig);
+
+				if (!matcher.matches()) {
+					throw new BindingConfigParseException("Illegal config format: " + bindingConfig
+							+ ". Correct format: simplebinary=\"port:deviceAddress:itemAddress:dataType:ioDirection\". Example: simplebinary=\"port:1:1:byte:O\"");
+				}
+				else {
+					// device info config
+					
+				}
+			}
+			else {
+				// port info config		
+				
+			}
+			
+
+			SimpleBinaryInfoBindingConfig config = new SimpleBinaryInfoBindingConfig();
+			commonConfig = config;
+
 		} else {
+			SimpleBinaryBindingConfig config = new SimpleBinaryBindingConfig();
+			commonConfig = config;
 
 			// config.item = item;
 			// config.itemType = item.getClass();
@@ -181,7 +217,8 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 			// config.datatype = "byte";
 			// else if (config.itemType.isAssignableFrom(ContactItem.class))
 			// config.datatype = "byte";
-			// else if (config.itemType.isAssignableFrom(RollershutterItem.class))
+			// else if
+			// (config.itemType.isAssignableFrom(RollershutterItem.class))
 			// config.datatype = "word";
 
 			boolean dataTypeSpecified = false;
@@ -205,7 +242,11 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 							dataTypeSpecified = true;
 
 							if (config.itemType.isAssignableFrom(NumberItem.class)) {
-								config.datatype = param;
+								if (!param.equals("byte") && !param.equals("word") && !param.equals("dword") && !param.equals("float")) {
+									logger.warn("Item %s supported datatypes: byte, word, dword or float. Type %s is ignored. Setted to word.", item.getName(), param);
+									config.datatype = "word";
+								} else
+									config.datatype = param;
 
 							} else if (config.itemType.isAssignableFrom(SwitchItem.class)) {
 								if (!param.equals("byte"))
@@ -218,9 +259,11 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 								config.datatype = "byte";
 
 							} else if (config.itemType.isAssignableFrom(ColorItem.class)) {
-								if (!param.equals("rgb") && !param.equals("rgbw") && !param.equals("hsb"))
+								if (!param.equals("rgb") && !param.equals("rgbw") && !param.equals("hsb")) {
 									logger.warn("Item %s supported datatypes: hsb, rgb or rgbw. Type %s is ignored. Setted to rgb.", item.getName(), param);
-								config.datatype = "rgb";
+									config.datatype = "rgb";
+								} else
+									config.datatype = param;
 
 							} else if (config.itemType.isAssignableFrom(StringItem.class)) {
 								if (!param.startsWith("array"))
@@ -272,11 +315,10 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 			}
 		}
 
-		logger.debug(config.toString());
+		logger.debug(commonConfig.toString());
 
-		addBindingConfig(item, config);
+		addBindingConfig(item, commonConfig);
 	}
-
 
 	public void validateItemType(Item item, String bindingConfig) throws BindingConfigParseException {
 		// all types welcome

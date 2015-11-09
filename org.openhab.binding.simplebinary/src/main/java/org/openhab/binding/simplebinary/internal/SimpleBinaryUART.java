@@ -90,6 +90,9 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	private PoolControl poolControl;
 	private boolean forceRTS;
 	private boolean invertedRTS;
+	
+	//public PortStatus portStatus;
+	//public Map<int, DeviceStatus> deviceStatus;
 
 	public SimpleBinaryUART(String deviceName, String port, int baud, PoolControl poolControl, boolean forceRTS, boolean invertedRTS) {
 		this.deviceName = deviceName;
@@ -98,7 +101,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		this.poolControl = poolControl;
 		this.forceRTS = forceRTS;
 		this.invertedRTS = invertedRTS;
-		
+
 		inBuffer.order(ByteOrder.LITTLE_ENDIAN);
 	}
 
@@ -183,7 +186,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 				// set port parameters
 				serialPort.setSerialPortParams(baud, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 				serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
-				//serialPort.setRTS(false);
+				// serialPort.setRTS(false);
 			} catch (UnsupportedCommOperationException e) {
 				logger.error(e.toString());
 
@@ -329,13 +332,13 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		logger.debug("data: {}", SimpleBinaryProtocol.arrayToString(data.getData(), data.getData().length));
 
 		try {
-			//set RTS
-			if(this.forceRTS) {				
+			// set RTS
+			if (this.forceRTS) {
 				serialPort.setRTS(invertedRTS ? false : true);
-				
+
 				logger.debug("RTS set");
 			}
-			
+
 			// write string to serial port
 			outputStream.write(data.getData());
 			outputStream.flush();
@@ -388,10 +391,10 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		case SerialPortEvent.RI:
 			break;
 		case SerialPortEvent.OUTPUT_BUFFER_EMPTY:
-			//reset RTS
-			if(this.forceRTS && (serialPort.isRTS() && !invertedRTS || !serialPort.isRTS() && invertedRTS)) {
+			// reset RTS
+			if (this.forceRTS && (serialPort.isRTS() && !invertedRTS || !serialPort.isRTS() && invertedRTS)) {
 				serialPort.setRTS(invertedRTS ? true : false);
-				
+
 				logger.debug("RTS reset");
 			}
 			break;
@@ -415,138 +418,135 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 				logger.debug("Received data on serial port {} - length {} bytes", port, inBuffer.position());
 
-				// check minimum length
-				if (inBuffer.position() > 3) {
-					// flip buffer
-					inBuffer.flip();
-					// check data
+				// check data
+				if (itemsConfig != null) {
+					// check minimum length
+					while (inBuffer.position() > 3) {
+						// flip buffer
+						inBuffer.flip();
 
-					try {
-						if (itemsConfig != null) {
-							while (inBuffer.limit() > inBuffer.position()) {
-								SimpleBinaryMessage itemData = SimpleBinaryProtocol.decompileData(inBuffer, itemsConfig, deviceName);
+						try {
+							SimpleBinaryMessage itemData = SimpleBinaryProtocol.decompileData(inBuffer, itemsConfig, deviceName);
 
-								if (itemData != null) {
-									setWaitingForAnswer(false);
+							if (itemData != null) {
+								setWaitingForAnswer(false);
 
-									if (itemData instanceof SimpleBinaryItem) {
-										logger.debug("Incoming data");
+								if (itemData instanceof SimpleBinaryItem) {
+									logger.debug("Incoming data");
+
+									resendCounter = 0;
+
+									State state = ((SimpleBinaryItem) itemData).getState();
+
+									if (state == null) {
+										logger.warn("Incoming data - Unknown item state");
+									} else {
+										logger.debug("Incoming data - item:{}/state:{}", ((SimpleBinaryItem) itemData).name, state);
+
+										if (eventPublisher != null)
+											eventPublisher.postUpdate(((SimpleBinaryItem) itemData).name, state);
+									}
+
+									// if data income on request "check new data" send it again for new check
+									if (getLastSendedData().getMessageType() == SimpleBinaryMessageType.CHECKNEWDATA)
+										this.resendData();
+									else
+										processCommandQueue();
+								} else if (itemData instanceof SimpleBinaryMessage) {
+									logger.debug("Incoming control message");
+
+									if (itemData.getMessageType() == SimpleBinaryMessageType.OK) {
+										logger.debug("Device {} on port {} report data OK", itemData.getAddress(), port);
 
 										resendCounter = 0;
 
-										State state = ((SimpleBinaryItem) itemData).getState();
+										processCommandQueue();
+									} else if (itemData.getMessageType() == SimpleBinaryMessageType.RESEND) {
+										logger.debug("Device {} on port {} request resend data", itemData.getAddress(), port);
 
-										if (state == null) {
-											logger.warn("Incoming data - Unknown item state");
-										} else {
-											logger.debug("Incoming data - item:{}/state:{}", ((SimpleBinaryItem) itemData).name, state);
-
-											if (eventPublisher != null)
-												eventPublisher.postUpdate(((SimpleBinaryItem) itemData).name, state);
-										}
-
-										// if data income on request "check new data" send it again for new check
-										if (getLastSendedData().getMessageType() == SimpleBinaryMessageType.CHECKNEWDATA)
+										if (resendCounter < MAX_RESEND_COUNT) {
 											this.resendData();
-										else
-											processCommandQueue();
-									} else if (itemData instanceof SimpleBinaryMessage) {
-										logger.debug("Incoming control message");
-
-										if (itemData.getMessageType() == SimpleBinaryMessageType.OK) {
-											logger.debug("Device {} on port {} report data OK", itemData.getAddress(), port);
-
-											resendCounter = 0;
-
-											processCommandQueue();
-										} else if (itemData.getMessageType() == SimpleBinaryMessageType.RESEND) {
-											logger.debug("Device {} on port {} request resend data", itemData.getAddress(), port);
-
-											if (resendCounter < MAX_RESEND_COUNT) {
-												this.resendData();
-												resendCounter++;
-											} else {
-												logger.warn("Max resend attempts reached.");
-												resendCounter = 0;
-												processCommandQueue();
-											}
-										} else if (itemData.getMessageType() == SimpleBinaryMessageType.NODATA) {
-											logger.debug("Device {} on port {} answer no new data", itemData.getAddress(), port);
-
-											resendCounter = 0;
-
-											processCommandQueue();
-										} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_DATA) {
-											logger.warn("Device {} on port {} report unknown data", itemData.getAddress(), port);
-											logger.debug("Sended data:");
-											logger.debug(lastSendedData.getData().toString());
-
-											resendCounter = 0;
-
-											processCommandQueue();
-										} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_ADDRESS) {
-											logger.warn("Device {} on port {} report unknown address", itemData.getAddress(), port);
-											logger.debug("Sended data:");
-											logger.debug(lastSendedData.getData().toString());
-
-											resendCounter = 0;
-
-											processCommandQueue();
-										} else if (itemData.getMessageType() == SimpleBinaryMessageType.SAVING_ERROR) {
-											logger.warn("Device {} on port {} report saving data error", itemData.getAddress(), port);
-											logger.debug("Sended data:");
-											logger.debug(lastSendedData.getData().toString());
-
-											resendCounter = 0;
-
-											processCommandQueue();
+											resendCounter++;
 										} else {
+											logger.warn("Max resend attempts reached.");
 											resendCounter = 0;
-											logger.warn("Device {} on port {} - Unsupported message type received: " + itemData.getMessageType().toString(), itemData.getAddress(), port);
+											processCommandQueue();
 										}
+									} else if (itemData.getMessageType() == SimpleBinaryMessageType.NODATA) {
+										logger.debug("Device {} on port {} answer no new data", itemData.getAddress(), port);
+
+										resendCounter = 0;
+
+										processCommandQueue();
+									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_DATA) {
+										logger.warn("Device {} on port {} report unknown data", itemData.getAddress(), port);
+										logger.debug("Sended data:");
+										logger.debug(lastSendedData.getData().toString());
+
+										resendCounter = 0;
+
+										processCommandQueue();
+									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_ADDRESS) {
+										logger.warn("Device {} on port {} report unknown address", itemData.getAddress(), port);
+										logger.debug("Sended data:");
+										logger.debug(lastSendedData.getData().toString());
+
+										resendCounter = 0;
+
+										processCommandQueue();
+									} else if (itemData.getMessageType() == SimpleBinaryMessageType.SAVING_ERROR) {
+										logger.warn("Device {} on port {} report saving data error", itemData.getAddress(), port);
+										logger.debug("Sended data:");
+										logger.debug(lastSendedData.getData().toString());
+
+										resendCounter = 0;
+
+										processCommandQueue();
+									} else {
+										resendCounter = 0;
+										logger.warn("Device {} on port {} - Unsupported message type received: " + itemData.getMessageType().toString(), itemData.getAddress(),
+												port);
 									}
 								}
 							}
-						}
 
-						// compact buffer
-						inBuffer.compact();
-					} catch (BufferUnderflowException ex) {
-						logger.warn("Buffer underflow while reading " + ex.toString());
-						// rewind buffer
-						inBuffer.rewind();
-						// compact buffer
-						inBuffer.compact();
-					} catch (NoValidCRCException ex) {
-						logger.error("Invalid CRC while reading " + ex.toString());
-						// compact buffer
-						inBuffer.compact();
+							// compact buffer
+							inBuffer.compact();
+						} catch (BufferUnderflowException ex) {
+							logger.warn("Buffer underflow while reading " + ex.toString());
+							// rewind buffer
+							inBuffer.rewind();
+							// compact buffer
+							inBuffer.compact();
+						} catch (NoValidCRCException ex) {
+							logger.error("Invalid CRC while reading " + ex.toString());
+							// compact buffer
+							inBuffer.compact();
 
-						if (resendCounter < MAX_RESEND_COUNT)
-							this.resendData();
-						else
+							if (resendCounter < MAX_RESEND_COUNT)
+								this.resendData();
+							else
+								setWaitingForAnswer(false);
+						} catch (NoValidItemInConfig ex) {
+							logger.error("Item not found in items config " + ex.toString());
+							// compact buffer
+							inBuffer.compact();
+
 							setWaitingForAnswer(false);
-					} catch (NoValidItemInConfig ex) {
-						logger.error("Item not found in items config " + ex.toString());
-						// compact buffer
-						inBuffer.compact();
+						} catch (UnknownMessageException ex) {
+							logger.error("Income unknown message " + ex.toString());
+							// clear buffer
+							inBuffer.clear();
 
-						setWaitingForAnswer(false);
-					} catch (UnknownMessageException ex) {
-						logger.error("Income unkown message " + ex.toString());
-						// rewind buffer
-						inBuffer.rewind();
-						inBuffer.get();
-						inBuffer.compact();
+						} catch (NotImplementedException ex) {
+							logger.warn("Message not implemented " + ex.toString());
+							inBuffer.clear();
 
-					} catch (NotImplementedException ex) {
-						logger.warn("Message not implemented " + ex.toString());
-						inBuffer.clear();
-
-						setWaitingForAnswer(false);
-					} catch (Exception ex) {
-						logger.error("Reading incoming data error: {}", ex.toString());
-						inBuffer.clear();
+							setWaitingForAnswer(false);
+						} catch (Exception ex) {
+							logger.error("Reading incoming data error: {}", ex.toString());
+							inBuffer.clear();
+						}
 					}
 				}
 			} catch (IOException e) {

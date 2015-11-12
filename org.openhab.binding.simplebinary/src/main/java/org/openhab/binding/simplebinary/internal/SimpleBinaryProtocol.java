@@ -44,7 +44,7 @@ public class SimpleBinaryProtocol {
 	 * @param busAddress Address connected device
 	 * @return
 	 */
-	public static SimpleBinaryItem compileNewDataFrame(int busAddress)
+	public static SimpleBinaryItemData compileNewDataFrame(int busAddress)
 	{
 		byte[] data = new byte[4];
 		
@@ -53,7 +53,7 @@ public class SimpleBinaryProtocol {
 		data[2] = 0;
 		data[3] = evalCRC(data,3);
 		
-		return new SimpleBinaryItem((byte)0xD0, busAddress, data);
+		return new SimpleBinaryItemData((byte)0xD0, busAddress, data);
 	}
 	
 	/**
@@ -62,7 +62,7 @@ public class SimpleBinaryProtocol {
 	 * @param itemConfig Requested item configuration
 	 * @return
 	 */
-	public static SimpleBinaryItem compileReadDataFrame(SimpleBinaryBindingConfig itemConfig)
+	public static SimpleBinaryItemData compileReadDataFrame(SimpleBinaryBindingConfig itemConfig)
 	{
 		byte[] data = new byte[5];
 		
@@ -72,7 +72,7 @@ public class SimpleBinaryProtocol {
 		data[3] = (byte)((itemConfig.address & 0xFF00) >> 8);		
 		data[4] = evalCRC(data,4);
 		
-		return new SimpleBinaryItem((byte)0xD1, itemConfig.busAddress, data);
+		return new SimpleBinaryItemData((byte)0xD1, itemConfig.busAddress, data);
 	}
 	
 	/**
@@ -585,7 +585,7 @@ public class SimpleBinaryProtocol {
 				if(crc != evalCRC(rawPacket))
 					throw new NoValidCRCException();				
 				
-				return new SimpleBinaryMessage(msgId,address);
+				return new SimpleBinaryMessage(msgId,address); //,findItem(itemsConfig, deviceName, devId, address)
 			default:
 				data.clear();
 	
@@ -618,7 +618,7 @@ public class SimpleBinaryProtocol {
 	 * @param address
 	 * @return
 	 */
-	private static Map.Entry<String, SimpleBinaryBindingConfig> findItem(Map<String,SimpleBinaryBindingConfig> itemsConfig, String deviceName, int devId, int address)
+	public static Map.Entry<String, SimpleBinaryBindingConfig> findItem(Map<String,SimpleBinaryBindingConfig> itemsConfig, String deviceName, int devId, int address)
 	{		
 		//logger.debug("Seaching for item: {}:{}", itemsConfig,itemsConfig.entrySet().size());
 		//logger.debug("deviceName:"+deviceName+"|devId:"+devId+"|address:"+address);

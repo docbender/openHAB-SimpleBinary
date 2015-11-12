@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 
 import org.openhab.binding.simplebinary.SimpleBinaryBindingProvider;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
+import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryInfoBindingConfig;
 
 import org.apache.commons.lang.StringUtils;
 import org.openhab.core.binding.AbstractActiveBinding;
@@ -54,8 +55,10 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 
 	// devices
 	private Map<String, SimpleBinaryUART> devices = new HashMap<String, SimpleBinaryUART>();
-	// item configs
+	// data item configs
 	private Map<String, SimpleBinaryBindingConfig> items = new HashMap<String, SimpleBinaryBindingConfig>();
+	// info item configs
+	private Map<String, SimpleBinaryInfoBindingConfig> infoItems = new HashMap<String, SimpleBinaryInfoBindingConfig>();
 
 	public SimpleBinaryBinding() {
 	}
@@ -98,7 +101,7 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 				String portString = (String) item.getValue();
 				if (StringUtils.isNotBlank(portString)) {
 					logger.debug("port: " + portString);
-					
+
 					Matcher matcher = rgxValue.matcher(portString);
 
 					if (!matcher.matches()) {
@@ -108,24 +111,24 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 						return;
 					}
 
-					PoolControl poolControl = PoolControl.ONCHANGE;
+					SimpleBinaryPoolControl simpleBinaryPoolControl = SimpleBinaryPoolControl.ONCHANGE;
 					int speed = 9600;
 					boolean forceRTS = false;
 					boolean RTSInversion = false;
-					
-					//check group 3
-					if(matcher.group(3) != null) {						
-						
-						if(matcher.group(3).equals("onscan")) {
-							poolControl = PoolControl.ONSCAN;
+
+					// check group 3
+					if (matcher.group(3) != null) {
+
+						if (matcher.group(3).equals("onscan")) {
+							simpleBinaryPoolControl = SimpleBinaryPoolControl.ONSCAN;
 						}
 					}
-					//check group 7
-					if(matcher.group(7) != null) {
+					// check group 7
+					if (matcher.group(7) != null) {
 						forceRTS = true;
-						
-						if(matcher.group(9) != null) {
-							RTSInversion = true;							
+
+						if (matcher.group(9) != null) {
+							RTSInversion = true;
 						}
 					}
 
@@ -134,13 +137,12 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 
 						portString = s[0];
 						speed = Integer.valueOf(s[1]);
-					}
-					else
+					} else
 						portString = matcher.group(1);
 
-					logger.info("SimpleBinary port={} speed={} mode={} forcerts={} rtsInversion={}", portString, speed, poolControl, forceRTS, RTSInversion);
+					logger.info("SimpleBinary port={} speed={} mode={} forcerts={} rtsInversion={}", portString, speed, simpleBinaryPoolControl, forceRTS, RTSInversion);
 
-					devices.put(item.getKey(), new SimpleBinaryUART(item.getKey(), portString, speed, poolControl, forceRTS, RTSInversion));
+					devices.put(item.getKey(), new SimpleBinaryUART(item.getKey(), portString, speed, simpleBinaryPoolControl, forceRTS, RTSInversion));
 				} else {
 					logger.error("Blank port configuration");
 					setProperlyConfigured(false);
@@ -148,11 +150,13 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 				}
 			}
 		}
+		
+		logger.debug("setProperlyConfigured ");
 
 		setProperlyConfigured(true);
 
 		for (Map.Entry<String, SimpleBinaryUART> item : devices.entrySet()) {
-			item.getValue().setBindingData(eventPublisher, items);
+			item.getValue().setBindingData(eventPublisher, items, infoItems);
 			item.getValue().open();
 		}
 	}
@@ -276,13 +280,22 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 
 		logger.debug("bindingChanged({},{}) is called!", provider, itemName);
 
-		SimpleBinaryBindingConfig config = ((SimpleBinaryGenericBindingProvider) provider).getItemConfig(itemName);
+		BindingConfig config = ((SimpleBinaryGenericBindingProvider) provider).getItemConfig(itemName);
 
-		if (items.get(itemName) != null)
-			items.remove(itemName);
+		if (config instanceof SimpleBinaryBindingConfig) {
+			if (items.get(itemName) != null)
+				items.remove(itemName);
 
-		if (config != null)
-			items.put(itemName, config);
+			if (config != null)
+				items.put(itemName, (SimpleBinaryBindingConfig) config);
+			
+		} else if (config instanceof SimpleBinaryInfoBindingConfig) {
+			if (infoItems.get(itemName) != null)
+				infoItems.remove(itemName);
+
+			if (config != null)
+				infoItems.put(itemName, (SimpleBinaryInfoBindingConfig) config);
+		}
 
 		logger.debug("ItemsConfig: {}:{}", items, items.entrySet().size());
 	}
@@ -292,11 +305,17 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 		super.allBindingsChanged(provider);
 
 		items.clear();
-
+		infoItems.clear();
+		
 		for (Entry<String, BindingConfig> item : ((SimpleBinaryGenericBindingProvider) provider).configs().entrySet()) {
-			items.put(item.getKey(), (SimpleBinaryBindingConfig) item.getValue());
+			if (item.getValue() instanceof SimpleBinaryBindingConfig) {
+				items.put(item.getKey(), (SimpleBinaryBindingConfig) item.getValue());
+			}
+			else if (item.getValue() instanceof SimpleBinaryInfoBindingConfig) {
+				infoItems.put(item.getKey(), (SimpleBinaryInfoBindingConfig) item.getValue());
+			}
 		}
-
+		
 		logger.debug("allBindingsChanged({}) is called!", provider);
 	}
 }

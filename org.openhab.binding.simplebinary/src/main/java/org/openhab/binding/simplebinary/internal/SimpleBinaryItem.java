@@ -25,32 +25,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class holding item data
+ * Class holding item data and config
  * 
- * @author tucek
+ * @author vita
+ * @since 1.8.0
  *
  */
-public class SimpleBinaryItem extends SimpleBinaryMessage {
+public class SimpleBinaryItem extends SimpleBinaryItemData {
 	
 	public String name;
 	private SimpleBinaryBindingConfig itemConfig;
-	private byte[] itemData;
 	
 	private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryProtocol.class);
 	
 
-	/**
-	 * Constructor for control messages
-	 * 
-	 * @param messageId ID
-	 * @param address   Address
-	 * @param itemData  Item data
-	 */
-	public SimpleBinaryItem(byte messageId, int address, byte[] itemData)
-	{
-		this("",null,messageId,address,itemData);
-	}
-	
 	/**
 	 * Constructor for items
 	 * 
@@ -62,11 +50,10 @@ public class SimpleBinaryItem extends SimpleBinaryMessage {
 	 */
 	public SimpleBinaryItem(String itemName, SimpleBinaryBindingConfig itemConfig, byte messageId, int address, byte[] itemData)
 	{
-		super(messageId, address);
+		super(messageId, address,itemData);
 		
 		this.name = itemName;
 		this.itemConfig = itemConfig;
-		this.itemData = itemData;
 	}
 	
 
@@ -76,16 +63,6 @@ public class SimpleBinaryItem extends SimpleBinaryMessage {
 	public byte getMessageId()
 	{		
 		return this.messageId;
-	}
-	
-	/**
-	 * Return item raw data
-	 * 
-	 * @return
-	 */
-	public byte[] getData()
-	{
-		return itemData;
 	}
 	
 	/**

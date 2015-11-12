@@ -7,6 +7,6 @@ package org.openhab.binding.simplebinary.internal;
  * @since 1.8.0
  */
 
-public enum PoolControl {
+public enum SimpleBinaryPoolControl {
 	ONCHANGE, ONSCAN
 }

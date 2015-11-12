@@ -109,7 +109,15 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 	 * @since 1.8.0
 	 */
 	class SimpleBinaryInfoBindingConfig implements BindingConfig {
-
+		
+		public Item item;
+		public String device;
+		public int busAddress;
+		public InfoType infoType;
+	}
+	
+	public enum InfoType {
+		CONNECTED
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryBinding.class);
@@ -134,9 +142,9 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 	 *            Item name
 	 * @return
 	 */
-	public SimpleBinaryBindingConfig getItemConfig(String itemName) {
+	public BindingConfig getItemConfig(String itemName) {
 
-		return (SimpleBinaryBindingConfig) bindingConfigs.get(itemName);
+		return  bindingConfigs.get(itemName);
 	}
 
 	/**
@@ -179,12 +187,21 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 				}
 				else {
 					// device info config
-					
+					int devId = Integer.valueOf(matcher.group(2)).intValue();
+					String param = matcher.group(3);
+					 
+					if(param.equals("connected")) {
+						
+					}	
 				}
 			}
 			else {
-				// port info config		
-				
+				// port info config			
+				String param = matcher.group(2);
+				 
+				if(param.equals("connected")) {
+					
+				}				
 			}
 			
 

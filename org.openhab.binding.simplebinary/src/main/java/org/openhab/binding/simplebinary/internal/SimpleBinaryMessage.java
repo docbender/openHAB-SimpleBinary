@@ -8,6 +8,10 @@
  */
 package org.openhab.binding.simplebinary.internal;
 
+import java.util.Map;
+
+import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
+
 /**
  * Class holding message data
  * 
@@ -17,26 +21,33 @@ package org.openhab.binding.simplebinary.internal;
 public class SimpleBinaryMessage {
 	protected byte messageId;
 	protected int busAddress;
+	//protected Map.Entry<String, SimpleBinaryBindingConfig> itemConfig;
 
+//	/**
+//	 * Constructor
+//	 * 
+//	 * @param messageId
+//	 * @param address
+//	 */
+//	public SimpleBinaryMessage(byte messageId, int address) {
+//		this.messageId = messageId;
+//		this.busAddress = address;
+//		this.itemConfig = null;
+//	}
+	
+	
 	/**
 	 * Constructor
 	 * 
 	 * @param messageId
 	 * @param address
+	 * @param itemConfig
 	 */
 	public SimpleBinaryMessage(byte messageId, int address) {
 		this.messageId = messageId;
 		this.busAddress = address;
-	}
-
-	/**
-	 * Return message ID
-	 * 
-	 * @return
-	 */
-	public byte getMessageId() {
-		return this.messageId;
-	}
+		//this.itemConfig = itemConfig;
+	}	
 
 	/**
 	 * Return device address
@@ -45,6 +56,19 @@ public class SimpleBinaryMessage {
 	 */
 	public int getAddress() {
 		return this.busAddress;
+	}
+	
+//	public int getConfig() {
+//		return this.itemConfig;
+//	}
+
+	/**
+	 * Return message ID
+	 * 
+	 * @return
+	 */
+	public byte getMessageId() {
+		return this.messageId;
 	}
 
 	/**

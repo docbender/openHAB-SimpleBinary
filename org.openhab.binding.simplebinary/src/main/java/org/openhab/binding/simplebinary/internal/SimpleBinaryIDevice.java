@@ -60,13 +60,13 @@ public interface SimpleBinaryIDevice {
 	 * 
 	 * @return
 	 */
-	public SimpleBinaryItemData getLastSendedData();
+	public SimpleBinaryItemData getLastSentData();
 
 	/**
 	 * Remember last sended data
 	 * 
 	 * @param data
 	 */
-	public void setLastSendedData(SimpleBinaryItemData data);
+	public void setLastSentData(SimpleBinaryItemData data);
 
 }

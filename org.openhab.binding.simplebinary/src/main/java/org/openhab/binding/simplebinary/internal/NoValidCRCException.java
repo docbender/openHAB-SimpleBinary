@@ -10,7 +10,7 @@ package org.openhab.binding.simplebinary.internal;
 public class NoValidCRCException extends Exception {
 
 	public NoValidCRCException() {
-		super();
+		super("CRC not valid");
 	}
 
 	public NoValidCRCException(String msg) {

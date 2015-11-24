@@ -502,8 +502,9 @@ public class SimpleBinaryProtocol {
 	 * @throws NoValidCRCException
 	 * @throws NoValidItemInConfig
 	 * @throws UnknownMessageException
+	 * @throws ModeChangeException 
 	 */
-	public static SimpleBinaryMessage decompileData(ByteBuffer data, Map<String,SimpleBinaryBindingConfig> itemsConfig, String deviceName) throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException
+	public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, Map<String,SimpleBinaryBindingConfig> itemsConfig, String deviceName) throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException
 	{
 		byte devId = data.get();
 		byte msgId = data.get();
@@ -511,7 +512,7 @@ public class SimpleBinaryProtocol {
 		byte[] rawPacket;
 		byte[] rawData = null;
 		byte crc = 0;
-
+ 
 		switch(msgId)
 		{
 			case (byte)0xDA:
@@ -587,7 +588,7 @@ public class SimpleBinaryProtocol {
 				
 				return new SimpleBinaryMessage(msgId,address); //,findItem(itemsConfig, deviceName, devId, address)
 			default:
-				data.clear();
+				//data.clear();
 	
 				throw new UnknownMessageException("Unknown message ID: " + msgId);					
 		}		
@@ -598,7 +599,7 @@ public class SimpleBinaryProtocol {
 			Map.Entry<String, SimpleBinaryBindingConfig> itemConfig = findItem(itemsConfig, deviceName, devId, address);			
 
 			if(itemConfig == null)
-				throw new NoValidItemInConfig();
+				throw new NoValidItemInConfig(deviceName, devId, address);
 		
 			SimpleBinaryItem item = new SimpleBinaryItem(itemConfig.getKey(), itemConfig.getValue(), msgId, address, rawData);
 			

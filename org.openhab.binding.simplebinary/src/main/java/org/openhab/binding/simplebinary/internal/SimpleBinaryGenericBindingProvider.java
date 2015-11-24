@@ -47,7 +47,15 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 		public Item item;
 		Class<? extends Item> itemType;
 
+		/**
+		 * Contains slave address
+		 * 
+		 */
 		public String device;
+		/**
+		 * Contains slave address
+		 * 
+		 */
 		public int busAddress;
 		public int direction = 0;
 		public int address;
@@ -110,14 +118,26 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 	 */
 	class SimpleBinaryInfoBindingConfig implements BindingConfig {
 		
+		/**
+		 * 
+		 */
 		public Item item;
+		/**
+		 * Contains device(port) name ex.: port01
+		 */
 		public String device;
+		/**
+		 * Contains slave address
+		 */
 		public int busAddress;
+		/**
+		 * Requested info type
+		 */
 		public InfoType infoType;
 	}
 	
 	public enum InfoType {
-		CONNECTED
+		STATE, PREVIOUS_STATE, STATE_CHANGE_TIME 
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryBinding.class);
@@ -176,67 +196,49 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 
 		if (!matcher.matches()) {
 			// look for info config
-			matcher = Pattern.compile("^(port\\d*):info:((connected))$").matcher(bindingConfig);
-			
-			if (!matcher.matches()) {
-				matcher = Pattern.compile("^(port\\d*):(\\d+):info:((connected))$").matcher(bindingConfig);
+			matcher = Pattern.compile("^(port\\d*)(:(\\d+))*:info:((state)|(previous_state)|(state_change_time))$").matcher(bindingConfig);
 
-				if (!matcher.matches()) {
-					throw new BindingConfigParseException("Illegal config format: " + bindingConfig
-							+ ". Correct format: simplebinary=\"port:deviceAddress:itemAddress:dataType:ioDirection\". Example: simplebinary=\"port:1:1:byte:O\"");
-				}
-				else {
-					// device info config
-					int devId = Integer.valueOf(matcher.group(2)).intValue();
-					String param = matcher.group(3);
-					 
-					if(param.equals("connected")) {
-						
-					}	
-				}
+			if (!matcher.matches()) {
+				throw new BindingConfigParseException("Illegal config format: " + bindingConfig
+						+ ". Correct format: simplebinary=\"port:deviceAddress:itemAddress:dataType:ioDirection\". Example: simplebinary=\"port:1:1:byte:O\"");
 			}
 			else {
-				// port info config			
-				String param = matcher.group(2);
+				// device info config
+				SimpleBinaryInfoBindingConfig config = new SimpleBinaryInfoBindingConfig();
+				commonConfig = config;
+				
+				config.item = item;
+				config.device = matcher.group(1);
+				
+				if(matcher.group(3) != null)
+					config.busAddress = Integer.valueOf(matcher.group(3)).intValue();
+				else
+					config.busAddress = -1;
+				
+				String param = matcher.group(4);	
 				 
-				if(param.equals("connected")) {
-					
-				}				
+				if(param.equalsIgnoreCase("state")) {
+					config.infoType = InfoType.STATE;
+				}
+				else if(param.equalsIgnoreCase("previous_state")) {
+					config.infoType = InfoType.PREVIOUS_STATE;
+				}
+				else if(param.equalsIgnoreCase("state_change_time")) {
+					config.infoType = InfoType.STATE_CHANGE_TIME;
+				}					
+				else {
+					throw new BindingConfigParseException("Unsupported info parameter " + param);
+				}
 			}
-			
-
-			SimpleBinaryInfoBindingConfig config = new SimpleBinaryInfoBindingConfig();
-			commonConfig = config;
-
 		} else {
 			SimpleBinaryBindingConfig config = new SimpleBinaryBindingConfig();
 			commonConfig = config;
-
-			// config.item = item;
-			// config.itemType = item.getClass();
-			// config.device = matcher.group(1);
-			// config.busAddress = Integer.valueOf(matcher.group(2)).intValue();
-			// config.address = Integer.valueOf(matcher.group(3)).intValue();
-			// config.datatype = matcher.group(4);
-			// config.direction = matcher.group(5).equals("IO") ? 0 :
-			// matcher.group(5).equals("I") ? 1 : 2;
 
 			config.item = item;
 			config.itemType = item.getClass();
 			config.device = matcher.group(1);
 			config.busAddress = Integer.valueOf(matcher.group(2)).intValue();
 			config.address = Integer.valueOf(matcher.group(3)).intValue();
-
-			// // set fixed datatype
-			// if (config.itemType.isAssignableFrom(SwitchItem.class))
-			// config.datatype = "byte";
-			// else if (config.itemType.isAssignableFrom(DimmerItem.class))
-			// config.datatype = "byte";
-			// else if (config.itemType.isAssignableFrom(ContactItem.class))
-			// config.datatype = "byte";
-			// else if
-			// (config.itemType.isAssignableFrom(RollershutterItem.class))
-			// config.datatype = "word";
 
 			boolean dataTypeSpecified = false;
 

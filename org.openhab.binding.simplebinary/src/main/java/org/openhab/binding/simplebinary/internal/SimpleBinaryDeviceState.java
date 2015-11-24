@@ -1,5 +1,6 @@
 package org.openhab.binding.simplebinary.internal;
 
+import java.util.Calendar;
 import java.util.Date;
 
 
@@ -18,17 +19,17 @@ public class SimpleBinaryDeviceState {
 	
 	private DeviceStates state = DeviceStates.UNKNOWN;
 	private DeviceStates prevState = DeviceStates.UNKNOWN;
-	private Date changedSince; 
+	private Calendar changedSince = Calendar.getInstance(); 
 	
 	public DeviceStates getState() {
 		return state;
 	}
 	
-	public DeviceStates getPreviusState() {
+	public DeviceStates getPreviousState() {
 		return prevState;
 	}
 	
-	public Date getChangeDate() {
+	public Calendar getChangeDate() {
 		return changedSince;
 	}
 	
@@ -37,9 +38,9 @@ public class SimpleBinaryDeviceState {
 		if(this.state != state) {
 			this.prevState = this.state;
 			this.state = state;
-			this.changedSince = new Date();
+			this.changedSince = Calendar.getInstance();
 		}
-	}
+	}	
 }
 
 

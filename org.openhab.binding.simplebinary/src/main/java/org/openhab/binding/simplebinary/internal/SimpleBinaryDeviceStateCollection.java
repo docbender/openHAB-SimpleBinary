@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBinaryDeviceState> {
 	private static final long serialVersionUID = -6637691081696263746L;
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryPortState.class);
 
 	protected Map<String, SimpleBinaryGenericBindingProvider.SimpleBinaryInfoBindingConfig> deviceItemsConfigs;
@@ -75,6 +75,9 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 					} else if (item.getValue().infoType == InfoType.STATE_CHANGE_TIME) {
 						// update event bus
 						eventPublisher.postUpdate(item.getValue().item.getName(), new DateTimeType(deviceState.getChangeDate()));
+					} else if (item.getValue().infoType == InfoType.PACKET_LOST) {
+						// update event bus
+						eventPublisher.postUpdate(item.getValue().item.getName(), new DecimalType(deviceState.getPacketLost()));
 					}
 				}
 			}
@@ -83,7 +86,7 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 
 	public void setStateToAllConfiguredDevices(String deviceName, SimpleBinaryDeviceState.DeviceStates state) {
 		if (eventPublisher != null) {
-			
+
 			logger.debug("setStateToAllConfiguredDevices");
 
 			// send data to event bus
@@ -92,7 +95,7 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 
 				// check correct device and target address
 				if (item.getValue().device.equals(deviceName) && item.getValue().busAddress >= 0 && item.getValue().infoType == InfoType.STATE) {
-					logger.debug("{}={}", item.getKey(),state.toString());
+					logger.debug("{}={}", item.getKey(), state.toString());
 					setDeviceState(deviceName, item.getValue().busAddress, state);
 				}
 			}

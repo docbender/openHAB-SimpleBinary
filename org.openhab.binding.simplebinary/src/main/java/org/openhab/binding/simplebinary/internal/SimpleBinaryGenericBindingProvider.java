@@ -137,7 +137,7 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 	}
 	
 	public enum InfoType {
-		STATE, PREVIOUS_STATE, STATE_CHANGE_TIME 
+		STATE, PREVIOUS_STATE, STATE_CHANGE_TIME, PACKET_LOST 
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryBinding.class);
@@ -196,7 +196,7 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 
 		if (!matcher.matches()) {
 			// look for info config
-			matcher = Pattern.compile("^(port\\d*)(:(\\d+))*:info:((state)|(previous_state)|(state_change_time))$").matcher(bindingConfig);
+			matcher = Pattern.compile("^(port\\d*)(:(\\d+))*:info:((state)|(previous_state)|(state_change_time)|(packet_lost))$").matcher(bindingConfig);
 
 			if (!matcher.matches()) {
 				throw new BindingConfigParseException("Illegal config format: " + bindingConfig
@@ -225,7 +225,10 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 				}
 				else if(param.equalsIgnoreCase("state_change_time")) {
 					config.infoType = InfoType.STATE_CHANGE_TIME;
-				}					
+				}		
+				else if(param.equalsIgnoreCase("packet_lost")) {
+					config.infoType = InfoType.PACKET_LOST;
+				}	
 				else {
 					throw new BindingConfigParseException("Unsupported info parameter " + param);
 				}

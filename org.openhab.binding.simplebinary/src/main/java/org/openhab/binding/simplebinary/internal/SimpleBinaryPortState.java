@@ -61,7 +61,6 @@ public class SimpleBinaryPortState {
 				eventPublisher.postUpdate(itemPreviousState, new DecimalType(this.prevState.ordinal()));
 			if (itemStateChangeTime != null)
 				eventPublisher.postUpdate(itemStateChangeTime, new DateTimeType(this.changedSince));
-
 		}
 	}
 

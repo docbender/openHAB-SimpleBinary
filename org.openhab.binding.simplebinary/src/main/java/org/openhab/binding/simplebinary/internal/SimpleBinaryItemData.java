@@ -11,8 +11,14 @@ public class SimpleBinaryItemData extends SimpleBinaryMessage {
 
 	protected byte[] itemData;
 
-	public SimpleBinaryItemData(byte messageId, int address, byte[] itemData) {
-		super(messageId, address);
+	public SimpleBinaryItemData(byte messageId, int deviceId, byte[] itemData) {
+		super(messageId, deviceId, -1);
+
+		this.itemData = itemData;
+	}
+	
+	public SimpleBinaryItemData(byte messageId, int deviceId, int itemAddress, byte[] itemData) {
+		super(messageId, deviceId, itemAddress);
 
 		this.itemData = itemData;
 	}

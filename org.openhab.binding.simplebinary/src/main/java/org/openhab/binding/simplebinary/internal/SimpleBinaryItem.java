@@ -45,26 +45,17 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
 	 * @param itemName
 	 * @param itemConfig
 	 * @param messageId
-	 * @param address
+	 * @param deviceId
 	 * @param itemData
 	 */
-	public SimpleBinaryItem(String itemName, SimpleBinaryBindingConfig itemConfig, byte messageId, int address, byte[] itemData)
+	public SimpleBinaryItem(String itemName, SimpleBinaryBindingConfig itemConfig, byte messageId, int deviceId, int itemAddress, byte[] itemData)
 	{
-		super(messageId, address,itemData);
+		super(messageId, deviceId, itemAddress, itemData);
 		
 		this.name = itemName;
 		this.itemConfig = itemConfig;
 	}
-	
-
-	/* (non-Javadoc)
-	 * @see org.openhab.binding.simplebinary.internal.SimpleBinaryMessage#getMessageId()
-	 */
-	public byte getMessageId()
-	{		
-		return this.messageId;
-	}
-	
+		
 	/**
 	 * Return item State from itemData
 	 * 

@@ -90,7 +90,7 @@ public class SimpleBinaryProtocol {
 		if(data == null)
 			return null;
 		
-		return new SimpleBinaryItem(itemName, config, data[1], data[0], data);
+		return new SimpleBinaryItem(itemName, config, data[1], config.busAddress, config.address, data);
 	}
 	
 	/**
@@ -586,7 +586,7 @@ public class SimpleBinaryProtocol {
 				if(crc != evalCRC(rawPacket))
 					throw new NoValidCRCException();				
 				
-				return new SimpleBinaryMessage(msgId,address); //,findItem(itemsConfig, deviceName, devId, address)
+				return new SimpleBinaryMessage(msgId, devId, address); //,findItem(itemsConfig, deviceName, devId, address)
 			default:
 				//data.clear();
 	
@@ -601,7 +601,7 @@ public class SimpleBinaryProtocol {
 			if(itemConfig == null)
 				throw new NoValidItemInConfig(deviceName, devId, address);
 		
-			SimpleBinaryItem item = new SimpleBinaryItem(itemConfig.getKey(), itemConfig.getValue(), msgId, address, rawData);
+			SimpleBinaryItem item = new SimpleBinaryItem(itemConfig.getKey(), itemConfig.getValue(), msgId, devId, address, rawData);
 			
 			return item;
 		}

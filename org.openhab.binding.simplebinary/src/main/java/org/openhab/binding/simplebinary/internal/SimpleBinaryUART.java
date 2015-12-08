@@ -480,7 +480,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	private void dataTimeouted() {
 		logger.warn("Port {} - Receiving data timeouted", this.port);
 
-		int address = this.getLastSentData().getAddress();
+		int address = this.getLastSentData().getDeviceId();
 
 		devicesStates.setDeviceState(this.deviceName, address, DeviceStates.NOT_RESPONDING);
 	}
@@ -546,7 +546,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 									resendCounter = 0;
 
 									// set state
-									devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryItem) itemData).getAddress(), DeviceStates.CONNECTED);
+									devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryItem) itemData).getDeviceId(), DeviceStates.CONNECTED);
 
 									State state = ((SimpleBinaryItem) itemData).getState();
 
@@ -569,15 +569,15 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 									logger.debug("Incoming control message");
 
 									// set state
-									devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getAddress(), DeviceStates.CONNECTED);
+									devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.CONNECTED);
 
 									if (itemData.getMessageType() == SimpleBinaryMessageType.OK) {
-										logger.debug("Device {} on port {} report data OK", itemData.getAddress(), port);
+										logger.debug("Device {} on port {} for item {} report data OK", itemData.getDeviceId(), port, itemData.getItemAddress());
 
 										resendCounter = 0;
 
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.RESEND) {
-										logger.info("Device {} on port {} request resend data", itemData.getAddress(), port);
+										logger.info("Device {} on port {} for item {} request resend data", itemData.getDeviceId(), port, itemData.getItemAddress());
 
 										if (resendCounter < MAX_RESEND_COUNT) {
 											inBuffer.compact();
@@ -587,52 +587,52 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 										} else {
 											logger.warn("Max resend attempts reached.");
 											// set state
-											devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getAddress(), DeviceStates.RESPONSE_ERROR);
+											devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.RESPONSE_ERROR);
 
 											resendCounter = 0;
 										}
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.NODATA) {
-										logger.debug("Device {} on port {} answer no new data", itemData.getAddress(), port);
+										logger.debug("Device {} on port {} for item {} answer no new data", itemData.getDeviceId(), port, itemData.getItemAddress());
 
 										resendCounter = 0;
 
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_DATA) {
-										logger.warn("Device {} on port {} report unknown data", itemData.getAddress(), port);
+										logger.warn("Device {} on port {} for item {} report unknown data", itemData.getDeviceId(), port, itemData.getItemAddress());
 										logger.debug("Sent data:");
 										logger.debug(lastSentData.getData().toString());
 
 										// set state
-										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getAddress(), DeviceStates.DATA_ERROR);
+										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
 
 										resendCounter = 0;
 
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_ADDRESS) {
-										logger.warn("Device {} on port {} report unknown address", itemData.getAddress(), port);
+										logger.warn("Device {} on port {} for item {} report unknown address", itemData.getDeviceId(), port, itemData.getItemAddress());
 										logger.debug("Sent data:");
 										logger.debug(lastSentData.getData().toString());
 
 										// set state
-										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getAddress(), DeviceStates.DATA_ERROR);
+										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
 
 										resendCounter = 0;
 
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.SAVING_ERROR) {
-										logger.warn("Device {} on port {} report saving data error", itemData.getAddress(), port);
+										logger.warn("Device {} on port {} for item {} report saving data error", itemData.getDeviceId(), port, itemData.getItemAddress());
 										logger.debug("Sent data:");
 										logger.debug(lastSentData.getData().toString());
 
 										// set state
-										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getAddress(), DeviceStates.DATA_ERROR);
+										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
 
 										resendCounter = 0;
 
 									} else {
 										resendCounter = 0;
-										logger.warn("Device {} on port {} - Unsupported message type received: " + itemData.getMessageType().toString(), itemData.getAddress(),
+										logger.warn("Device {} on port {} - Unsupported message type received: " + itemData.getMessageType().toString(), itemData.getDeviceId(),
 												port);
 
 										// set state
-										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getAddress(), DeviceStates.DATA_ERROR);
+										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
 									}
 								}
 							} else {

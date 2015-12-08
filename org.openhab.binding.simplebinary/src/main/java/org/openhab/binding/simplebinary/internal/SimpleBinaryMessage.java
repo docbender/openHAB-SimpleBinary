@@ -20,33 +20,20 @@ import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvi
  */
 public class SimpleBinaryMessage {
 	protected byte messageId;
-	protected int busAddress;
-	//protected Map.Entry<String, SimpleBinaryBindingConfig> itemConfig;
-
-//	/**
-//	 * Constructor
-//	 * 
-//	 * @param messageId
-//	 * @param address
-//	 */
-//	public SimpleBinaryMessage(byte messageId, int address) {
-//		this.messageId = messageId;
-//		this.busAddress = address;
-//		this.itemConfig = null;
-//	}
-	
+	protected int deviceId;
+	protected int itemAddress;
 	
 	/**
 	 * Constructor
 	 * 
 	 * @param messageId
-	 * @param address
+	 * @param deviceId
 	 * @param itemConfig
 	 */
-	public SimpleBinaryMessage(byte messageId, int address) {
+	public SimpleBinaryMessage(byte messageId, int deviceId, int itemAddress) {
 		this.messageId = messageId;
-		this.busAddress = address;
-		//this.itemConfig = itemConfig;
+		this.deviceId = deviceId;
+		this.itemAddress = itemAddress;
 	}	
 
 	/**
@@ -54,13 +41,17 @@ public class SimpleBinaryMessage {
 	 * 
 	 * @return
 	 */
-	public int getAddress() {
-		return this.busAddress;
+	public int getDeviceId() {
+		return this.deviceId;
 	}
 	
-//	public int getConfig() {
-//		return this.itemConfig;
-//	}
+	/**
+	 * Return item address
+	 * @return
+	 */
+	public int getItemAddress() {
+		return this.itemAddress;
+	}
 
 	/**
 	 * Return message ID

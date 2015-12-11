@@ -24,12 +24,21 @@ public class SimpleBinaryByteBuffer {
 	public SimpleBinaryByteBuffer(int size) {
 		_size = size;
 		_buffer = ByteBuffer.allocate(size);
+		
+		_buffer.order(ByteOrder.LITTLE_ENDIAN);
 	}
 	
 	public void initialize() {
 		_mode = BufferMode.WRITE;
 		_buffer = ByteBuffer.allocate(_size);
+		
+		_buffer.order(ByteOrder.LITTLE_ENDIAN);
 	}
+	
+	public BufferMode getMode()
+	{		
+		return _mode;
+	}	
 
 	public ByteBuffer flip() throws ModeChangeException {
 		if (_mode != BufferMode.READ) {
@@ -51,12 +60,12 @@ public class SimpleBinaryByteBuffer {
 		return _buffer;
 	}
 
-	public ByteBuffer clear() throws ModeChangeException {
+	public ByteBuffer clear() {
 		if (_mode == BufferMode.READ) {
 			_mode = BufferMode.WRITE;
 			_buffer.clear();
 		} else
-			throw new ModeChangeException("clear()", _mode);
+			_buffer.position(0);
 
 		return _buffer;
 	}

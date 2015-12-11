@@ -516,6 +516,10 @@ public class SimpleBinaryProtocol {
 		switch(msgId)
 		{
 			case (byte)0xDA:
+				//check minimal length
+				if(data.remaining() < 4)
+					return null;
+			
 				address = data.getShort();
 				rawData = new byte[1]; 
 				rawData[0] = data.get();
@@ -529,6 +533,10 @@ public class SimpleBinaryProtocol {
 		
 				break;
 			case (byte)0xDB:
+				//check minimal length
+				if(data.remaining() < 5)
+					return null;
+							
 				address = data.getShort();
 				rawData = new byte[2];
 				data.get(rawData);
@@ -544,6 +552,10 @@ public class SimpleBinaryProtocol {
 				
 			case (byte)0xDC:
 			case (byte)0xDD:
+				//check minimal length
+				if(data.remaining() < 7)
+					return null;
+							
 				address = data.getShort();
 				rawData = new byte[4];
 				data.get(rawData);
@@ -558,8 +570,17 @@ public class SimpleBinaryProtocol {
 				break;
 				
 			case (byte)0xDE:
+				//check minimal length
+				if(data.remaining() < 6)
+					return null;
+			
 				address = data.getShort();
 				int length = data.getShort();
+				
+				//check declared length
+				if(data.remaining() < length+1)
+					return null;
+				
 				byte[] array = new byte[length];
 				data.get(array);
 				rawData = array;
@@ -590,7 +611,7 @@ public class SimpleBinaryProtocol {
 			default:
 				//data.clear();
 	
-				throw new UnknownMessageException("Unknown message ID: " + msgId);					
+				throw new UnknownMessageException(String.format("Unknown message ID: 0x%02X", msgId));					
 		}		
 		
 		
@@ -674,9 +695,8 @@ public class SimpleBinaryProtocol {
 		
 		byte result = (byte)(crc >> 8);
 		
-		//logger.debug("Counting CRC8 of: " + Arrays.toString(data));
-		logger.debug("Counting CRC8 of: " + arrayToString(data, length));
-		logger.debug("CRC8 result: 0x" + Integer.toHexString(Byte.toUnsignedInt(result)).toUpperCase());
+		logger.trace("Counting CRC8 of: " + arrayToString(data, length));
+		logger.trace("CRC8 result: 0x" + Integer.toHexString(Byte.toUnsignedInt(result)).toUpperCase());
 		
 		
 		return result;

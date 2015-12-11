@@ -75,7 +75,7 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
 					throw new Exception("getState(): cannot convert to item " + name + " to FLOAT. Wrong data length.");
 				else
 				{
-					logger.debug("converting to FLOAT: " + SimpleBinaryProtocol.arrayToString(itemData, 4)); 
+					logger.trace("converting to FLOAT: " + SimpleBinaryProtocol.arrayToString(itemData, 4)); 
 							
 					//long bits = itemData[0] | (itemData[1] << 8) | (itemData[2] << 16) | (itemData[3] << 24);
 					//logger.debug("bits: {}", bits); 
@@ -83,9 +83,9 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
 					ByteBuffer bf = ByteBuffer.wrap(itemData);
 					bf.order(ByteOrder.LITTLE_ENDIAN);
 					float value = bf.getFloat();
-					logger.debug("floatbits: {}", Float.floatToIntBits(value));
+					logger.trace("floatbits: {}", Float.floatToIntBits(value));
 					
-					logger.debug("FLOAT value converted: {}", value ); 
+					logger.trace("FLOAT value converted: {}", value ); 
 			
 					return new DecimalType(value);
 				}

@@ -131,6 +131,8 @@ void simpleBinary::processSerial()
 
     if(serbuflen > 3)
     {
+      receiveTime = millis();
+       
       if(serbuf[0] == _uartAddress)    
       {
         int address;
@@ -344,7 +346,7 @@ void simpleBinary::sendOK()
     data[2] = 0x0;
     data[3] = CRC8::evalCRC(data,3);
     
-    Serial.write(data,4);
+    write(data,4);
 }
 
 /// Send answer that data are bad (crc)
@@ -357,7 +359,7 @@ void simpleBinary::sendWrongData(byte crc)
     data[2] = crc;
     data[3] = CRC8::evalCRC(data,3);
     
-    Serial.write(data,4);
+    write(data,4);
 }
 
 /// Send answer that data are unknown
@@ -370,7 +372,7 @@ void simpleBinary::sendUnknownData()
     data[2] = 0x0;
     data[3] = CRC8::evalCRC(data,3);
     
-    Serial.write(data,4);
+    write(data,4);
 }
 
 /// Send answer that has unknown address
@@ -383,7 +385,7 @@ void simpleBinary::sendInvalidAddress()
     data[2] = 0x0;
     data[3] = CRC8::evalCRC(data,3);
     
-    Serial.write(data,4);
+    write(data,4);
 }
 
 /// Send error while saving data
@@ -396,7 +398,7 @@ void simpleBinary::sendSavingError()
     data[2] = 0x0;
     data[3] = CRC8::evalCRC(data,3);
     
-    Serial.write(data,4);
+    write(data,4);
 }
 
 /// Send answer that there are no new data
@@ -409,7 +411,7 @@ void simpleBinary::sendNoData()
     data[2] = 0x0;
     data[3] = CRC8::evalCRC(data,3);
     
-    Serial.write(data,4);
+    write(data,4);
 }
 
 /// Send data to master device
@@ -432,7 +434,7 @@ void simpleBinary::sendData(itemData *item)
       data[4] = *(*item).readNewData();
       data[5] = CRC8::evalCRC(data,5);
   
-      Serial.write(data,6);
+      write(data,6);
     break;
     case WORD:
       data = new char[7];
@@ -443,7 +445,7 @@ void simpleBinary::sendData(itemData *item)
       item->readNewDataToMemory(data+4);
       data[6] = CRC8::evalCRC(data,6);
   
-      Serial.write(data,7);
+      write(data,7);
     break;
     case DWORD:
     case FLOAT:   
@@ -455,7 +457,7 @@ void simpleBinary::sendData(itemData *item)
       item->readNewDataToMemory(data+4);
       data[8] = CRC8::evalCRC(data,8);
   
-      Serial.write(data,9);
+      write(data,9);
     break;
     case HSB:
     case RGB:
@@ -468,7 +470,7 @@ void simpleBinary::sendData(itemData *item)
       item->readNewDataToMemory(data+4);
       data[8] = CRC8::evalCRC(data,8);
   
-      Serial.write(data,9);
+      write(data,9);
     break;    
     case ARRAY:
       int len = 7+item->getDataLength();
@@ -481,11 +483,65 @@ void simpleBinary::sendData(itemData *item)
       item->readNewDataToMemory(data+6);
       data[len-1] = CRC8::evalCRC(data,len-1);
   
-      Serial.write(data,len);
+      write(data,len);
     break;       
   }
 
   if(data != NULL)  
     delete[] data;  
+}
+
+/// Write data to serial port
+///
+/// \param data    Data to send    
+/// \param length  Data length
+///
+void simpleBinary::write(char* data, int length)
+{   
+  if(sendDelay > 0)
+  {    
+    unsigned long diff;
+    unsigned long now = millis();
+      
+    if(now >= receiveTime)
+      diff = now - receiveTime;
+    else
+      diff = 4294967295 - receiveTime + now;
+
+    if(diff < sendDelay)
+      delay(sendDelay-diff);    
+  }
+  
+  if(RTSenabled)
+  {
+    digitalWrite(RTSpin, HIGH);
+    Serial.write(data,length);
+    Serial.flush();
+    digitalWrite(RTSpin, LOW);
+  }
+  else
+    Serial.write(data,length);
+}
+
+/// Set pin number to use as RTS signal
+///
+/// \param pinNumber  Pin number for RTS signal    
+///
+void simpleBinary::enableRTS(int pinNumber)
+{
+  RTSenabled = true;
+  RTSpin = pinNumber;
+
+  pinMode(RTSpin, OUTPUT);
+  digitalWrite(RTSpin, LOW);
+}
+
+/// Set delay between receive and send message (in ms) for stabilization of communication line
+///
+/// \param delayms  Delay in ms    
+///
+void simpleBinary::setSendDelay(unsigned int delayms)
+{
+  sendDelay = delayms;
 }
 

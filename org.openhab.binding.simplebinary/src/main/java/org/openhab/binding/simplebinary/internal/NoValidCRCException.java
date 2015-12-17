@@ -16,5 +16,9 @@ public class NoValidCRCException extends Exception {
 	public NoValidCRCException(String msg) {
 		super(msg);
 	}
+	
+	public NoValidCRCException(byte receivedCrc, byte expectedCrc) {
+		super(String.format("CRC not valid. Receive/expected 0x%02X/0x%02X,", receivedCrc, expectedCrc));
+	}
 
 }

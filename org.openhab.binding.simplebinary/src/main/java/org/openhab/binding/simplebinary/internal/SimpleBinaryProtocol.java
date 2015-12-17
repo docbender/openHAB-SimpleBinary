@@ -511,7 +511,7 @@ public class SimpleBinaryProtocol {
 		int address = 0;
 		byte[] rawPacket;
 		byte[] rawData = null;
-		byte crc = 0;
+		byte crc = 0, calcCrc;
  
 		switch(msgId)
 		{
@@ -528,8 +528,9 @@ public class SimpleBinaryProtocol {
 				data.get(rawPacket);					
 				crc = data.get();
 				//check message crc
-				if(crc != evalCRC(rawPacket))
-					throw new NoValidCRCException();
+				calcCrc = evalCRC(rawPacket);
+				if(crc != calcCrc)
+					throw new NoValidCRCException(crc,calcCrc);
 		
 				break;
 			case (byte)0xDB:
@@ -545,8 +546,9 @@ public class SimpleBinaryProtocol {
 				data.get(rawPacket);
 				crc = data.get();
 				//check message crc
-				if(crc != evalCRC(rawPacket))
-					throw new NoValidCRCException();		
+				calcCrc = evalCRC(rawPacket);
+				if(crc != calcCrc)
+					throw new NoValidCRCException(crc,calcCrc);		
 	
 				break;
 				
@@ -564,8 +566,9 @@ public class SimpleBinaryProtocol {
 				data.get(rawPacket);
 				crc = data.get();
 				//check message crc
-				if(crc != evalCRC(rawPacket))
-					throw new NoValidCRCException();					
+				calcCrc = evalCRC(rawPacket);
+				if(crc != calcCrc)
+					throw new NoValidCRCException(crc,calcCrc);				
 		
 				break;
 				
@@ -589,8 +592,9 @@ public class SimpleBinaryProtocol {
 				data.get(rawPacket);
 				crc = data.get();
 				//check message crc
-				if(crc != evalCRC(rawPacket))
-					throw new NoValidCRCException();			
+				calcCrc = evalCRC(rawPacket);
+				if(crc != calcCrc)
+					throw new NoValidCRCException(crc,calcCrc);		
 		
 				break;
 			case (byte)0xE0:
@@ -604,10 +608,11 @@ public class SimpleBinaryProtocol {
 				data.get(rawPacket);					
 				crc = data.get();
 				//check message crc
-				if(crc != evalCRC(rawPacket))
-					throw new NoValidCRCException();				
+				calcCrc = evalCRC(rawPacket);
+				if(crc != calcCrc)
+					throw new NoValidCRCException(crc,calcCrc);				
 				
-				return new SimpleBinaryMessage(msgId, devId, address); //,findItem(itemsConfig, deviceName, devId, address)
+				return new SimpleBinaryMessage(msgId, devId, -1); //,findItem(itemsConfig, deviceName, devId, address)
 			default:
 				//data.clear();
 	

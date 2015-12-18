@@ -130,7 +130,7 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
 			}
 			else if(itemConfig.getDataType() == SimpleBinaryTypes.RGBW)
 			{
-				return new HSBType(new Color((int)itemData[0], (int)itemData[1], (int)itemData[2]));
+				return new HSBType(new Color(itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF));
 			}
 			else
 				throw new Exception("getState(): cannot convert to item " + name + " to " + itemConfig.getDataType() + ".");	

@@ -608,12 +608,12 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 											resendCounter = 0;
 										}
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.NODATA) {
-										logger.debug("Port {} - Device {} for item {} answer no new data", port, itemData.getDeviceId(), itemAddress);
+										logger.debug("Port {} - Device {} answer no new data", port, itemData.getDeviceId());
 
 										resendCounter = 0;
 
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_DATA) {
-										logger.warn("Port {} - Device {} for item {} report unknown data", port, itemData.getDeviceId(), itemAddress);
+										logger.warn("Port {} - Device {} report unknown data", port, itemData.getDeviceId());
 										logger.debug("Port {} - Last sent data:", port);
 										logger.debug(lastSentData.getData().toString());
 

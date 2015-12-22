@@ -51,7 +51,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  * Serial device class
  * 
  * @author Vita Tucek
- * 
+ * @since 1.8.0
  */
 public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventListener {
 
@@ -258,7 +258,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		}
 
 		logger.debug("Port {} - opened", this.port);
-		// TODO zajistit update do eventbusu - pres stateCollection ????
+		
 		portState.setState(PortStates.LISTENING);
 		connected = true;
 		return true;

@@ -8,6 +8,7 @@ package org.openhab.binding.simplebinary.internal;
  */
 
 public class NoValidCRCException extends Exception {
+	private static final long serialVersionUID = -4524739106640114564L;
 
 	public NoValidCRCException() {
 		super("CRC not valid");

@@ -1,7 +1,6 @@
 package org.openhab.binding.simplebinary.internal;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -11,7 +10,6 @@ import java.util.Queue;
  * @author vita
  * @since 1.8.0
  */
-
 public class SimpleBinaryDeviceState {
 
 	double packetLost = 0.0;

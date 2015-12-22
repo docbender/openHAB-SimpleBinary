@@ -13,6 +13,7 @@ import org.openhab.binding.simplebinary.internal.SimpleBinaryByteBuffer.BufferMo
  */
 
 public class ModeChangeException  extends Exception {
+	private static final long serialVersionUID = -2494344117743188391L;
 
 	public ModeChangeException() {
 		super("Operation not supported in given mode");

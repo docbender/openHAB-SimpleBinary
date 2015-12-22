@@ -8,7 +8,6 @@
  */
 package org.openhab.binding.simplebinary.internal;
 
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,9 +22,6 @@ import org.apache.commons.lang.StringUtils;
 import org.openhab.core.binding.AbstractActiveBinding;
 import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.binding.BindingProvider;
-import org.openhab.core.items.Item;
-import org.openhab.core.library.types.DecimalType;
-import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.osgi.framework.BundleContext;
@@ -46,6 +42,7 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 	 * The BundleContext. This is only valid when the bundle is ACTIVE. It is set in the activate() method and must not
 	 * be accessed anymore once the deactivate() method was called or before activate() was called.
 	 */
+	@SuppressWarnings("unused")
 	private BundleContext bundleContext;
 
 	/**

@@ -8,10 +8,6 @@
  */
 package org.openhab.binding.simplebinary.internal;
 
-import java.util.Map;
-
-import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
-
 /**
  * Class holding message data
  * 
@@ -26,9 +22,9 @@ public class SimpleBinaryMessage {
 	/**
 	 * Constructor
 	 * 
-	 * @param messageId
-	 * @param deviceId
-	 * @param itemConfig
+	 * @param messageId Message ID
+	 * @param deviceId  Device ID
+	 * @param itemAddress Item address
 	 */
 	public SimpleBinaryMessage(byte messageId, int deviceId, int itemAddress) {
 		this.messageId = messageId;

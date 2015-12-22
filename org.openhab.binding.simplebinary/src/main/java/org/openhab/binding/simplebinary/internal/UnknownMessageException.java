@@ -8,6 +8,7 @@ package org.openhab.binding.simplebinary.internal;
  */
 
 public class UnknownMessageException extends Exception {
+	private static final long serialVersionUID = 1367099920816957870L;
 
 	public UnknownMessageException() {
 		super();

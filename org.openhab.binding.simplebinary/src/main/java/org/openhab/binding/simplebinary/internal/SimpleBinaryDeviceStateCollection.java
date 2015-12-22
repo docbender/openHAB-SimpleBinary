@@ -1,11 +1,9 @@
 package org.openhab.binding.simplebinary.internal;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.InfoType;
-import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryInfoBindingConfig;
 import org.openhab.core.events.EventPublisher;
 import org.openhab.core.library.types.DateTimeType;
@@ -14,8 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author tucek
+ * Device status collection
  * 
+ * @author Vita
+ * @since 1.8.0
  */
 public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBinaryDeviceState> {
 	private static final long serialVersionUID = -6637691081696263746L;
@@ -25,8 +25,13 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 	protected Map<String, SimpleBinaryGenericBindingProvider.SimpleBinaryInfoBindingConfig> deviceItemsConfigs;
 	protected EventPublisher eventPublisher;
 
+
 	/**
-	 * @param deviceItemsConfigs
+	 * Device collection constructor
+	 * 
+	 * @param deviceName Port
+	 * @param deviceItemsConfigs Items configuration
+	 * @param eventPublisher Event bus publisher
 	 */
 	public SimpleBinaryDeviceStateCollection(String deviceName, Map<String, SimpleBinaryInfoBindingConfig> deviceItemsConfigs, EventPublisher eventPublisher) {
 		super();
@@ -43,10 +48,13 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 		}
 	}
 
-	// public void addDevice(Integer deviceAddress, DeviceState.DeviceStates state){
-	//
-	// }
-
+	/**
+	 * Set state to device specified by address connected to given port
+	 * 
+	 * @param deviceName Port
+	 * @param deviceAddress Device address
+	 * @param state Device state
+	 */
 	public void setDeviceState(String deviceName, Integer deviceAddress, SimpleBinaryDeviceState.DeviceStates state) {
 
 		if (!this.containsKey(deviceAddress)) {
@@ -84,6 +92,12 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 		}
 	}
 
+	/**
+	 * Set state to all devices connected to specified port
+	 * 
+	 * @param deviceName Serial port name
+	 * @param state Required state
+	 */
 	public void setStateToAllConfiguredDevices(String deviceName, SimpleBinaryDeviceState.DeviceStates state) {
 		if (eventPublisher != null) {
 

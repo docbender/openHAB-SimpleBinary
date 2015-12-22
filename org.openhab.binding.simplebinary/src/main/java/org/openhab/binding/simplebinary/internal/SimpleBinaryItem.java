@@ -1,11 +1,9 @@
 package org.openhab.binding.simplebinary.internal;
 
 import java.awt.Color;
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
 import org.openhab.core.library.items.ColorItem;
 import org.openhab.core.library.items.ContactItem;

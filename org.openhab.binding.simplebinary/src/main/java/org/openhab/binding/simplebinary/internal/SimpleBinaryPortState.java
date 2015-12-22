@@ -1,11 +1,9 @@
 package org.openhab.binding.simplebinary.internal;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Map;
 
 import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.InfoType;
-import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryInfoBindingConfig;
 import org.openhab.core.events.EventPublisher;
 import org.openhab.core.library.types.DateTimeType;
@@ -17,14 +15,11 @@ import org.openhab.core.library.types.DecimalType;
  * @author vita
  * @since 1.8.0
  */
-
 public class SimpleBinaryPortState {
 
 	public enum PortStates {
 		UNKNOWN, LISTENING, CLOSED, NOT_EXIST, NOT_AVAILABLE
 	}
-
-
 
 	private PortStates state = PortStates.UNKNOWN;
 	private PortStates prevState = PortStates.UNKNOWN;
@@ -34,18 +29,38 @@ public class SimpleBinaryPortState {
 	private String itemPreviousState = null;
 	private String itemStateChangeTime = null;
 
+	/**
+	 * Return port status
+	 * 
+	 * @return
+	 */
 	public PortStates getState() {
 		return state;
 	}
 
+	/**
+	 * Return previous status
+	 * 
+	 * @return
+	 */
 	public PortStates getPreviusState() {
 		return prevState;
 	}
 
+	/**
+	 * Return date when last change occurred
+	 * 
+	 * @return
+	 */
 	public Calendar getChangeDate() {
 		return changedSince;
 	}
 
+	/**
+	 * Set port state
+	 * 
+	 * @param state
+	 */
 	public void setState(PortStates state) {
 
 		// set state only if previous is different
@@ -64,6 +79,13 @@ public class SimpleBinaryPortState {
 		}
 	}
 
+	/**
+	 * Set binding data for internal use and port item state init
+	 * 
+	 * @param eventPublisher
+	 * @param itemsInfoConfig
+	 * @param deviceName
+	 */
 	public void setBindingData(EventPublisher eventPublisher, Map<String, SimpleBinaryInfoBindingConfig> itemsInfoConfig, String deviceName) {
 		this.eventPublisher = eventPublisher;
 

@@ -8,6 +8,7 @@ package org.openhab.binding.simplebinary.internal;
  */
 
 public class WrongAddressException extends Exception {
+	private static final long serialVersionUID = -66093531080490622L;
 
 	public WrongAddressException() {
 		super();

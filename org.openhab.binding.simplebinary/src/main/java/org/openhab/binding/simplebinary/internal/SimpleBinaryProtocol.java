@@ -1,7 +1,6 @@
 package org.openhab.binding.simplebinary.internal;
 
 import java.awt.Color;
-import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
@@ -27,8 +26,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Class of protocol
  * 
- * @author tucek
- * 
+ * @author vita
+ * @since 1.8.0
  */
 public class SimpleBinaryProtocol {
 
@@ -435,7 +434,7 @@ public class SimpleBinaryProtocol {
 			else
 				Wo = M;
 
-			int Q = 100;
+			//int Q = 100;
 
 			float K = m / (Wo + M);
 

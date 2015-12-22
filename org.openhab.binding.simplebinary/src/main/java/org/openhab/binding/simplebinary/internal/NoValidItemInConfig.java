@@ -7,7 +7,8 @@ package org.openhab.binding.simplebinary.internal;
  * @since 1.8.0
  */
 
-public class NoValidItemInConfig extends Exception {
+public class NoValidItemInConfig extends Exception {	
+	private static final long serialVersionUID = 4901413826466898609L;
 
 	public NoValidItemInConfig() {
 		super("Item not found in configuration");

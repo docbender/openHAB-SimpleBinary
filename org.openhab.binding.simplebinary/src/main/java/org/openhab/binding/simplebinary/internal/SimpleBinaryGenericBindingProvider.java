@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class is responsible for parsing the binding configuration.
  * 
- * @author vita
+ * @author Vita Tucek
  * @since 1.8.0
  */
 public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingProvider implements SimpleBinaryBindingProvider {
@@ -117,7 +117,7 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 	 * @since 1.8.0
 	 */
 	class SimpleBinaryInfoBindingConfig implements BindingConfig {
-		
+
 		/**
 		 * 
 		 */
@@ -135,9 +135,9 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 		 */
 		public InfoType infoType;
 	}
-	
+
 	public enum InfoType {
-		STATE, PREVIOUS_STATE, STATE_CHANGE_TIME, PACKET_LOST 
+		STATE, PREVIOUS_STATE, STATE_CHANGE_TIME, PACKET_LOST
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryBinding.class);
@@ -164,7 +164,7 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 	 */
 	public BindingConfig getItemConfig(String itemName) {
 
-		return  bindingConfigs.get(itemName);
+		return bindingConfigs.get(itemName);
 	}
 
 	/**
@@ -201,35 +201,30 @@ public class SimpleBinaryGenericBindingProvider extends AbstractGenericBindingPr
 			if (!matcher.matches()) {
 				throw new BindingConfigParseException("Illegal config format: " + bindingConfig
 						+ ". Correct format: simplebinary=\"port:deviceAddress:itemAddress:dataType:ioDirection\". Example: simplebinary=\"port:1:1:byte:O\"");
-			}
-			else {
+			} else {
 				// device info config
 				SimpleBinaryInfoBindingConfig config = new SimpleBinaryInfoBindingConfig();
 				commonConfig = config;
-				
+
 				config.item = item;
 				config.device = matcher.group(1);
-				
-				if(matcher.group(3) != null)
+
+				if (matcher.group(3) != null)
 					config.busAddress = Integer.valueOf(matcher.group(3)).intValue();
 				else
 					config.busAddress = -1;
-				
-				String param = matcher.group(4);	
-				 
-				if(param.equalsIgnoreCase("state")) {
+
+				String param = matcher.group(4);
+
+				if (param.equalsIgnoreCase("state")) {
 					config.infoType = InfoType.STATE;
-				}
-				else if(param.equalsIgnoreCase("previous_state")) {
+				} else if (param.equalsIgnoreCase("previous_state")) {
 					config.infoType = InfoType.PREVIOUS_STATE;
-				}
-				else if(param.equalsIgnoreCase("state_change_time")) {
+				} else if (param.equalsIgnoreCase("state_change_time")) {
 					config.infoType = InfoType.STATE_CHANGE_TIME;
-				}		
-				else if(param.equalsIgnoreCase("packet_lost")) {
+				} else if (param.equalsIgnoreCase("packet_lost")) {
 					config.infoType = InfoType.PACKET_LOST;
-				}	
-				else {
+				} else {
 					throw new BindingConfigParseException("Unsupported info parameter " + param);
 				}
 			}

@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2010-2015, openHAB.org and others.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ */
 package org.openhab.binding.simplebinary.internal;
 
 import java.util.HashMap;
@@ -14,7 +22,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Device status collection
  * 
- * @author Vita
+ * @author Vita Tucek
  * @since 1.8.0
  */
 public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBinaryDeviceState> {
@@ -25,13 +33,15 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 	protected Map<String, SimpleBinaryGenericBindingProvider.SimpleBinaryInfoBindingConfig> deviceItemsConfigs;
 	protected EventPublisher eventPublisher;
 
-
 	/**
 	 * Device collection constructor
 	 * 
-	 * @param deviceName Port
-	 * @param deviceItemsConfigs Items configuration
-	 * @param eventPublisher Event bus publisher
+	 * @param deviceName
+	 *            Port
+	 * @param deviceItemsConfigs
+	 *            Items configuration
+	 * @param eventPublisher
+	 *            Event bus publisher
 	 */
 	public SimpleBinaryDeviceStateCollection(String deviceName, Map<String, SimpleBinaryInfoBindingConfig> deviceItemsConfigs, EventPublisher eventPublisher) {
 		super();
@@ -51,9 +61,12 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 	/**
 	 * Set state to device specified by address connected to given port
 	 * 
-	 * @param deviceName Port
-	 * @param deviceAddress Device address
-	 * @param state Device state
+	 * @param deviceName
+	 *            Port
+	 * @param deviceAddress
+	 *            Device address
+	 * @param state
+	 *            Device state
 	 */
 	public void setDeviceState(String deviceName, Integer deviceAddress, SimpleBinaryDeviceState.DeviceStates state) {
 
@@ -95,8 +108,10 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 	/**
 	 * Set state to all devices connected to specified port
 	 * 
-	 * @param deviceName Serial port name
-	 * @param state Required state
+	 * @param deviceName
+	 *            Serial port name
+	 * @param state
+	 *            Required state
 	 */
 	public void setStateToAllConfiguredDevices(String deviceName, SimpleBinaryDeviceState.DeviceStates state) {
 		if (eventPublisher != null) {

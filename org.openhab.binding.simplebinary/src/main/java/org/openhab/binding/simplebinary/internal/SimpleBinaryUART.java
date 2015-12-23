@@ -22,8 +22,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedList;
@@ -79,7 +77,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	private OutputStream outputStream;
 	/** buffer for incoming data */
 	private SimpleBinaryByteBuffer inBuffer = new SimpleBinaryByteBuffer(256);
-	//private ByteBuffer inBuffer = ByteBuffer.allocate(256);
+	// private ByteBuffer inBuffer = ByteBuffer.allocate(256);
 	/** flag that device is connected */
 	private boolean connected = false;
 	/** queue for commands */
@@ -122,7 +120,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		this.baud = baud;
 		this.poolControl = simpleBinaryPoolControl;
 		this.forceRTS = forceRTS;
-		this.invertedRTS = invertedRTS;		
+		this.invertedRTS = invertedRTS;
 	}
 
 	/**
@@ -150,7 +148,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	}
 
 	/**
-	 * Return port hardware name 
+	 * Return port hardware name
 	 * 
 	 * @return
 	 */
@@ -158,7 +156,6 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		return port;
 	}
 
-	
 	/**
 	 * Check if port is opened
 	 * 
@@ -168,8 +165,9 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		return connected;
 	}
 
-	/** 
+	/**
 	 * Open serial port
+	 * 
 	 * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#open()
 	 */
 	public Boolean open() {
@@ -258,7 +256,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		}
 
 		logger.debug("Port {} - opened", this.port);
-		
+
 		portState.setState(PortStates.LISTENING);
 		connected = true;
 		return true;
@@ -266,6 +264,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 	/**
 	 * Return list of available port
+	 * 
 	 * @return
 	 */
 	@SuppressWarnings("rawtypes")
@@ -282,9 +281,9 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		return sb.toString();
 	}
 
-
 	/**
 	 * Close serial port
+	 * 
 	 * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#close()
 	 */
 	public void close() {
@@ -307,11 +306,12 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		open();
 	}
 
-	
 	/**
 	 * Send command into device channel
 	 * 
-	 * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#sendData(java.lang.String, org.openhab.core.types.Command, org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig)
+	 * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#sendData(java.lang.String,
+	 *      org.openhab.core.types.Command,
+	 *      org.openhab.binding.simplebinary.internal.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig)
 	 */
 	public void sendData(String itemName, Command command, SimpleBinaryBindingConfig config) {
 		// compile data
@@ -322,8 +322,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	}
 
 	/**
-	 * Add compiled data item to sending queue 
-	 *  
+	 * Add compiled data item to sending queue
+	 * 
 	 * @param data
 	 */
 	public void sendData(SimpleBinaryItem data) {
@@ -400,12 +400,10 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		if (commandQueue.isEmpty())
 			return;
 
-		if (!waitingForAnswer)
-		{
+		if (!waitingForAnswer) {
 			resendCounter = 0;
 			sendDataOut(commandQueue.remove());
-		}
-		else
+		} else
 			logger.debug("Port {} - Processing commandQueue - waiting", this.port);
 	}
 
@@ -423,11 +421,11 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 			// set RTS
 			if (this.forceRTS) {
 				logger.debug("Port {} - RTS set", this.port);
-				
+
 				// calc minumum time for send + currentTime + 0ms
 				sentTimeTicks = System.currentTimeMillis() + (((data.getData().length * 8) + 4) * 1000 / this.baud);
 
-				serialPort.setRTS(invertedRTS ? false : true);				
+				serialPort.setRTS(invertedRTS ? false : true);
 			}
 
 			// write string to serial port
@@ -483,12 +481,11 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		int address = this.getLastSentData().getDeviceId();
 
 		devicesStates.setDeviceState(this.deviceName, address, DeviceStates.NOT_RESPONDING);
-		
+
 		logger.debug("Port {} - Input buffer cleared", this.port);
 
 		inBuffer.clear();
 	}
-
 
 	/**
 	 * Serial events
@@ -526,7 +523,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 						break;
 				}
 
-				//logger.debug("Port {} - Received data - buffer length {} bytes", port, inBuffer.position());
+				// logger.debug("Port {} - Received data - buffer length {} bytes", port, inBuffer.position());
 
 				// check data
 				if (itemsConfig != null) {
@@ -540,13 +537,13 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 						try {
 							int first = inBuffer.get();
 							inBuffer.rewind();
-							
-							//check expected address
-							if(lastSentData.getDeviceId() != first){
+
+							// check expected address
+							if (lastSentData.getDeviceId() != first) {
 								throw new WrongAddressException(lastSentData.getDeviceId(), first);
 							}
-								
-							//decompile income message
+
+							// decompile income message
 							SimpleBinaryMessage itemData = SimpleBinaryProtocol.decompileData(inBuffer, itemsConfig, deviceName);
 
 							if (itemData != null) {
@@ -580,8 +577,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 									}
 								} else if (itemData instanceof SimpleBinaryMessage) {
 									logger.debug("Port {} - Incoming control message", port);
-									
-									//address
+
+									// address
 									int itemAddress = lastSentData.itemAddress;
 
 									// set state
@@ -644,50 +641,49 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 									} else {
 										resendCounter = 0;
-										logger.warn("Port {} - Device {} - Unsupported message type received: " + itemData.getMessageType().toString(), port, itemData.getDeviceId(),
-												port);
+										logger.warn("Port {} - Device {} - Unsupported message type received: " + itemData.getMessageType().toString(), port,
+												itemData.getDeviceId(), port);
 
 										// set state
 										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
 									}
 								}
-								
+
 								// compact buffer
 								inBuffer.compact();
 								processCommandQueue();
-								
+
 							} else {
 								inBuffer.rewind();
 								// compact buffer
 								inBuffer.compact();
-								
+
 								break;
-							}							
+							}
 						} catch (BufferUnderflowException ex) {
 							logger.warn("Port {} - Buffer underflow while reading: {}", this.port, ex.getMessage());
 							// print details
-							printCommunicationInfo();							
-							
+							printCommunicationInfo();
+
 							StringWriter sw = new StringWriter();
 							PrintWriter pw = new PrintWriter(sw);
 							ex.printStackTrace(pw);
 							logger.warn("Underflow stacktrace: " + sw.toString());
-							
-							logger.warn("Buffer mode {}, remaining={} bytes, limit={} bytes",inBuffer.getMode().toString(), inBuffer.remaining(), inBuffer.limit());
 
-							try{
-								//inBuffer.clear();
-								
+							logger.warn("Buffer mode {}, remaining={} bytes, limit={} bytes", inBuffer.getMode().toString(), inBuffer.remaining(), inBuffer.limit());
+
+							try {
+								// inBuffer.clear();
+
 								// rewind buffer
 								inBuffer.rewind();
-								logger.warn("Buffer mode {}, remaining after rewind {} bytes",inBuffer.getMode().toString(), inBuffer.remaining());
+								logger.warn("Buffer mode {}, remaining after rewind {} bytes", inBuffer.getMode().toString(), inBuffer.remaining());
 								// compact buffer
-								inBuffer.compact();								
-							}
-							catch(ModeChangeException exep){
+								inBuffer.compact();
+							} catch (ModeChangeException exep) {
 								logger.error(exep.getMessage());
 							}
-							
+
 							break;
 
 						} catch (NoValidCRCException ex) {
@@ -704,7 +700,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 							} else {
 								setWaitingForAnswer(false);
 								processCommandQueue();
-								
+
 								// set state
 								devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.RESPONSE_ERROR);
 							}
@@ -717,7 +713,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 							setWaitingForAnswer(false);
 							processCommandQueue();
-							
+
 							// set state
 							devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
 						} catch (WrongAddressException ex) {
@@ -725,16 +721,16 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 							// print details
 							printCommunicationInfo();
 
-							setWaitingForAnswer(false);							
+							setWaitingForAnswer(false);
 
-							//only 4 bytes (minus 1 after delete first byte) is not enough to have complete message
+							// only 4 bytes (minus 1 after delete first byte) is not enough to have complete message
 							if (inBuffer.limit() < 5) {
 								// clear buffer
 								inBuffer.clear();
 
 								logger.warn("Port {} - Address not valid: input buffer cleared", this.port);
 								processCommandQueue();
-								
+
 								// set state
 								devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
 							} else {
@@ -744,7 +740,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 								inBuffer.get();
 								inBuffer.compact();
 							}
-							
+
 						} catch (UnknownMessageException ex) {
 							logger.error("Port {} - Income unknown message: {}", this.port, ex.getMessage());
 							// print details
@@ -752,16 +748,16 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 							setWaitingForAnswer(false);
 
-							//inBuffer.rewind();
+							// inBuffer.rewind();
 
-							//only 4 bytes (minus 1 after delete first byte) is not enough to have complete message
+							// only 4 bytes (minus 1 after delete first byte) is not enough to have complete message
 							if (inBuffer.limit() < 5) {
 								// clear buffer
 								inBuffer.clear();
 
 								logger.warn("Port {} - Income unknown message: input buffer cleared", this.port);
 								processCommandQueue();
-								
+
 								// set state
 								devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
 							} else {
@@ -780,17 +776,17 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 							setWaitingForAnswer(false);
 							processCommandQueue();
-							
+
 							// set state
 							devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
 						} catch (ModeChangeException ex) {
 							logger.error("Port {} - Bad operation: {}", this.port, ex.getMessage());
-							
-							inBuffer.initialize(); 
-							
+
+							inBuffer.initialize();
+
 							// print details
 							printCommunicationInfo();
-						
+
 						} catch (Exception ex) {
 							logger.error("Port {} - Reading incoming data error: {}", this.port, ex.getMessage());
 							// print details
@@ -799,12 +795,12 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 							processCommandQueue();
 						}
 
-						 // check for new data
-						 while (inputStream.available() > 0) {
-							 logger.debug("Port {} - another new data - {}bytes", this.port, inputStream.available());
-							 if (!readIncomingData())
-								 break;
-						 }
+						// check for new data
+						while (inputStream.available() > 0) {
+							logger.debug("Port {} - another new data - {}bytes", this.port, inputStream.available());
+							if (!readIncomingData())
+								break;
+						}
 					}
 				}
 			} catch (IOException e) {
@@ -822,7 +818,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 	/**
 	 * Print communication information
-	 * @throws ModeChangeException 
+	 * 
+	 * @throws ModeChangeException
 	 */
 	private void printCommunicationInfo() throws ModeChangeException {
 		// content of input buffer
@@ -841,7 +838,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	 * Read data from serial port buffer
 	 * 
 	 * @throws IOException
-	 * @throws ModeChangeException 
+	 * @throws ModeChangeException
 	 */
 	private boolean readIncomingData() throws IOException, ModeChangeException {
 
@@ -849,7 +846,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		int bytes = inputStream.read(readBuffer);
 
 		logger.debug("Port {} - Received incoming data length {} bytes", port, bytes);
-		logger.debug("Port {} - data: {}", port, SimpleBinaryProtocol.arrayToString(readBuffer, bytes));		
+		logger.debug("Port {} - data: {}", port, SimpleBinaryProtocol.arrayToString(readBuffer, bytes));
 
 		if (bytes + inBuffer.position() >= inBuffer.capacity()) {
 			logger.error("Port {} - Buffer overrun", port);
@@ -862,13 +859,14 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	}
 
 	/**
-	 * Provide resending last sent message 
+	 * Provide resending last sent message
+	 * 
 	 * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#resendData()
 	 */
 	public void resendData() {
 
-		//TODO: minimum time for data line stabilizing
-		
+		// TODO: minimum time for data line stabilizing
+
 		if (getLastSentData() != null) {
 			logger.debug("Port {} - Resend data", port);
 
@@ -880,7 +878,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	}
 
 	/**
-	 * Return last sent message 
+	 * Return last sent message
 	 * 
 	 * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#getLastSentData()
 	 */
@@ -888,7 +886,6 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		return lastSentData;
 	}
 
-	
 	/**
 	 * Set last sent data
 	 * 
@@ -898,7 +895,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 		lastSentData = data;
 	}
 
-	/**  
+	/**
 	 * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#checkNewData()
 	 */
 	public void checkNewData() {

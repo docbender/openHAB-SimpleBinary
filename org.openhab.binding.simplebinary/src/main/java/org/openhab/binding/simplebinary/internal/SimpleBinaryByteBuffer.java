@@ -1,5 +1,10 @@
 /**
- * 
+ * Copyright (c) 2010-2015, openHAB.org and others.
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
  */
 package org.openhab.binding.simplebinary.internal;
 
@@ -8,7 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * ByteBuffer implementation with possibility to have control over read/write mode 
+ * ByteBuffer implementation with possibility to have control over read/write mode
  * 
  * @author Vita Tucek
  * @since 1.8.0
@@ -27,37 +32,37 @@ public class SimpleBinaryByteBuffer {
 	/**
 	 * Contruct buffer with defined size
 	 * 
-	 * @param size Required size (bytes)
+	 * @param size
+	 *            Required size (bytes)
 	 */
 	public SimpleBinaryByteBuffer(int size) {
 		_size = size;
 		_buffer = ByteBuffer.allocate(size);
-		
+
 		_buffer.order(ByteOrder.LITTLE_ENDIAN);
 	}
-	
+
 	/**
 	 * Buffer reinitialization
 	 */
 	public void initialize() {
 		_mode = BufferMode.WRITE;
 		_buffer = ByteBuffer.allocate(_size);
-		
+
 		_buffer.order(ByteOrder.LITTLE_ENDIAN);
 	}
-	
+
 	/**
 	 * Return actual buffer mode
 	 * 
 	 * @return
 	 */
-	public BufferMode getMode()
-	{		
+	public BufferMode getMode() {
 		return _mode;
-	}	
+	}
 
 	/**
-	 * Provide flip buffer (set into read mode) 
+	 * Provide flip buffer (set into read mode)
 	 * 
 	 * @return
 	 * @throws ModeChangeException
@@ -151,7 +156,7 @@ public class SimpleBinaryByteBuffer {
 	}
 
 	/**
-	 * Return buffer capacity 
+	 * Return buffer capacity
 	 * 
 	 * @return
 	 */

@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Implement this class if you are going create an actively polling service like querying a Website/Device.
  * 
- * @author vita
+ * @author Vita Tucek
  * @since 1.8.0
  */
 public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindingProvider> {
@@ -147,7 +147,7 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 				}
 			}
 		}
-		
+
 		logger.debug("setProperlyConfigured ");
 
 		setProperlyConfigured(true);
@@ -285,7 +285,7 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 
 			if (config != null)
 				items.put(itemName, (SimpleBinaryBindingConfig) config);
-			
+
 		} else if (config instanceof SimpleBinaryInfoBindingConfig) {
 			if (infoItems.get(itemName) != null)
 				infoItems.remove(itemName);
@@ -303,16 +303,15 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 
 		items.clear();
 		infoItems.clear();
-		
+
 		for (Entry<String, BindingConfig> item : ((SimpleBinaryGenericBindingProvider) provider).configs().entrySet()) {
 			if (item.getValue() instanceof SimpleBinaryBindingConfig) {
 				items.put(item.getKey(), (SimpleBinaryBindingConfig) item.getValue());
-			}
-			else if (item.getValue() instanceof SimpleBinaryInfoBindingConfig) {
+			} else if (item.getValue() instanceof SimpleBinaryInfoBindingConfig) {
 				infoItems.put(item.getKey(), (SimpleBinaryInfoBindingConfig) item.getValue());
 			}
 		}
-		
+
 		logger.debug("allBindingsChanged({}) is called!", provider);
 	}
 }

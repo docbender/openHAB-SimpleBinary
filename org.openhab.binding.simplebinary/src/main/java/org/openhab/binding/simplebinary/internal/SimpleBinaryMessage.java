@@ -11,7 +11,7 @@ package org.openhab.binding.simplebinary.internal;
 /**
  * Class holding message data
  * 
- * @author vita
+ * @author Vita Tucek
  * @since 1.8.0
  */
 public class SimpleBinaryMessage {
@@ -43,6 +43,7 @@ public class SimpleBinaryMessage {
 	
 	/**
 	 * Return item address
+	 * 
 	 * @return
 	 */
 	public int getItemAddress() {

@@ -14,7 +14,7 @@ import org.openhab.core.types.Command;
 /**
  * Device interface
  * 
- * @author vita
+ * @author Vita Tucek
  * @since 1.8.0
  */
 public interface SimpleBinaryIDevice {

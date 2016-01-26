@@ -36,6 +36,7 @@ class itemData
     bool saveWord(char* data);
     bool saveDword(char* data);
     bool saveArray(char *pData, int len); 
+    void save(int value) { if(_type == BYTE) _data[0] = value; else if(_type == WORD) memcpy(_data,&value,2); else if(_type == DWORD) memcpy(_data,&value,4);};
     void save(float value) { if(_type == FLOAT) memcpy(_data,&value,4); };
 
     // return item address

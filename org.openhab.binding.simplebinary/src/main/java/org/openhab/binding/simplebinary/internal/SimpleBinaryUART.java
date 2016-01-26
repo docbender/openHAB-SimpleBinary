@@ -611,8 +611,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_DATA) {
 										logger.warn("Port {} - Device {} report unknown data", port, itemData.getDeviceId());
-										logger.debug("Port {} - Last sent data:", port);
-										logger.debug(lastSentData.getData().toString());
+										// last data out
+										logger.debug("Port {} - Last sent data: {}", port, SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));										
 
 										// set state
 										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
@@ -621,8 +621,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_ADDRESS) {
 										logger.warn("Port {} - Device {} for item {} report unknown address", port, itemData.getDeviceId(), itemAddress);
-										logger.debug("Port {} - Last sent data:", port);
-										logger.debug(lastSentData.getData().toString());
+										// last data out
+										logger.debug("Port {} - Last sent data: {}", port, SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
 
 										// set state
 										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
@@ -631,8 +631,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.SAVING_ERROR) {
 										logger.warn("Port {} - Device {} for item {} report saving data error", port, itemData.getDeviceId(), itemAddress);
-										logger.debug("Port {} - Last sent data:", port);
-										logger.debug(lastSentData.getData().toString());
+										// last data out
+										logger.debug("Port {} - Last sent data: {}", port, SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
 
 										// set state
 										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);

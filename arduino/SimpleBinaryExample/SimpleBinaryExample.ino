@@ -3,6 +3,7 @@
 // Name:        simpleBinary.cpp
 // Author:      Vita Tucek
 // Created:     11.9.2015
+// License:     MIT
 // Description: Usage example of SimpleBinary communication with OpenHAB binding
 //
 //---------------------------------------------------------------------------

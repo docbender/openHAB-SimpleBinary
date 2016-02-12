@@ -1,3 +1,14 @@
+//---------------------------------------------------------------------------
+//
+// Name:        itemData.h
+// Author:      Vita Tucek
+// Created:     20.8.2015
+// License:     MIT
+// Description: Class for holding data header
+// 
+//
+//---------------------------------------------------------------------------
+
 #ifndef ITEMDATA_H
 #define ITEMDATA_H
 

@@ -1,3 +1,13 @@
+//---------------------------------------------------------------------------
+//
+// Name:        simpleBinary.h
+// Author:      Vita Tucek
+// Created:     20.8.2015
+// License:     MIT
+// Description: Implementation of SimpleBinary protocol for use with OpenHAB
+//
+//---------------------------------------------------------------------------
+
 #ifndef SIMPLEBINARY_H
 #define SIMPLEBINARY_H
 
@@ -7,8 +17,7 @@
 class simpleBinary
 {     
   public:
-    simpleBinary() {}; 
-    simpleBinary(int uartAddress, int size) {  serbuflen = 0; _uartAddress = uartAddress; _size = size; _data = new itemData[size]; };    
+    simpleBinary(int uartAddress, int size):sendDelay(0),receiveTime(0),serbuflen(0),_uartAddress(uartAddress),_size(size)  {  _data = new itemData[size]; };    
 
     ~simpleBinary() { delete[] _data; };
     
@@ -54,9 +63,9 @@ class simpleBinary
      //RTS pin number 
      int RTSpin;
      //delay time between ask and answer 
-     unsigned int sendDelay = 0;
+     unsigned int sendDelay;
      //milisecond counter with receive data time
-     unsigned long receiveTime = 0;
+     unsigned long receiveTime;
 
 
      //send data saved in item

@@ -3,6 +3,7 @@
 // Name:        simpleBinary.cpp
 // Author:      Vita Tucek
 // Created:     20.8.2015
+// License:     MIT
 // Description: Implementation of SimpleBinary protocol for use with OpenHAB
 //
 //---------------------------------------------------------------------------

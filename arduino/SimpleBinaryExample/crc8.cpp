@@ -3,6 +3,7 @@
 // Name:        crc8.cpp
 // Author:      Vita Tucek
 // Created:     20.8.2015
+// License:     MIT
 // Description: CRC8 check
 //
 //---------------------------------------------------------------------------

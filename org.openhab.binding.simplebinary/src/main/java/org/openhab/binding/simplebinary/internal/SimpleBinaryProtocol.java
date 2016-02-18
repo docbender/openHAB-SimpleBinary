@@ -662,7 +662,11 @@ public class SimpleBinaryProtocol {
 		byte result = (byte) (crc >> 8);
 
 		logger.trace("Counting CRC8 of: " + arrayToString(data, length));
-		logger.trace("CRC8 result: 0x" + Integer.toHexString(Byte.toUnsignedInt(result)).toUpperCase());
+		
+//		if(SimpleBinaryBinding.JavaVersion >= 1.8)
+//			logger.trace("CRC8 result: 0x" + Integer.toHexString(Byte.toUnsignedInt(result)).toUpperCase());
+//		else
+		logger.trace("CRC8 result: 0x" + Integer.toHexString(result & 0xFF).toUpperCase());
 
 		return result;
 	}
@@ -684,7 +688,10 @@ public class SimpleBinaryProtocol {
 			else
 				s.append(" ");
 
-			s.append("0x" + Integer.toHexString(Byte.toUnsignedInt(b)).toUpperCase());
+//			if(SimpleBinaryBinding.JavaVersion >= 1.8)
+//				s.append("0x" + Integer.toHexString(Byte.toUnsignedInt(b)).toUpperCase());
+//			else
+			s.append("0x" + Integer.toHexString(b & 0xFF).toUpperCase());				
 		}
 
 		s.append("]");

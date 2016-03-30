@@ -37,6 +37,8 @@ import org.slf4j.LoggerFactory;
 public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindingProvider> {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryBinding.class);
+	
+	public static final Double JavaVersion = Double.parseDouble(System.getProperty("java.specification.version"));;
 
 	/**
 	 * The BundleContext. This is only valid when the bundle is ACTIVE. It is set in the activate() method and must not
@@ -226,7 +228,9 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 		logger.debug("execute() method is called!");
 
 		if (devices != null && devices.size() > 0) {
-			for (Map.Entry<String, SimpleBinaryUART> item : devices.entrySet()) {
+			//go through all devices
+			for (Map.Entry<String, SimpleBinaryUART> item : devices.entrySet()) {			
+				//check device for new data
 				item.getValue().checkNewData();
 			}
 		}

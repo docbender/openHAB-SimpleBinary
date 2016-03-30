@@ -48,14 +48,17 @@ public class SimpleBinaryProtocol {
 	 * 
 	 * @param busAddress
 	 *            Address connected device
+	 * @param forceAllDataAsNew
+	 *            Tell device all his output items should be mark as new
 	 * @return
 	 */
-	public static SimpleBinaryItemData compileNewDataFrame(int busAddress) {
+	public static SimpleBinaryItemData compileNewDataFrame(int busAddress, boolean forceAllDataAsNew) {
 		byte[] data = new byte[4];
+		byte control = forceAllDataAsNew ? (byte) 1 : (byte) 0;
 
 		data[0] = (byte) (busAddress & 0xFF);
 		data[1] = (byte) 0xD0;
-		data[2] = 0;
+		data[2] = control;
 		data[3] = evalCRC(data, 3);
 
 		return new SimpleBinaryItemData((byte) 0xD0, busAddress, data);
@@ -374,8 +377,8 @@ public class SimpleBinaryProtocol {
 						blue = 255;
 
 					logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
-					
-					byte[] rgbw = calcWhite(red, green, blue); 
+
+					byte[] rgbw = calcWhite(red, green, blue);
 					red = rgbw[0];
 					green = rgbw[1];
 					blue = rgbw[2];
@@ -425,7 +428,7 @@ public class SimpleBinaryProtocol {
 	 * @return
 	 */
 	private static byte[] calcWhite(long red, long green, long blue) {
-		
+
 		byte[] result = new byte[4];
 		float M = Math.max(Math.max(red, green), blue);
 		float m = Math.min(Math.min(red, green), blue);
@@ -442,7 +445,7 @@ public class SimpleBinaryProtocol {
 			else
 				Wo = M;
 
-			//int Q = 100;
+			// int Q = 100;
 
 			float K = m / (Wo + M);
 
@@ -455,11 +458,11 @@ public class SimpleBinaryProtocol {
 			Bo = blue;
 			Wo = 0;
 		}
-		
-		result[0] = (byte)Math.round(Ro);
-		result[1] = (byte)Math.round(Go);
-		result[2] = (byte)Math.round(Bo);
-		result[3] = (byte)Math.round(Math.floor(Wo));		
+
+		result[0] = (byte) Math.round(Ro);
+		result[1] = (byte) Math.round(Go);
+		result[2] = (byte) Math.round(Bo);
+		result[3] = (byte) Math.round(Math.floor(Wo));
 
 		return result;
 	}
@@ -662,10 +665,10 @@ public class SimpleBinaryProtocol {
 		byte result = (byte) (crc >> 8);
 
 		logger.trace("Counting CRC8 of: " + arrayToString(data, length));
-		
-//		if(SimpleBinaryBinding.JavaVersion >= 1.8)
-//			logger.trace("CRC8 result: 0x" + Integer.toHexString(Byte.toUnsignedInt(result)).toUpperCase());
-//		else
+
+		// if(SimpleBinaryBinding.JavaVersion >= 1.8)
+		// logger.trace("CRC8 result: 0x" + Integer.toHexString(Byte.toUnsignedInt(result)).toUpperCase());
+		// else
 		logger.trace("CRC8 result: 0x" + Integer.toHexString(result & 0xFF).toUpperCase());
 
 		return result;
@@ -688,10 +691,10 @@ public class SimpleBinaryProtocol {
 			else
 				s.append(" ");
 
-//			if(SimpleBinaryBinding.JavaVersion >= 1.8)
-//				s.append("0x" + Integer.toHexString(Byte.toUnsignedInt(b)).toUpperCase());
-//			else
-			s.append("0x" + Integer.toHexString(b & 0xFF).toUpperCase());				
+			// if(SimpleBinaryBinding.JavaVersion >= 1.8)
+			// s.append("0x" + Integer.toHexString(Byte.toUnsignedInt(b)).toUpperCase());
+			// else
+			s.append("0x" + Integer.toHexString(b & 0xFF).toUpperCase());
 		}
 
 		s.append("]");

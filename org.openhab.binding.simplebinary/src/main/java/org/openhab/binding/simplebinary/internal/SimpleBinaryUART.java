@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -341,8 +342,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	 * 
 	 * @param deviceAddress
 	 */
-	private void sendNewDataCheck(int deviceAddress) {
-		SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress);
+	private void sendNewDataCheck(int deviceAddress, boolean forceAllDataAsNew) {
+		SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, forceAllDataAsNew);
 
 		commandQueue.add(data);
 
@@ -612,7 +613,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_DATA) {
 										logger.warn("Port {} - Device {} report unknown data", port, itemData.getDeviceId());
 										// last data out
-										logger.debug("Port {} - Last sent data: {}", port, SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));										
+										logger.debug("Port {} - Last sent data: {}", port,
+												SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
 
 										// set state
 										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
@@ -622,7 +624,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_ADDRESS) {
 										logger.warn("Port {} - Device {} for item {} report unknown address", port, itemData.getDeviceId(), itemAddress);
 										// last data out
-										logger.debug("Port {} - Last sent data: {}", port, SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
+										logger.debug("Port {} - Last sent data: {}", port,
+												SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
 
 										// set state
 										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
@@ -632,7 +635,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 									} else if (itemData.getMessageType() == SimpleBinaryMessageType.SAVING_ERROR) {
 										logger.warn("Port {} - Device {} for item {} report saving data error", port, itemData.getDeviceId(), itemAddress);
 										// last data out
-										logger.debug("Port {} - Last sent data: {}", port, SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
+										logger.debug("Port {} - Last sent data: {}", port,
+												SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
 
 										// set state
 										devicesStates.setDeviceState(this.deviceName, ((SimpleBinaryMessage) itemData).getDeviceId(), DeviceStates.DATA_ERROR);
@@ -913,17 +917,24 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 					}
 				}
 			} else {
-				List<Integer> deviceItems = new ArrayList<Integer>();
-
+				// create devices map with device address and state
+				Map<Integer, DeviceStates> deviceItems = new HashMap<Integer, DeviceStates>();
+				// fill new created map - every device has one record
 				for (Map.Entry<String, SimpleBinaryBindingConfig> item : itemsConfig.entrySet()) {
 					if (item.getValue().device.equals(this.deviceName)) {
-						if (!deviceItems.contains(item.getValue().busAddress))
-							deviceItems.add(item.getValue().busAddress);
+						if (!deviceItems.containsKey(item.getValue().busAddress)) {
+							// for device retrieve his state
+							deviceItems.put(item.getValue().busAddress, this.devicesStates.getDeviceState(item.getValue().busAddress));
+						}
 					}
 				}
 
-				for (Integer integer : deviceItems) {
-					this.sendNewDataCheck(integer);
+				// take every device and create for him command depend on his state
+				for (Map.Entry<Integer, DeviceStates> device : deviceItems.entrySet()) {
+					boolean forceAllValues = device.getValue() == DeviceStates.UNKNOWN || device.getValue() == DeviceStates.NOT_RESPONDING
+							|| device.getValue() == DeviceStates.RESPONSE_ERROR;
+
+					this.sendNewDataCheck(device.getKey(), forceAllValues);
 				}
 
 				deviceItems = null;

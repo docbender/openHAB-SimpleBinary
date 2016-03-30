@@ -130,4 +130,22 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 			}
 		}
 	}
+
+	/**
+	 * @param deviceAddress
+	 *            Device address
+	 * @return Device state
+	 * 
+	 * @since 1.9.0
+	 */
+	public SimpleBinaryDeviceState.DeviceStates getDeviceState(Integer deviceAddress) {
+		// retrieve device
+		SimpleBinaryDeviceState deviceState = this.get(deviceAddress);
+
+		if (deviceState == null)
+			return null;
+
+		// return device state
+		return deviceState.getState();
+	}
 }

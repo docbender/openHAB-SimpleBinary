@@ -85,6 +85,8 @@ public class SimpleBinaryMessage {
 			return SimpleBinaryMessageType.RESEND;
 		case (byte) 0xE2:
 			return SimpleBinaryMessageType.NODATA;
+		case (byte) 0xE3:
+			return SimpleBinaryMessageType.UNKNOWN_DATA;		
 		case (byte) 0xE4:
 			return SimpleBinaryMessageType.UNKNOWN_ADDRESS;
 		case (byte) 0xE5:

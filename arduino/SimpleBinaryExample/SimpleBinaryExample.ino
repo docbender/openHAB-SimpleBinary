@@ -21,9 +21,12 @@
 simpleBinary *items;
 
 void setup() {
-  
+  //UART inicialization
+  Serial.begin(UART_SPEED);
+  UCSR0B |= 0x80;
+    
   //items initialization
-  items = new simpleBinary(UART_ADDRESS,11);
+  items = new simpleBinary(UART_ADDRESS, 11, Serial, forceAllItemsAsNew);
 
   //rgb with connection to executeRGB function
   items->initItem(0,100,RGB, executeRGB);
@@ -39,11 +42,7 @@ void setup() {
   items->initItem(7,3,DWORD, executeData);
   items->initItem(8,13,DWORD, executeData);
   items->initItem(9,4,FLOAT, executeData);
-  items->initItem(10,14,FLOAT, executeData);  
-
-  //UART inicialization
-  Serial.begin(UART_SPEED);
-  UCSR0B |= 0x80;
+  items->initItem(10,14,FLOAT, executeData);
 }
 
 void loop() 
@@ -105,4 +104,14 @@ void executeRGB(itemData *item)
     //DmxSimple.write(3, blue);
     //DmxSimple.write(4, white);
   }
+}
+
+//----------------------------------------- Force data as new ---------------------------------------------
+void forceAllItemsAsNew(simpleBinary *allItems)
+{  
+   for(int i=0;i<(*allItems).size();i++)
+   {
+      if(i==5 || i==6 || i==8 || i==10)
+        (*allItems)[i].setNewData();
+   }
 }

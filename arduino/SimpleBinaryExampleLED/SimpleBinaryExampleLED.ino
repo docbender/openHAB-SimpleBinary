@@ -23,9 +23,12 @@
 simpleBinary *items;
 
 void setup() {
-
+   //UART inicialization
+   Serial.begin(UART_SPEED);
+   UCSR0B |= 0x80;
+   
    //items initialization
-   items = new simpleBinary(UART_ADDRESS,2);
+   items = new simpleBinary(UART_ADDRESS, 2, Serial);
 
    //initialize first item with address 1, data type BYTE (represent openHAB switch) 
    //and pointer to function that is provide on state change
@@ -33,12 +36,7 @@ void setup() {
 
    //initialize second item with address 2, data type BYTE (represent openHAB contact) 
    //no action executed because no incoming data expected
-   items->initItem(1,2,BYTE, NULL);
-
-
-   //UART inicialization
-   Serial.begin(UART_SPEED);
-   UCSR0B |= 0x80;
+   items->initItem(1,2,BYTE);
 }
 
 void loop() 

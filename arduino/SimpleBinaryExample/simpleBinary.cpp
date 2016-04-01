@@ -18,18 +18,29 @@
 /// \param idx      Item index in configuration array 
 /// \param address  Item address  
 /// \param type     Item data type
+///
+itemData* simpleBinary::initItem(int idx, int address, itemType type)
+{
+  return _data[idx].init(address, type, NULL);  
+}
+
+/// Item initialization 
+///
+/// \param idx      Item index in configuration array 
+/// \param address  Item address  
+/// \param type     Item data type
 /// \param (*pFce)(itemData*) Pointer to function that is executed on data receive. NULL for no action  
 ///
-void simpleBinary::initItem(int idx, int address, itemType type, void (*pFce)(itemData*))
+itemData* simpleBinary::initItem(int idx, int address, itemType type, void (*pFce)(itemData*))
 {
-  _data[idx].init(address, type, pFce);  
+  return _data[idx].init(address, type, pFce);  
 }
 
 /// check if address exist in items array
 ///
 /// \param address  Searched item address  
 ///
-bool simpleBinary::checkAddress(int address)
+bool simpleBinary::checkAddress(int address) const 
 {
   for(int i=0;i<_size;i++)
   {
@@ -46,7 +57,7 @@ bool simpleBinary::checkAddress(int address)
 /// \param address  Item address
 /// \param data     Saved data  
 ///
-bool simpleBinary::saveByte(int address, char* data)
+bool simpleBinary::saveByte(int address, const char* data)
 {
   for(int i=0;i<_size;i++)
   {
@@ -64,7 +75,7 @@ bool simpleBinary::saveByte(int address, char* data)
 /// \param address  Item address
 /// \param data     Saved data  
 ///
-bool simpleBinary::saveWord(int address, char* data)
+bool simpleBinary::saveWord(int address, const char* data)
 {
   for(int i=0;i<_size;i++)
   {
@@ -82,7 +93,7 @@ bool simpleBinary::saveWord(int address, char* data)
 /// \param address  Item address
 /// \param data     Saved data  
 ///
-bool simpleBinary::saveDword(int address, char* data)
+bool simpleBinary::saveDword(int address, const char* data)
 {
   for(int i=0;i<_size;i++)
   {
@@ -101,7 +112,7 @@ bool simpleBinary::saveDword(int address, char* data)
 /// \param data     Saved data
 /// \param len      Data length to save     
 ///
-bool simpleBinary::saveArray(int address, char *pData, int len)
+bool simpleBinary::saveArray(int address, const char *pData, int len)
 {
   for(int i=0;i<_size;i++)
   {
@@ -123,9 +134,9 @@ bool simpleBinary::saveArray(int address, char *pData, int len)
 ///
 void simpleBinary::processSerial()
 {
-    while (Serial.available() > 0) 
+    while (serial->available() > 0) 
     {
-      int data = Serial.read();
+      int data = serial->read();
 
       serbuf[serbuflen++] = data;
     }
@@ -142,8 +153,13 @@ void simpleBinary::processSerial()
         switch(serbuf[1])
         {
           //new data
-          case (char)0xD0:
-            if(serbuf[2] == 0x00)
+          case (char)0xD0:            
+            if(serbuf[2] == 0x01)
+            {
+               //force all output data as new through user function
+               forceAllNewData();
+            }
+            if(serbuf[2] == 0x00 || serbuf[2] == 0x01)
             {
                crc = CRC8::evalCRC(serbuf,3);
 
@@ -299,18 +315,61 @@ void simpleBinary::processSerial()
 ///
 void simpleBinary::checkNewData()
 {
-  //check all items
-  for(int i=0;i<_size;i++)
-  {    
-    //send data first finded item
-    //itemData it = (*items)[i];
-    if(_data[i].hasNewData())
-    {
-      sendData(&(_data[i]));
+   int i;
+
+   if(_newDataCheckInProgress)
+      i = _newDataLastIndex;
+   else
+   {
+      i = _newDataStartIndex;
+      _newDataCheckInProgress = true;
+   }
+
+   //check all items - start one after last stop
+   do
+   {
+      if(_data[i].hasNewData())
+      {
+         sendData(&(_data[i]));
       
-      return;
-    }    
-  }
+         int next = (++i < _size) ? i : 0;
+
+         if(next == _newDataStartIndex)
+         {
+            _newDataStartIndex++;
+            _newDataCheckInProgress = false;        
+         }
+         else
+           _newDataLastIndex = next;
+         
+         return;
+      } 
+
+      i++;  
+
+      if(i >= _size)
+         i = 0;
+   }
+   while(i != _newDataStartIndex);
+  
+   _newDataStartIndex = (++i < _size) ? i : 0;
+   _newDataCheckInProgress = false;  
+
+   
+//  //check all items
+//  for(int i=0;i<_size;i++)
+//  {    
+//    //send data first finded item
+//    //itemData it = (*items)[i];
+//    if(_data[i].hasNewData())
+//    {
+//      sendData(&(_data[i]));
+//      
+//      return;
+//    }    
+//  }  
+
+   Serial.print(F("No data. Next:"));  Serial.println(_newDataStartIndex,DEC);
 
   //no new data available
   sendNoData();
@@ -424,7 +483,7 @@ void simpleBinary::sendData(itemData *item)
   char* data = NULL;
   int address;
   
-  switch((*item).getType())
+  switch(item->getType())
   {
     case BYTE:  
       data = new char[6];
@@ -497,7 +556,7 @@ void simpleBinary::sendData(itemData *item)
 /// \param data    Data to send    
 /// \param length  Data length
 ///
-void simpleBinary::write(char* data, int length)
+void simpleBinary::write(const char* data, int length)
 {   
   if(sendDelay > 0)
   {    
@@ -516,12 +575,12 @@ void simpleBinary::write(char* data, int length)
   if(RTSenabled)
   {
     digitalWrite(RTSpin, HIGH);
-    Serial.write(data,length);
-    Serial.flush();
+    serial->write(data,length);
+    serial->flush();
     digitalWrite(RTSpin, LOW);
   }
   else
-    Serial.write(data,length);
+    serial->write(data,length);
 }
 
 /// Set pin number to use as RTS signal
@@ -544,5 +603,15 @@ void simpleBinary::enableRTS(int pinNumber)
 void simpleBinary::setSendDelay(unsigned int delayms)
 {
   sendDelay = delayms;
+}
+
+/// Run assigned function to force all data as new one
+///
+void simpleBinary::forceAllNewData()
+{
+  if(pForceFunction == NULL) 
+    return; 
+    
+  (*pForceFunction)(this);  
 }
 

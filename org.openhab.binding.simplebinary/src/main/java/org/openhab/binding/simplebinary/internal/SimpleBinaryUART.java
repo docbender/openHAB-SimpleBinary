@@ -341,6 +341,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 	 * Prepare request to check if device with specific address has new data
 	 * 
 	 * @param deviceAddress
+	 * @param forceAllDataAsNew 
 	 */
 	private void sendNewDataCheck(int deviceAddress, boolean forceAllDataAsNew) {
 		SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, forceAllDataAsNew);
@@ -349,6 +350,17 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
 		processCommandQueue();
 	}
+	
+	/**
+	 * Send immediately check to device with specific address if it has new data
+	 * 
+	 * @param deviceAddress
+	 */
+	private void sendNewDataCheckOutOfQueue(int deviceAddress) {
+		SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, false);
+
+		sendDataOut(data);
+	}	
 
 	/**
 	 * Prepare request for read data of specific item
@@ -573,7 +585,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 									if (getLastSentData().getMessageType() == SimpleBinaryMessageType.CHECKNEWDATA) {
 										inBuffer.compact();
 										logger.debug("Port {} - Repeat CHECKNEWDATA command", port);
-										this.resendData();
+										//send new request immediately and without "force all data as new"
+										sendNewDataCheckOutOfQueue(getLastSentData().deviceId);
 										break;
 									}
 								} else if (itemData instanceof SimpleBinaryMessage) {

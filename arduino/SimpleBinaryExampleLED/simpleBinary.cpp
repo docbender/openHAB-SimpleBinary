@@ -331,16 +331,19 @@ void simpleBinary::checkNewData()
       if(_data[i].hasNewData())
       {
          sendData(&(_data[i]));
-      
-         int next = (++i < _size) ? i : 0;
 
-         if(next == _newDataStartIndex)
+         if(_size > 1)
          {
-            _newDataStartIndex++;
-            _newDataCheckInProgress = false;        
+           int next = (++i < _size) ? i : 0;
+  
+           if(next == _newDataStartIndex)
+           {
+              _newDataStartIndex++;
+              _newDataCheckInProgress = false;        
+           }
+           else
+             _newDataLastIndex = next;
          }
-         else
-           _newDataLastIndex = next;
          
          return;
       } 
@@ -354,22 +357,6 @@ void simpleBinary::checkNewData()
   
    _newDataStartIndex = (++i < _size) ? i : 0;
    _newDataCheckInProgress = false;  
-
-   
-//  //check all items
-//  for(int i=0;i<_size;i++)
-//  {    
-//    //send data first finded item
-//    //itemData it = (*items)[i];
-//    if(_data[i].hasNewData())
-//    {
-//      sendData(&(_data[i]));
-//      
-//      return;
-//    }    
-//  }  
-
-   Serial.print(F("No data. Next:"));  Serial.println(_newDataStartIndex,DEC);
 
   //no new data available
   sendNoData();
@@ -548,7 +535,7 @@ void simpleBinary::sendData(itemData *item)
   }
 
   if(data != NULL)  
-    delete[] data;  
+    delete[] data; 
 }
 
 /// Write data to serial port

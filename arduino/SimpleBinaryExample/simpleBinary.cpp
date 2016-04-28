@@ -153,7 +153,7 @@ void simpleBinary::processSerial()
         switch(serbuf[1])
         {
           //new data
-          case (char)0xD0:            
+          case (char)0xD0:  
             if(serbuf[2] == 0x01)
             {
                //force all output data as new through user function
@@ -164,7 +164,7 @@ void simpleBinary::processSerial()
                crc = CRC8::evalCRC(serbuf,3);
 
                if(crc != serbuf[3])
-                  sendWrongData(serbuf[3]);
+                  sendWrongData(crc);
                 else
                   checkNewData();
             }   
@@ -327,7 +327,7 @@ void simpleBinary::checkNewData()
 
    //check all items - start one after last stop
    do
-   {
+   {   
       if(_data[i].hasNewData())
       {
          sendData(&(_data[i]));
@@ -338,11 +338,13 @@ void simpleBinary::checkNewData()
   
            if(next == _newDataStartIndex)
            {
-              _newDataStartIndex++;
-              _newDataCheckInProgress = false;        
+              _newDataStartIndex = (++_newDataStartIndex < _size) ? _newDataStartIndex : 0;
+              _newDataCheckInProgress = false;      
            }
            else
+           {
              _newDataLastIndex = next;
+           }
          }
          
          return;

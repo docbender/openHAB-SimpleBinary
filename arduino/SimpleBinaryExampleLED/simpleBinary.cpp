@@ -13,6 +13,12 @@
 #include "simpleBinary.h"
 
 
+
+//when defined SEND_PACKET_WRONG_CRC in case received packet has wrong CRC answer "wrong data" is sent
+//#define SEND_PACKET_WRONG_CRC
+//when defined SEND_PACKET_UNKNOWN_DATA in case received packet contains data that has no action assigned answer "unknown data" is sent
+//#define SEND_PACKET_UNKNOWN_DATA
+
 /// Item initialization 
 ///
 /// \param idx      Item index in configuration array 
@@ -154,53 +160,61 @@ void simpleBinary::processSerial()
         {
           //new data
           case (char)0xD0:  
-            if(serbuf[2] == 0x01)
-            {
-               //force all output data as new through user function
-               forceAllNewData();
-            }
-            if(serbuf[2] == 0x00 || serbuf[2] == 0x01)
-            {
-               crc = CRC8::evalCRC(serbuf,3);
+            crc = CRC8::evalCRC(serbuf,3);
 
-               if(crc != serbuf[3])
-                  sendWrongData(crc);
-                else
+            if(crc == serbuf[3])
+            {
+               if(serbuf[2] == 0x00 || serbuf[2] == 0x01)
+               {
+                  if(serbuf[2] == 0x01)
+                  {
+                     //force all output data as new through user function
+                     forceAllNewData();
+                  }
+                                    
+                  //check data to send
                   checkNewData();
-            }   
+               }   
+#ifdef SEND_PACKET_UNKNOWN_DATA              
+               else
+                 sendUnknownData();   
+#endif                                  
+            }
+#ifdef SEND_PACKET_WRONG_CRC
             else
-              sendUnknownData();              
-
+               sendWrongData(crc);
+#endif
             serbuflen = 0;                       
             break;
           //read data  
           case (char)0xD1: 
             if(serbuflen < 5)
               break;
-              
-            address =  serbuf[2] | (serbuf[3] << 8);
-            
+
             crc = CRC8::evalCRC(serbuf,4);
 
-            if(crc != serbuf[4])
-               sendWrongData(crc);
+            if(crc == serbuf[4])
+            {
+              address =  serbuf[2] | (serbuf[3] << 8); 
+              readData(address); 
+            }
+#ifdef SEND_PACKET_WRONG_CRC            
             else
-               readData(address);            
-
+               sendWrongData(crc);
+#endif
             serbuflen = 0;           
             break;
           //write byte
           case (char)0xDA:
             if(serbuflen < 6)
               break;
-            //address
-            address = serbuf[2] | (serbuf[3] << 8);
             //crc check
             crc = CRC8::evalCRC(serbuf,5);
-            if(serbuf[5] != crc)
-              sendWrongData(crc);
-            else         
-            {
+            
+            if(serbuf[5] == crc)   
+            {                       
+              //address
+              address = serbuf[2] | (serbuf[3] << 8);
               //check address
               if(!checkAddress(address))
                 sendInvalidAddress();               
@@ -210,6 +224,10 @@ void simpleBinary::processSerial()
               else
                 sendSavingError();
             }
+#ifdef SEND_PACKET_WRONG_CRC            
+            else
+              sendWrongData(crc);
+#endif
             //clear buffer
             serbuflen = 0;                                                           
             break;
@@ -218,14 +236,13 @@ void simpleBinary::processSerial()
             if(serbuflen < 7)
               break;
 
-            //address 
-            address = serbuf[2] | (serbuf[3] << 8);
             //crc check
             crc = CRC8::evalCRC(serbuf,6);
-            if(serbuf[6] != crc)
-              sendWrongData(crc);
-            else       
+
+            if(serbuf[6] == crc)
             {
+               //address 
+               address = serbuf[2] | (serbuf[3] << 8);
               //check address
               if(!checkAddress(address))
                 sendInvalidAddress();                 
@@ -233,8 +250,12 @@ void simpleBinary::processSerial()
               if(saveWord(address,serbuf+4))
                 sendOK();
               else
-                sendSavingError();              
+                sendSavingError();               
             }
+#ifdef SEND_PACKET_WRONG_CRC            
+            else            
+              sendWrongData(crc);
+#endif
             //clear buffer
             serbuflen = 0;            
             break;
@@ -244,14 +265,14 @@ void simpleBinary::processSerial()
             if(serbuflen < 9)
               break;
 
-            //address
-            address = serbuf[2] | (serbuf[3] << 8);
             //crc check
             crc = CRC8::evalCRC(serbuf,8);
-            if(serbuf[8] != crc)
-              sendWrongData(crc);
-            else
+            
+            if(serbuf[8] == crc)            
             {
+              //address
+              address = serbuf[2] | (serbuf[3] << 8);
+
               //check address
               if(!checkAddress(address))
                 sendInvalidAddress();
@@ -259,8 +280,12 @@ void simpleBinary::processSerial()
               if(saveDword(address,serbuf+4))
                 sendOK();
               else
-                sendSavingError();  
+                sendSavingError();
             }
+#ifdef SEND_PACKET_WRONG_CRC            
+            else
+              sendWrongData(crc);
+#endif
             //clear buffer
             serbuflen = 0;             
             break;
@@ -275,14 +300,12 @@ void simpleBinary::processSerial()
             if(serbuflen < 7 + datalen)
               break;
 
-            //address
-            address = serbuf[2] | (serbuf[3] << 8);
             //crc check
-            crc = CRC8::evalCRC(serbuf,6+datalen);
-            if(serbuf[7+datalen] != crc)
-              sendWrongData(crc);
-            else            
+            crc = CRC8::evalCRC(serbuf,6+datalen);              
+            if(serbuf[7+datalen] == crc)
             {
+              //address
+              address = serbuf[2] | (serbuf[3] << 8);
               //check address
               if(!checkAddress(address))
                 sendInvalidAddress();
@@ -291,14 +314,18 @@ void simpleBinary::processSerial()
               if(saveArray(address,pData, datalen))
                 sendOK();
               else
-                sendSavingError();              
+                sendSavingError();            
             }
+#ifdef SEND_PACKET_WRONG_CRC            
+            else
+              sendWrongData(crc);
+#endif
             //clear buffer
             serbuflen = 0;               
             break;                        
           default:
             serbuflen = 0;
-            sendUnknownData();
+            //sendUnknownData();
             break;            
          }
       }

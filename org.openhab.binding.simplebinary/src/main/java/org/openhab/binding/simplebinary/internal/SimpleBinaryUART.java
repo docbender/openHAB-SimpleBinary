@@ -14,11 +14,11 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.BufferUnderflowException;
+import java.util.Deque;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TooManyListenersException;
@@ -51,7 +51,10 @@ import gnu.io.UnsupportedCommOperationException;
 public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventListener {
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryUART.class);
-    private static final int TIMEOUT = 500;
+    /** Timeout for receiving data [ms] **/
+    private static final int TIMEOUT = 1000;
+    /** Time for data line stabilization after data receive [ms] **/
+    private static final long LINE_STABILIZATION_TIME = 100;
 
     /** port name ex.: port, port1, ... */
     private String deviceName;
@@ -79,7 +82,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     /** flag that device is connected */
     private boolean connected = false;
     /** queue for commands */
-    private Queue<SimpleBinaryItemData> commandQueue = new LinkedList<SimpleBinaryItemData>();
+    private Deque<SimpleBinaryItemData> commandQueue = new LinkedList<SimpleBinaryItemData>();
     /** flag waiting */
     private boolean waitingForAnswer = false;
     /** store last sent data */
@@ -101,6 +104,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     public SimpleBinaryPortState portState = new SimpleBinaryPortState();
     /** State of connected slave devices */
     public SimpleBinaryDeviceStateCollection devicesStates;
+    /** Last data receive time **/
+    private long receiveTime = 0;
 
     /**
      * Constructor
@@ -359,14 +364,16 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     }
 
     /**
-     * Send immediately check to device with specific address if it has new data
+     * Put "check new data" packet of specified device in front of command queue
      *
      * @param deviceAddress
      */
-    private void sendNewDataCheckOutOfQueue(int deviceAddress) {
+    private void putSendNewDataCheckInFrontOfQueue(int deviceAddress) {
         SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, false);
 
-        sendDataOut(data);
+        // sendDataOut(data);
+
+        commandQueue.addFirst(data);
     }
 
     /**
@@ -441,6 +448,16 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
      *            Item data with compiled packet
      */
     private void sendDataOut(SimpleBinaryItemData data) {
+
+        while (Math.abs(System.currentTimeMillis() - receiveTime) <= LINE_STABILIZATION_TIME) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+
         logger.debug("Port {} - Sending data to device {} with length {} bytes", this.port, data.getDeviceId(),
                 data.getData().length);
         logger.debug("Port {} - data: {}", this.port,
@@ -582,7 +599,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                         deviceName);
 
                                 if (itemData != null) {
-                                    setWaitingForAnswer(false);
+                                    // setWaitingForAnswer(false);
 
                                     if (itemData instanceof SimpleBinaryItem) {
                                         logger.trace("Port {} - Incoming data", port);
@@ -611,12 +628,12 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                         // if data income on request "check new data" send it again for new check
                                         if (getLastSentData()
                                                 .getMessageType() == SimpleBinaryMessageType.CHECKNEWDATA) {
-                                            inBuffer.compact();
+                                            // inBuffer.compact();
                                             logger.debug("Port {} - Device {} Repeat CHECKNEWDATA command", port,
                                                     deviceId);
                                             // send new request immediately and without "force all data as new"
-                                            sendNewDataCheckOutOfQueue(getLastSentData().deviceId);
-                                            break;
+                                            putSendNewDataCheckInFrontOfQueue(getLastSentData().deviceId);
+                                            // break;
                                         }
                                     } else if (itemData instanceof SimpleBinaryMessage) {
                                         logger.debug("Port {} - Device {} Incoming control message", port,
@@ -717,6 +734,9 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
                                     // compact buffer
                                     inBuffer.compact();
+                                    // stop block sent
+                                    setWaitingForAnswer(false);
+                                    // look for data to send
                                     processCommandQueue();
 
                                 } else {
@@ -923,6 +943,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
         } else {
             inBuffer.put(readBuffer, 0, bytes);
         }
+
+        receiveTime = System.currentTimeMillis();
 
         return true;
     }

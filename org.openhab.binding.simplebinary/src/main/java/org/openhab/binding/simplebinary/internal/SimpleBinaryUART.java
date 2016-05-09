@@ -14,14 +14,19 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.BufferUnderflowException;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TooManyListenersException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.IOUtils;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryDeviceState.DeviceStates;
@@ -84,7 +89,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     /** queue for commands */
     private Deque<SimpleBinaryItemData> commandQueue = new LinkedList<SimpleBinaryItemData>();
     /** flag waiting */
-    private boolean waitingForAnswer = false;
+    private AtomicBoolean waitingForAnswer = new AtomicBoolean(false);
     /** store last sent data */
     private SimpleBinaryItemData lastSentData = null;
     /** counting resend data */
@@ -106,6 +111,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     public SimpleBinaryDeviceStateCollection devicesStates;
     /** Last data receive time **/
     private long receiveTime = 0;
+    /** Lock for process commands to prevent run it twice **/
+    private final Lock lock = new ReentrantLock();
 
     /**
      * Constructor
@@ -338,7 +345,13 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     public void sendData(SimpleBinaryItem data) {
         if (data != null) {
             logger.debug("Port {}: Adding command into queue", this.port);
-            commandQueue.add(data);
+
+            // lock queue
+            lock.lock();
+            // add data
+            commandQueue.offer(data);
+            // unlock queue
+            lock.unlock();
 
             processCommandQueue();
         } else {
@@ -349,16 +362,18 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     /**
      * Prepare request to check if device with specific address has new data
      *
-     * @param deviceAddress
-     * @param forceAllDataAsNew
+     * @param deviceAddress Device address
+     * @param forceAllDataAsNew Flag to force send all data from slave
      */
     private void sendNewDataCheck(int deviceAddress, boolean forceAllDataAsNew) {
         SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, forceAllDataAsNew);
 
+        lock.lock();
         // check if packet already exist
         if (!dataInQueue(data)) {
-            commandQueue.add(data);
+            commandQueue.offer(data);
         }
+        lock.unlock();
 
         processCommandQueue();
     }
@@ -366,14 +381,28 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     /**
      * Put "check new data" packet of specified device in front of command queue
      *
-     * @param deviceAddress
+     * @param deviceAddress Device address
      */
-    private void putSendNewDataCheckInFrontOfQueue(int deviceAddress) {
-        SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, false);
+    private void sendNewDataCheckPriority(int deviceAddress) {
+        sendNewDataCheckPriority(deviceAddress, false);
+    }
+
+    /**
+     * Put "check new data" packet of specified device in front of command queue
+     *
+     * @param deviceAddress Device address
+     * @param forceAllDataAsNew Flag to force send all data from slave
+     */
+    private void sendNewDataCheckPriority(int deviceAddress, boolean forceAllDataAsNew) {
+        SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, forceAllDataAsNew);
 
         // sendDataOut(data);
 
+        lock.lock();
         commandQueue.addFirst(data);
+        lock.unlock();
+
+        processCommandQueue();
     }
 
     /**
@@ -384,10 +413,12 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     private void sendReadData(SimpleBinaryBindingConfig itemConfig) {
         SimpleBinaryItemData data = SimpleBinaryProtocol.compileReadDataFrame(itemConfig);
 
+        lock.lock();
         // check if packet already exist
         if (!dataInQueue(data)) {
-            commandQueue.add(data);
+            commandQueue.offer(data);
         }
+        lock.unlock();
 
         processCommandQueue();
     }
@@ -429,15 +460,68 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     private void processCommandQueue() {
         logger.debug("Port {} - Processing commandQueue - length {}", this.port, commandQueue.size());
 
-        if (commandQueue.isEmpty()) {
+        if (!lock.tryLock()) {
+            logger.debug("Port {} - CommandQueue locked. Leaving processCommandQueue.");
             return;
         }
 
-        if (!waitingForAnswer) {
-            resendCounter = 0;
-            sendDataOut(commandQueue.remove());
-        } else {
-            logger.debug("Port {} - Processing commandQueue - waiting", this.port);
+        SimpleBinaryItemData dataToSend = null;
+
+        try {
+            if (commandQueue.isEmpty()) {
+                return;
+            }
+
+            if (!waitingForAnswer.get()) {
+                resendCounter = 0;
+
+                SimpleBinaryItemData firstdata = commandQueue.peek();
+                DeviceStates state = this.devicesStates.getDeviceState(firstdata.deviceId);
+
+                // check if device responds and there is lot of commands
+                if (state != DeviceStates.NOT_RESPONDING && (commandQueue.size() > 1)) {
+                    dataToSend = commandQueue.poll();
+                } else {
+                    // reorder queue - all commands from dead device put at the end of the queue
+                    List<SimpleBinaryItemData> deadData = new ArrayList<SimpleBinaryItemData>();
+
+                    SimpleBinaryItemData data = firstdata;
+
+                    // over all items until item isn't same as first one
+                    do {
+                        if (data.deviceId == firstdata.deviceId) {
+                            deadData.add(data);
+                        } else {
+                            commandQueue.offer(data);
+                        }
+
+                        data = commandQueue.poll();
+
+                        if (firstdata == data) {
+                            break;
+                        }
+
+                    } while (true);
+
+                    // TODO: at begin put "check new data"??? - but only if ONCHANGE. What if ONSCAN???
+
+                    // add dead device data
+                    commandQueue.addAll(deadData);
+
+                    // put first command (no matter if device not responding)
+                    dataToSend = commandQueue.poll();
+                }
+
+            } else {
+                logger.debug("Port {} - Processing commandQueue - waiting", this.port);
+            }
+        } catch (Exception e) {
+        } finally {
+            lock.unlock();
+        }
+
+        if (dataToSend != null) {
+            sendDataOut(dataToSend);
         }
     }
 
@@ -449,6 +533,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
      */
     private void sendDataOut(SimpleBinaryItemData data) {
 
+        // data line stabilization
         while (Math.abs(System.currentTimeMillis() - receiveTime) <= LINE_STABILIZATION_TIME) {
             try {
                 Thread.sleep(10);
@@ -494,7 +579,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
      * @param state
      */
     private void setWaitingForAnswer(boolean state) {
-        waitingForAnswer = state;
+        waitingForAnswer.set(state);
 
         if (state) {
             if (timeoutTask != null) {
@@ -632,7 +717,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                             logger.debug("Port {} - Device {} Repeat CHECKNEWDATA command", port,
                                                     deviceId);
                                             // send new request immediately and without "force all data as new"
-                                            putSendNewDataCheckInFrontOfQueue(getLastSentData().deviceId);
+                                            sendNewDataCheckPriority(getLastSentData().deviceId);
                                             // break;
                                         }
                                     } else if (itemData instanceof SimpleBinaryMessage) {
@@ -957,8 +1042,6 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     @Override
     public void resendData() {
 
-        // TODO: minimum time for data line stabilizing
-
         if (getLastSentData() != null) {
             logger.debug("Port {} - Resend data", port);
 
@@ -1029,7 +1112,13 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                             || device.getValue() == DeviceStates.NOT_RESPONDING
                             || device.getValue() == DeviceStates.RESPONSE_ERROR;
 
-                    this.sendNewDataCheck(device.getKey(), forceAllValues);
+                    logger.debug("Port {} - checkNewData() device={} force={}", port, device.getKey(), forceAllValues);
+
+                    if (forceAllValues) {
+                        this.sendNewDataCheckPriority(device.getKey(), forceAllValues);
+                    } else {
+                        this.sendNewDataCheck(device.getKey(), forceAllValues);
+                    }
                 }
 
                 deviceItems = null;

@@ -57,9 +57,9 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryUART.class);
     /** Timeout for receiving data [ms] **/
-    private static final int TIMEOUT = 1000;
+    private static final int TIMEOUT = 2000;
     /** Time for data line stabilization after data receive [ms] **/
-    private static final long LINE_STABILIZATION_TIME = 100;
+    private static final long LINE_STABILIZATION_TIME = 0;
 
     /** port name ex.: port, port1, ... */
     private String deviceName;
@@ -92,8 +92,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     private AtomicBoolean waitingForAnswer = new AtomicBoolean(false);
     /** store last sent data */
     private SimpleBinaryItemData lastSentData = null;
-    /** counting resend data */
-    private int resendCounter = 0;
+    // /** counting resend data */
+    // private int resendCounter = 0;
     /** timer measuring answer timeout */
     private Timer timer = new Timer();
     private TimerTask timeoutTask = null;
@@ -342,7 +342,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
      *
      * @param data
      */
-    public void sendData(SimpleBinaryItem data) {
+    public void sendData(SimpleBinaryItemData data) {
         if (data != null) {
             logger.debug("Port {}: Adding command into queue", this.port);
 
@@ -360,12 +360,34 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     }
 
     /**
+     * Add compiled data item to sending queue at first place
+     *
+     * @param data
+     */
+    public void sendDataPriority(SimpleBinaryItemData data) {
+        if (data != null) {
+            logger.debug("Port {}: Adding priority command into queue", this.port);
+
+            // lock queue
+            lock.lock();
+            // add data
+            commandQueue.addFirst(data);
+            // unlock queue
+            lock.unlock();
+
+            processCommandQueue();
+        } else {
+            logger.warn("Port {}: Nothing to send. Empty data", this.port);
+        }
+    }
+
+    /**
      * Prepare request to check if device with specific address has new data
      *
      * @param deviceAddress Device address
      * @param forceAllDataAsNew Flag to force send all data from slave
      */
-    private void sendNewDataCheck(int deviceAddress, boolean forceAllDataAsNew) {
+    private void offerNewDataCheck(int deviceAddress, boolean forceAllDataAsNew) {
         SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, forceAllDataAsNew);
 
         lock.lock();
@@ -375,7 +397,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
         }
         lock.unlock();
 
-        processCommandQueue();
+        // processCommandQueue();
     }
 
     /**
@@ -383,8 +405,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
      *
      * @param deviceAddress Device address
      */
-    private void sendNewDataCheckPriority(int deviceAddress) {
-        sendNewDataCheckPriority(deviceAddress, false);
+    private void offerNewDataCheckPriority(int deviceAddress) {
+        offerNewDataCheckPriority(deviceAddress, false);
     }
 
     /**
@@ -393,7 +415,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
      * @param deviceAddress Device address
      * @param forceAllDataAsNew Flag to force send all data from slave
      */
-    private void sendNewDataCheckPriority(int deviceAddress, boolean forceAllDataAsNew) {
+    private void offerNewDataCheckPriority(int deviceAddress, boolean forceAllDataAsNew) {
         SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, forceAllDataAsNew);
 
         // sendDataOut(data);
@@ -402,7 +424,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
         commandQueue.addFirst(data);
         lock.unlock();
 
-        processCommandQueue();
+        // processCommandQueue();
     }
 
     /**
@@ -420,7 +442,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
         }
         lock.unlock();
 
-        processCommandQueue();
+        // processCommandQueue();
     }
 
     /**
@@ -458,10 +480,11 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
      *
      */
     private void processCommandQueue() {
-        logger.debug("Port {} - Processing commandQueue - length {}", this.port, commandQueue.size());
+        logger.debug("Port {} - Processing commandQueue - length {}. Thread={}", this.port, commandQueue.size(),
+                Thread.currentThread().getId());
 
         if (!lock.tryLock()) {
-            logger.debug("Port {} - CommandQueue locked. Leaving processCommandQueue.");
+            logger.debug("Port {} - CommandQueue locked. Leaving processCommandQueue.", this.port);
             return;
         }
 
@@ -473,7 +496,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
             }
 
             if (!waitingForAnswer.get()) {
-                resendCounter = 0;
+                // resendCounter = 0;
 
                 SimpleBinaryItemData firstdata = commandQueue.peek();
                 DeviceStates state = this.devicesStates.getDeviceState(firstdata.deviceId);
@@ -532,14 +555,15 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
      *            Item data with compiled packet
      */
     private void sendDataOut(SimpleBinaryItemData data) {
-
         // data line stabilization
-        while (Math.abs(System.currentTimeMillis() - receiveTime) <= LINE_STABILIZATION_TIME) {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+        if (LINE_STABILIZATION_TIME > 0) {
+            while (Math.abs(System.currentTimeMillis() - receiveTime) <= LINE_STABILIZATION_TIME) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -548,28 +572,49 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
         logger.debug("Port {} - data: {}", this.port,
                 SimpleBinaryProtocol.arrayToString(data.getData(), data.getData().length));
 
-        try {
-            // set RTS
-            if (this.forceRTS) {
-                logger.debug("Port {} - RTS set", this.port);
+        if (compareAndSetWaitingForAnswer()) {
+            try {
+                // set RTS
+                if (this.forceRTS) {
+                    logger.debug("Port {} - RTS set", this.port);
 
-                // calc minumum time for send + currentTime + 0ms
-                sentTimeTicks = System.currentTimeMillis() + (((data.getData().length * 8) + 4) * 1000 / this.baud);
+                    // calc minumum time for send + currentTime + 0ms
+                    sentTimeTicks = System.currentTimeMillis() + (((data.getData().length * 8) + 4) * 1000 / this.baud);
 
-                serialPort.setRTS(invertedRTS ? false : true);
+                    serialPort.setRTS(invertedRTS ? false : true);
+                }
+
+                // write string to serial port
+                outputStream.write(data.getData());
+                outputStream.flush();
+
+                // setWaitingForAnswer(true);
+
+                setLastSentData(data);
+            } catch (IOException e) {
+                logger.error("Port {} - Error while writing", this.port);
+
+                reconnect();
             }
+        } else {
+            logger.debug("Port {} - Sending data to device {} discarted. Another send/wait is processed.", this.port,
+                    data.getDeviceId());
+        }
 
-            // write string to serial port
-            outputStream.write(data.getData());
-            outputStream.flush();
+    }
 
+    /**
+     * Set waiting task for answer for slave device if waitingForAnswer not set.
+     * Return true if flag is set
+     *
+     */
+    private boolean compareAndSetWaitingForAnswer() {
+        if (waitingForAnswer.compareAndSet(false, true)) {
             setWaitingForAnswer(true);
 
-            setLastSentData(data);
-        } catch (IOException e) {
-            logger.error("Port {} - Error while writing", this.port);
-
-            reconnect();
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -612,7 +657,8 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
     private void dataTimeouted() {
         int address = this.getLastSentData().getDeviceId();
 
-        logger.warn("Port {} - Device{} - Receiving data timeouted", this.port, address);
+        logger.warn("Port {} - Device{} - Receiving data timeouted. Thread={}", this.port, address,
+                Thread.currentThread().getId());
 
         devicesStates.setDeviceState(this.deviceName, address, DeviceStates.NOT_RESPONDING);
 
@@ -689,7 +735,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                     if (itemData instanceof SimpleBinaryItem) {
                                         logger.trace("Port {} - Incoming data", port);
 
-                                        resendCounter = 0;
+                                        // resendCounter = 0;
 
                                         int deviceId = ((SimpleBinaryItem) itemData).getDeviceId();
 
@@ -713,12 +759,11 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                         // if data income on request "check new data" send it again for new check
                                         if (getLastSentData()
                                                 .getMessageType() == SimpleBinaryMessageType.CHECKNEWDATA) {
-                                            // inBuffer.compact();
+
                                             logger.debug("Port {} - Device {} Repeat CHECKNEWDATA command", port,
                                                     deviceId);
                                             // send new request immediately and without "force all data as new"
-                                            sendNewDataCheckPriority(getLastSentData().deviceId);
-                                            // break;
+                                            offerNewDataCheckPriority(getLastSentData().deviceId);
                                         }
                                     } else if (itemData instanceof SimpleBinaryMessage) {
                                         logger.debug("Port {} - Device {} Incoming control message", port,
@@ -735,31 +780,18 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                             logger.debug("Port {} - Device {} for item {} report data OK", port,
                                                     itemData.getDeviceId(), itemAddress);
 
-                                            resendCounter = 0;
+                                            // resendCounter = 0;
 
                                         } else if (itemData.getMessageType() == SimpleBinaryMessageType.RESEND) {
                                             logger.info("Port {} - Device {} for item {} request resend data", port,
                                                     itemData.getDeviceId(), itemAddress);
 
-                                            if (resendCounter < MAX_RESEND_COUNT) {
-                                                inBuffer.compact();
-                                                this.resendData();
-                                                resendCounter++;
-                                                break;
-                                            } else {
-                                                logger.warn("Port {} - Device {} - Max resend attempts reached.", port,
-                                                        itemData.getDeviceId());
-                                                // set state
-                                                devicesStates.setDeviceState(this.deviceName, itemData.getDeviceId(),
-                                                        DeviceStates.RESPONSE_ERROR);
-
-                                                resendCounter = 0;
-                                            }
+                                            resendData();
                                         } else if (itemData.getMessageType() == SimpleBinaryMessageType.NODATA) {
                                             logger.debug("Port {} - Device {} answer no new data", port,
                                                     itemData.getDeviceId());
 
-                                            resendCounter = 0;
+                                            // resendCounter = 0;
 
                                         } else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_DATA) {
                                             logger.warn("Port {} - Device {} report unknown data", port,
@@ -773,7 +805,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                             devicesStates.setDeviceState(this.deviceName, itemData.getDeviceId(),
                                                     DeviceStates.DATA_ERROR);
 
-                                            resendCounter = 0;
+                                            // resendCounter = 0;
 
                                         } else
                                             if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_ADDRESS) {
@@ -788,7 +820,7 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                             devicesStates.setDeviceState(this.deviceName, itemData.getDeviceId(),
                                                     DeviceStates.DATA_ERROR);
 
-                                            resendCounter = 0;
+                                            // resendCounter = 0;
 
                                         } else if (itemData.getMessageType() == SimpleBinaryMessageType.SAVING_ERROR) {
                                             logger.warn("Port {} - Device {} for item {} report saving data error",
@@ -802,10 +834,10 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                             devicesStates.setDeviceState(this.deviceName, itemData.getDeviceId(),
                                                     DeviceStates.DATA_ERROR);
 
-                                            resendCounter = 0;
+                                            // resendCounter = 0;
 
                                         } else {
-                                            resendCounter = 0;
+                                            // resendCounter = 0;
                                             logger.warn(
                                                     "Port {} - Device {} - Unsupported message type received: "
                                                             + itemData.getMessageType().toString(),
@@ -819,12 +851,17 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
 
                                     // compact buffer
                                     inBuffer.compact();
-                                    // stop block sent
-                                    setWaitingForAnswer(false);
-                                    // look for data to send
-                                    processCommandQueue();
+
+                                    if (waitingForAnswer.get()) {
+                                        // stop block sent
+                                        setWaitingForAnswer(false);
+                                        // look for data to send
+                                        processCommandQueue();
+                                    }
 
                                 } else {
+                                    logger.warn("Port {} - Cannot decompile incoming data", port);
+                                    // rewind at start position (wait for next bytes)
                                     inBuffer.rewind();
                                     // compact buffer
                                     inBuffer.compact();
@@ -866,17 +903,11 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                 // compact buffer
                                 inBuffer.compact();
 
-                                if (resendCounter < MAX_RESEND_COUNT) {
-                                    this.resendData();
-                                    resendCounter++;
-                                    break;
-                                } else {
+                                resendData();
+
+                                if (waitingForAnswer.get()) {
                                     setWaitingForAnswer(false);
                                     processCommandQueue();
-
-                                    // set state
-                                    devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(),
-                                            DeviceStates.RESPONSE_ERROR);
                                 }
                             } catch (NoValidItemInConfig ex) {
                                 logger.error("Port {} - Item not found in items config: {}", this.port,
@@ -886,8 +917,10 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                 // compact buffer
                                 inBuffer.compact();
 
-                                setWaitingForAnswer(false);
-                                processCommandQueue();
+                                if (waitingForAnswer.get()) {
+                                    setWaitingForAnswer(false);
+                                    processCommandQueue();
+                                }
 
                                 // set state
                                 devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(),
@@ -905,7 +938,10 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                     inBuffer.clear();
 
                                     logger.warn("Port {} - Address not valid: input buffer cleared", this.port);
-                                    processCommandQueue();
+
+                                    if (!waitingForAnswer.get()) {
+                                        processCommandQueue();
+                                    }
 
                                     // set state
                                     devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(),
@@ -935,7 +971,10 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                                     inBuffer.clear();
 
                                     logger.warn("Port {} - Income unknown message: input buffer cleared", this.port);
-                                    processCommandQueue();
+
+                                    if (!waitingForAnswer.get()) {
+                                        processCommandQueue();
+                                    }
 
                                     // set state
                                     devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(),
@@ -953,17 +992,20 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                             } catch (ModeChangeException ex) {
                                 logger.error("Port {} - Bad operation: {}", this.port, ex.getMessage());
 
-                                inBuffer.initialize();
-
                                 // print details
-                                printCommunicationInfo();
+                                // printCommunicationInfo();
+
+                                inBuffer.initialize();
 
                             } catch (Exception ex) {
                                 logger.error("Port {} - Reading incoming data error: {}", this.port, ex.getMessage());
                                 // print details
                                 printCommunicationInfo();
                                 inBuffer.clear();
-                                processCommandQueue();
+
+                                if (!waitingForAnswer.get()) {
+                                    processCommandQueue();
+                                }
                             }
 
                             // check for new data
@@ -986,6 +1028,24 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                     logger.error(sw.toString());
                 }
                 break;
+        }
+    }
+
+    /**
+     * Resend last sended data
+     */
+    @Override
+    public void resendData() {
+        SimpleBinaryItemData lastData = getLastSentData();
+        if (lastData != null) {
+            if (lastData.getResendCounter() < MAX_RESEND_COUNT) {
+                lastData.incrementResendCounter();
+                sendDataPriority(lastData);
+            } else {
+                logger.warn("Port {} - Device {} - Max resend attempts reached.", port, lastData.getDeviceId());
+                // set state
+                devicesStates.setDeviceState(this.deviceName, lastData.getDeviceId(), DeviceStates.RESPONSE_ERROR);
+            }
         }
     }
 
@@ -1034,23 +1094,23 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
         return true;
     }
 
-    /**
-     * Provide resending last sent message
-     *
-     * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#resendData()
-     */
-    @Override
-    public void resendData() {
-
-        if (getLastSentData() != null) {
-            logger.debug("Port {} - Resend data", port);
-
-            // resendCounter++;
-            sendDataOut(getLastSentData());
-
-            logger.debug("Port {} - resendCounter {}", port, resendCounter);
-        }
-    }
+    // /**
+    // * Provide resending last sent message
+    // *
+    // * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#resendData()
+    // */
+    // @Override
+    // public void resendData() {
+    //
+    // if (getLastSentData() != null) {
+    // logger.debug("Port {} - Resend data", port);
+    //
+    // // resendCounter++;
+    // sendDataOut(getLastSentData());
+    //
+    // logger.debug("Port {} - resendCounter {}", port, resendCounter);
+    // }
+    // }
 
     /**
      * Return last sent message
@@ -1112,17 +1172,19 @@ public class SimpleBinaryUART implements SimpleBinaryIDevice, SerialPortEventLis
                             || device.getValue() == DeviceStates.NOT_RESPONDING
                             || device.getValue() == DeviceStates.RESPONSE_ERROR;
 
-                    logger.debug("Port {} - checkNewData() device={} force={}", port, device.getKey(), forceAllValues);
+                    logger.trace("Port {} - checkNewData() device={} force={}", port, device.getKey(), forceAllValues);
 
                     if (forceAllValues) {
-                        this.sendNewDataCheckPriority(device.getKey(), forceAllValues);
+                        this.offerNewDataCheckPriority(device.getKey(), forceAllValues);
                     } else {
-                        this.sendNewDataCheck(device.getKey(), forceAllValues);
+                        this.offerNewDataCheck(device.getKey(), forceAllValues);
                     }
                 }
 
                 deviceItems = null;
             }
+
+            processCommandQueue();
         }
     }
 }

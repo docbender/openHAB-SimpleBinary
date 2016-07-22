@@ -56,7 +56,7 @@ public class SimpleBinaryDeviceState {
 
     /**
      * Return last device state
-     * 
+     *
      * @return
      */
     public DeviceStates getState() {
@@ -65,7 +65,7 @@ public class SimpleBinaryDeviceState {
 
     /**
      * Return previous state of device
-     * 
+     *
      * @return
      */
     public DeviceStates getPreviousState() {
@@ -74,7 +74,7 @@ public class SimpleBinaryDeviceState {
 
     /**
      * Return date of last device state change
-     * 
+     *
      * @return
      */
     public Calendar getChangeDate() {
@@ -83,7 +83,7 @@ public class SimpleBinaryDeviceState {
 
     /**
      * Set actual device state
-     * 
+     *
      * @param state
      */
     public void setState(DeviceStates state) {
@@ -105,7 +105,7 @@ public class SimpleBinaryDeviceState {
 
     /**
      * Return packet lost in percentage
-     * 
+     *
      * @return
      */
     public double getPacketLost() {

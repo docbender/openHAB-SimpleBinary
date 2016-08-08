@@ -85,6 +85,8 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
             refreshInterval = Long.parseLong(refreshIntervalString);
         }
 
+        logger.debug("RefreshInterval={}", refreshInterval);
+
         // if devices collection isn't empty
         if (devices.size() > 0) {
             logger.debug("Device count {}", devices.size());
@@ -104,7 +106,10 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
         Pattern rgxTCPServerKey = Pattern.compile("^tcpserver$");
         Pattern rgxTCPServerValue = Pattern.compile("^((\\S+[:])?(\\d+))(;((onscan)|(onchange)))?$");
         Pattern rgxTCPServerClientKey = Pattern.compile("^tcpserverclientlist$");
-        Pattern rgxTCPServerClientValue = Pattern.compile("^((\\d+)[=](\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}))$");
+        Pattern rgxTCPServerClientValue = Pattern.compile(
+                "^((\\d+)[:](\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}[.]\\d{1,3})([:]iplock)?)$", Pattern.CASE_INSENSITIVE);
+
+        logger.debug("Looking for device configuration...");
 
         for (Map.Entry<String, Object> item : configuration.entrySet()) {
             // logger.debug("key:" + item.getKey() + "/value:" + item.getValue());
@@ -157,8 +162,11 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
                     logger.info("SimpleBinary port={} speed={} mode={} forcerts={} rtsInversion={}", portString, speed,
                             simpleBinaryPoolControl, forceRTS, RTSInversion);
 
-                    devices.put(item.getKey(), new SimpleBinaryUART(item.getKey(), portString, speed,
-                            simpleBinaryPoolControl, forceRTS, RTSInversion));
+                    SimpleBinaryUART uartDevice = new SimpleBinaryUART(item.getKey(), portString, speed,
+                            simpleBinaryPoolControl, forceRTS, RTSInversion);
+                    uartDevice.setBindingData(eventPublisher, items, infoItems);
+
+                    devices.put(item.getKey(), uartDevice);
                 } else {
                     logger.error("Blank port configuration");
                     setProperlyConfigured(false);
@@ -167,7 +175,6 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
             } else if (rgxTCPServerKey.matcher(item.getKey()).matches()) {
                 String portString = (String) item.getValue();
                 if (StringUtils.isNotBlank(portString)) {
-
                     Matcher matcher = rgxTCPServerValue.matcher(portString);
 
                     if (!matcher.matches()) {
@@ -202,14 +209,22 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
                     logger.info("SimpleBinary bind_address={} port={} mode={} ", portString, port,
                             simpleBinaryPoolControl);
 
-                    devices.put(item.getKey(),
-                            new SimpleBinaryIP(item.getKey(), portString, port, simpleBinaryPoolControl));
+                    SimpleBinaryIP ipDevice = new SimpleBinaryIP(item.getKey(), portString, port,
+                            simpleBinaryPoolControl);
+                    ipDevice.setBindingData(eventPublisher, items, infoItems);
+                    devices.put(item.getKey(), ipDevice);
                 } else {
                     logger.error("Blank TCP server configuration");
                     setProperlyConfigured(false);
                     return;
                 }
             }
+        }
+
+        if (devices.size() == 0) {
+            logger.warn("No configurations exist.");
+            setProperlyConfigured(false);
+            return;
         }
 
         if (devices.containsKey("tcpserver")) {
@@ -221,20 +236,21 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 
                     if (StringUtils.isNotBlank(clientsString)) {
 
-                        String[] clients = clientsString.split("[^;\\s][^\\;]*[^;\\s]*");
+                        String[] clients = clientsString.split(";");
 
                         for (String s : clients) {
                             Matcher matcher = rgxTCPServerClientValue.matcher(s);
 
                             if (!matcher.matches()) {
                                 logger.error("{}: Wrong TCP client configuration: {}", item.getKey(), s);
-                                logger.info("Configuration example: tcpserverclientlist=1:192.168.0.1;2:192.168.0.5");
+                                logger.info(
+                                        "Configuration example: tcpserverclientlist=1:192.168.0.1;2:192.168.0.5:iplock");
                                 setProperlyConfigured(false);
                                 return;
                             }
 
                             // add device to collection - device ID, device IP address
-                            server.addDevice(matcher.group(2), matcher.group(3));
+                            server.addDevice(matcher.group(2), matcher.group(3), matcher.group(4) != null);
                         }
 
                     } else {
@@ -249,7 +265,6 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
         setProperlyConfigured(true);
 
         for (Map.Entry<String, SimpleBinaryGenericDevice> item : devices.entrySet()) {
-            item.getValue().setBindingData(eventPublisher, items, infoItems);
             item.getValue().open();
         }
     }
@@ -406,7 +421,9 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
             }
         }
 
-        logger.debug("ItemsConfig: {}:{}", items, items.entrySet().size());
+        if (logger.isDebugEnabled()) {
+            logger.debug("ItemsConfig: {}:{}", items, items.entrySet().size());
+        }
     }
 
     @Override
@@ -424,6 +441,8 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
             }
         }
 
-        logger.debug("allBindingsChanged({}) is called!", provider);
+        if (logger.isDebugEnabled()) {
+            logger.debug("allBindingsChanged({}) is called!", provider);
+        }
     }
 }

@@ -129,7 +129,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
             listener.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             InetSocketAddress hostAddress;
 
-            if (this.deviceID.length() > 0) {
+            if (this.getIp().length() > 0) {
                 hostAddress = new InetSocketAddress(getIp(), getPort());
             } else {
                 hostAddress = new InetSocketAddress(this.port);
@@ -139,11 +139,18 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
             listener.bind(hostAddress);
 
+            logger.debug("{} - Listener local address={}", toString(), listener.getLocalAddress().toString());
+
             listener.accept(channels,
                     new CompletionHandler<AsynchronousSocketChannel, SimpleBinaryIPChannelInfoCollection>() {
                         @Override
                         public void completed(AsynchronousSocketChannel channel,
                                 SimpleBinaryIPChannelInfoCollection a) {
+
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("New incoming connection");
+                            }
+
                             // get ready for next connection
                             listener.accept(a, this);
                             // allocate receive buffer
@@ -152,21 +159,21 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                             SimpleBinaryIPChannelInfo chInfo = a.addChannel(channel, buffer,
                                     new SimpleBinaryIRequestTimeouted() {
 
-                                @Override
-                                public void timeoutEvent(SimpleBinaryIPChannelInfo chInfo) {
+                                        @Override
+                                        public void timeoutEvent(SimpleBinaryIPChannelInfo chInfo) {
 
-                                    logger.warn("{} - Device{} - Receiving data timeouted. ", toString(),
-                                            chInfo.getDeviceId());
+                                            logger.warn("Device{} - Receiving data timeouted. ", chInfo.getDeviceId());
 
-                                    devicesStates.setDeviceState(deviceName, chInfo.getDeviceId(),
-                                            DeviceStates.NOT_RESPONDING);
+                                            devicesStates.setDeviceState(deviceName, chInfo.getDeviceId(),
+                                                    DeviceStates.NOT_RESPONDING);
 
-                                    processCommandQueue(chInfo.getDeviceId());
-                                }
-                            });
+                                            processCommandQueue(chInfo.getDeviceId());
+                                        }
+                                    });
 
                             if (logger.isDebugEnabled()) {
-                                logger.debug("New Channel opened:{}", chInfo.getIpAddress());
+                                logger.debug("{} - New Channel opened:{}", toString(), chInfo.getIp());
+
                             }
 
                             // callback read
@@ -175,12 +182,12 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                 public void completed(Integer result, final SimpleBinaryIPChannelInfo chInfo) {
 
                                     if (logger.isDebugEnabled()) {
-                                        logger.debug("Channel {} - read result = {}", chInfo.getIpAddress(), result);
+                                        logger.debug("Channel {} - read result = {}", chInfo.getIp(), result);
                                     }
 
                                     if (result < 0) {
                                         if (logger.isDebugEnabled()) {
-                                            logger.debug("Disconnected:{}", chInfo.getIpAddress());
+                                            logger.debug("Disconnected: {}", chInfo.getIp());
                                         }
 
                                         try {
@@ -194,14 +201,46 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                         return;
                                     }
 
+                                    if (chInfo.isIpLocked()) {
+                                        // TODO: get this to processData
+                                        // ipLocked - get device ID from configuration
+                                        int forcedId = chInfo.getDeviceIdConfigured();
+                                    }
+
                                     // data processing
                                     SimpleBinaryByteBuffer inBuffer = chInfo.getBuffer();
 
                                     while (inBuffer.position() > 3) {
 
-                                        ProcessDataResult r = processData(inBuffer, false, chInfo.getLastSentData());
+                                        // verify device first
+                                        if (!chInfo.isDeviceIdAlreadyReceived()) {
+                                            int r = verifyDataOnly(inBuffer);
 
-                                        if (r == ProcessDataResult.OK || r == ProcessDataResult.INVALID_CRC
+                                            if (logger.isDebugEnabled()) {
+                                                logger.debug("Verify incomming data result: {}", r);
+                                            }
+
+                                            if (r >= 0) {
+                                                if (!chInfo.assignDeviceId(r)) {
+                                                    logger.warn(
+                                                            "DeviceID {} is already used by another connected device. This device will be ignored.",
+                                                            r);
+                                                    return;
+                                                } else if (chInfo.hasIpMismatch()) {
+                                                    logger.warn(
+                                                            "DeviceID {} has mismatch between configured and connected IP addresses.",
+                                                            r);
+                                                } else if (chInfo.isIpLocked() && chInfo.hasIdMismatch()) {
+                                                    logger.warn(
+                                                            "Device with IP {} has mismatch between configured and connected device ID's.",
+                                                            chInfo.getIp());
+                                                }
+                                            }
+                                        }
+
+                                        int r = processData(inBuffer, chInfo.getLastSentData());
+
+                                        if (r >= 0 || r == ProcessDataResult.INVALID_CRC
                                                 || r == ProcessDataResult.BAD_CONFIG
                                                 || r == ProcessDataResult.NO_VALID_ADDRESS
                                                 || r == ProcessDataResult.UNKNOWN_MESSAGE) {
@@ -217,7 +256,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                     }
 
                                     if (logger.isDebugEnabled()) {
-                                        logger.debug("Channel {} - read finished", chInfo.getIpAddress());
+                                        logger.debug("{} - Channel {} - read finished", toString(), chInfo.getIp());
                                     }
 
                                     chInfo.getChannel().read(buffer, chInfo, this);
@@ -260,8 +299,8 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
             return false;
         }
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("{} - channel opened", this.toString());
+        if (logger.isInfoEnabled()) {
+            logger.info("{} - channel listen for incomming connections", this.toString());
         }
 
         portState.setState(PortStates.LISTENING);
@@ -302,16 +341,29 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
     @Override
     protected boolean sendDataOut(SimpleBinaryItemData data) {
         if (logger.isDebugEnabled()) {
-            logger.debug("{} - Sending data to device {} with length {} bytes", this.toString(), data.getDeviceId(),
+            logger.debug("{} - Try to send data to device {} - {} bytes", this.toString(), data.getDeviceId(),
                     data.getData().length);
-            logger.debug("{} - data: {}", this.toString(),
-                    SimpleBinaryProtocol.arrayToString(data.getData(), data.getData().length));
         }
 
         SimpleBinaryIPChannelInfo chInfo = channels.getById(data.getDeviceId());
 
         if (chInfo == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("{} - Device {}: No channel found.", this.toString(), data.getDeviceId());
+            }
             return false;
+        }
+
+        if (chInfo.getChannel() == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("{} - Device {}: Channel not ready.", this.toString(), data.getDeviceId());
+            }
+            return false;
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} - data: {}", this.toString(),
+                    SimpleBinaryProtocol.arrayToString(data.getData(), data.getData().length));
         }
 
         if (chInfo.compareAndSetWaitingForAnswer()) {
@@ -324,13 +376,17 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
             chInfo.setWriteBuffer(buffer);
 
+            if (logger.isDebugEnabled()) {
+                logger.debug("ID={},channel={}", data.getDeviceId(), chInfo.getChannel().toString());
+            }
+
             chInfo.getChannel().write(buffer, chInfo, new CompletionHandler<Integer, SimpleBinaryIPChannelInfo>() {
                 @Override
                 public void completed(Integer result, final SimpleBinaryIPChannelInfo chInfo) {
 
                     if (result < 0) {
                         if (logger.isDebugEnabled()) {
-                            logger.debug("Disconnected:{}", chInfo.getIpAddress());
+                            logger.debug("Disconnected:{}", chInfo.getIp());
                         }
 
                         try {
@@ -384,8 +440,14 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         return deviceID + ":" + getPort();
     }
 
-    public void addDevice(String deviceID, String ipAddress) {
-        channels.addConfiguredChannel(Integer.parseInt(deviceID), ipAddress);
+    public void addDevice(String deviceID, String ipAddress, boolean isIpLocked) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("{}: Adding TCP client configuration: {}-{}", toString(), Integer.parseInt(deviceID),
+                    ipAddress);
+        }
+        if (channels != null) {
+            channels.addConfiguredChannel(Integer.parseInt(deviceID), ipAddress, isIpLocked);
+        }
     }
 
     // public void processChannel(final AsynchronousSocketChannel channel) throws Exception {

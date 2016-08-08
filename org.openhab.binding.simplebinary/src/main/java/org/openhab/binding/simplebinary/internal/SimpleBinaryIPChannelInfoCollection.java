@@ -13,6 +13,8 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.util.LinkedList;
 
 import org.openhab.binding.simplebinary.internal.SimpleBinaryDeviceState.DeviceStates;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Channel info
@@ -24,6 +26,8 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
     private final SimpleBinaryDeviceStateCollection deviceStates;
     private final String deviceName;
 
+    private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryIPChannelInfoCollection.class);
+
     public SimpleBinaryIPChannelInfoCollection(SimpleBinaryDeviceStateCollection deviceStates, String deviceName) {
         this.deviceStates = deviceStates;
         this.deviceName = deviceName;
@@ -32,10 +36,19 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
     public SimpleBinaryIPChannelInfo addChannel(AsynchronousSocketChannel channel, ByteBuffer buffer,
             SimpleBinaryIRequestTimeouted timeoutEvent) {
 
-        String channelIp = SimpleBinaryIPChannelInfo.retrieveAddress(channel).getAddress().toString();
+        if (logger.isDebugEnabled()) {
+            logger.debug("Adding channel...");
+        }
+
+        String channelIp = SimpleBinaryIPChannelInfo.retrieveAddress(channel).getAddress().getHostAddress();
 
         for (SimpleBinaryIPChannelInfo i : this) {
-            if (i.getIpAddress().equals(channelIp)) {
+            String ip = i.getIpReceived();
+            // assign only locked connection
+            if (ip != null && ip.equals(channelIp) && i.isIpLocked()) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Channel is locked and already exists");
+                }
                 i.assignChannel(channel, buffer, timeoutEvent);
 
                 deviceStates.setDeviceState(deviceName, i.getDeviceId(), DeviceStates.CONNECTED);
@@ -47,6 +60,10 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
         SimpleBinaryIPChannelInfo channelInfo = new SimpleBinaryIPChannelInfo(channel, buffer, this, timeoutEvent);
         this.add(channelInfo);
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("New channel in collection created");
+        }
+
         return channelInfo;
     }
 
@@ -57,11 +74,18 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
     }
 
     public SimpleBinaryIPChannelInfo getById(int id) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("getById - collection size{}. ID={}", this.size(), id);
+        }
+
         if (this.size() == 0) {
             return null;
         }
 
         for (SimpleBinaryIPChannelInfo i : this) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("for channel={},IP={}", i.getDeviceId(), i.getIp());
+            }
             if (i.getDeviceId() == id) {
                 return i;
             }
@@ -70,7 +94,7 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
         return null;
     }
 
-    public void addConfiguredChannel(int deviceID, String ipAddress) {
-        this.add(new SimpleBinaryIPChannelInfo(deviceID, ipAddress, this));
+    public void addConfiguredChannel(int deviceID, String ipAddress, boolean isIpLocked) {
+        this.add(new SimpleBinaryIPChannelInfo(deviceID, ipAddress, isIpLocked, this));
     }
 }

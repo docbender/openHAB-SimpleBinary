@@ -13,9 +13,13 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Channel info
@@ -28,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  */
 public class SimpleBinaryIPChannelInfo {
+    private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryIPChannelInfo.class);
 
     private AsynchronousSocketChannel channel = null;
     private SimpleBinaryByteBuffer buffer = null;
@@ -39,6 +44,8 @@ public class SimpleBinaryIPChannelInfo {
     private int configuredDeviceID = -1;
     private int receivedDeviceID = -1;
     private String configuredDeviceIP = "";
+
+    private final boolean isIpLocked;
 
     /** timer measuring answer timeout */
     protected Timer timer = new Timer();
@@ -54,6 +61,14 @@ public class SimpleBinaryIPChannelInfo {
     // }
     // };
 
+    /**
+     * Constructor to add new channel after connect
+     *
+     * @param channel
+     * @param buffer
+     * @param collection
+     * @param timeoutEvent
+     */
     public SimpleBinaryIPChannelInfo(AsynchronousSocketChannel channel, ByteBuffer buffer,
             SimpleBinaryIPChannelInfoCollection collection, SimpleBinaryIRequestTimeouted timeoutEvent) {
 
@@ -63,14 +78,27 @@ public class SimpleBinaryIPChannelInfo {
         assignChannel(channel, buffer, timeoutEvent);
 
         // set address for use when device reconnected
-        this.configuredDeviceIP = getIpAddress();
+        this.configuredDeviceIP = getIp();
+
+        this.isIpLocked = false;
     }
 
-    public SimpleBinaryIPChannelInfo(int deviceID, String ipAddress, SimpleBinaryIPChannelInfoCollection collection) {
+    /**
+     * Constructor to add configuration record
+     *
+     * @param deviceID
+     * @param ipAddress
+     * @param isIpLocked
+     * @param collection
+     */
+    public SimpleBinaryIPChannelInfo(int deviceID, String ipAddress, boolean isIpLocked,
+            SimpleBinaryIPChannelInfoCollection collection) {
         this.collection = collection;
 
         this.configuredDeviceID = deviceID;
         this.configuredDeviceIP = ipAddress;
+
+        this.isIpLocked = isIpLocked;
     }
 
     public void assignChannel(AsynchronousSocketChannel channel, ByteBuffer buffer,
@@ -83,9 +111,6 @@ public class SimpleBinaryIPChannelInfo {
         address = retrieveAddress(this.channel);
     }
 
-    /**
-     *
-     */
     public static InetSocketAddress retrieveAddress(AsynchronousSocketChannel channel) {
         SocketAddress a = null;
 
@@ -109,11 +134,23 @@ public class SimpleBinaryIPChannelInfo {
         }
     }
 
-    public String getIpAddress() {
+    public String getIp() {
         if (address != null) {
             return address.getAddress().getHostAddress();
         } else {
             return configuredDeviceIP;
+        }
+    }
+
+    public String getIpConfigured() {
+        return configuredDeviceIP;
+    }
+
+    public String getIpReceived() {
+        if (address != null) {
+            return address.getAddress().getHostAddress();
+        } else {
+            return null;
         }
     }
 
@@ -126,11 +163,11 @@ public class SimpleBinaryIPChannelInfo {
     }
 
     public int getDeviceId() {
-        if (configuredDeviceID >= 0) {
-            return configuredDeviceID;
+        if (receivedDeviceID >= 0) {
+            return receivedDeviceID;
         }
 
-        return receivedDeviceID;
+        return configuredDeviceID;
     }
 
     public int getDeviceIdConfigured() {
@@ -141,12 +178,20 @@ public class SimpleBinaryIPChannelInfo {
         return receivedDeviceID;
     }
 
+    public boolean isDeviceIdAlreadyReceived() {
+        return receivedDeviceID != -1;
+    }
+
     public SimpleBinaryByteBuffer getBuffer() {
         return buffer;
     }
 
     public AsynchronousSocketChannel getChannel() {
         return channel;
+    }
+
+    public SimpleBinaryIPChannelInfoCollection getCollection() {
+        return collection;
     }
 
     public void remove() {
@@ -160,7 +205,7 @@ public class SimpleBinaryIPChannelInfo {
         clearWaitingForAnswer();
 
         channel = null;
-        address = null;
+        // address = null;
         buffer = null;
         writeBuffer = null;
         requestTimeouted = null;
@@ -248,6 +293,93 @@ public class SimpleBinaryIPChannelInfo {
 
     protected void clearWaitingForAnswer() {
         setWaitingForAnswer(false);
+    }
+
+    public boolean isIpLocked() {
+        return isIpLocked;
+    }
+
+    /**
+     * Assign device id for communication
+     *
+     * @param devId
+     * @return True if successfully assigned false if other device use this id
+     */
+    public boolean assignDeviceId(int devId) {
+        receivedDeviceID = devId;
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Device {} (configured IP={},configured ID={}) assigned to ID={}", this.getIpReceived(),
+                    this.getIpConfigured(), this.getDeviceIdConfigured(), devId);
+        }
+
+        if (isIpLocked) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Device {} locked. No assign needed.", this.getIpReceived());
+            }
+            return true;
+        }
+
+        if (collection != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("collection size={}", collection.size());
+            }
+
+            // remove duplicate channels in collection and check for already used IDs
+            for (Iterator<SimpleBinaryIPChannelInfo> itr = collection.iterator(); itr.hasNext();) {
+                SimpleBinaryIPChannelInfo item = itr.next();
+
+                if (!item.equals(this)) {
+                    if (item.getChannel() == null) {
+                        if (item.getDeviceIdReceived() == devId
+                                || (item.getDeviceIdReceived() == -1 && item.getDeviceIdConfigured() == devId)) {
+
+                            if (item.getDeviceIdConfigured() >= 0) {
+                                configuredDeviceID = item.getDeviceIdConfigured();
+                            }
+                            if (item.getIpConfigured().length() > 0) {
+                                configuredDeviceIP = item.getIpConfigured();
+                            }
+
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("Device {} - ID assigning. Old channel record removed(ID={},IP={})",
+                                        this.getIpReceived(), item.getDeviceId(), item.getIp());
+                            }
+
+                            itr.remove();
+                        }
+                    } else if (item.getDeviceIdReceived() == devId) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public boolean hasIpMismatch() {
+        if (configuredDeviceIP.length() == 0) {
+            return false;
+        }
+
+        if (!configuredDeviceIP.equals(getIpReceived())) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean hasIdMismatch() {
+        if (configuredDeviceID < 0) {
+            return false;
+        }
+
+        if (configuredDeviceID != getDeviceIdReceived()) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

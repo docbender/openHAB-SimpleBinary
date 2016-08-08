@@ -47,10 +47,8 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
     /** connected clients collection */
     private SimpleBinaryIPChannelInfoCollection channels;
 
-    // /** input data stream */
-    // private InputStream inputStream;
-    // /** output data stream */
-    // private OutputStream outputStream;
+    // ** communication timeout **/
+    private static final int DEFAULT_COMMUNICATION_TIMEOUT = 30000;
 
     /**
      * Constructor
@@ -380,6 +378,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                 logger.debug("ID={},channel={}", data.getDeviceId(), chInfo.getChannel().toString());
             }
 
+            // write into device
             chInfo.getChannel().write(buffer, chInfo, new CompletionHandler<Integer, SimpleBinaryIPChannelInfo>() {
                 @Override
                 public void completed(Integer result, final SimpleBinaryIPChannelInfo chInfo) {

@@ -44,7 +44,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Compile data "new data" request packet
-     * 
+     *
      * @param busAddress
      *            Address connected device
      * @param forceAllDataAsNew
@@ -65,7 +65,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Compile data "read data" request packet
-     * 
+     *
      * @param itemConfig
      *            Requested item configuration
      * @return
@@ -84,7 +84,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Compile command data for specific item
-     * 
+     *
      * @param itemName
      * @param command
      * @param config
@@ -103,7 +103,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Compile command data for specific item
-     * 
+     *
      * @param itemName
      * @param command
      * @param config
@@ -204,8 +204,8 @@ public class SimpleBinaryProtocol {
                                 config.getDataType());
                     }
 
-                } else
-                    if (command instanceof IncreaseDecreaseType && config.itemType.isAssignableFrom(DimmerItem.class)) {
+                } else if (command instanceof IncreaseDecreaseType
+                        && config.itemType.isAssignableFrom(DimmerItem.class)) {
                     if (logger.isDebugEnabled()) {
                         logger.debug("IncreaseDecreaseType - DimmerItem");
                     }
@@ -471,7 +471,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Calculate white part for RGB
-     * 
+     *
      * @param red
      * @param green
      * @param blue
@@ -520,11 +520,11 @@ public class SimpleBinaryProtocol {
 
     /**
      * Decompile received message
-     * 
+     *
      * @param data
      * @param itemsConfig
      * @param deviceName
-     * @return
+     * @return Decompiled data message
      * @throws NoValidCRCException
      * @throws NoValidItemInConfig
      * @throws UnknownMessageException
@@ -532,7 +532,27 @@ public class SimpleBinaryProtocol {
      */
     public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
             Map<String, SimpleBinaryBindingConfig> itemsConfig, String deviceName)
-                    throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
+            throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
+
+        return decompileData(data, itemsConfig, deviceName, false);
+    }
+
+    /**
+     * Decompile received message
+     *
+     * @param data
+     * @param itemsConfig
+     * @param deviceName
+     * @param letDataInBuffer
+     * @return Decompiled data message
+     * @throws NoValidCRCException
+     * @throws NoValidItemInConfig
+     * @throws UnknownMessageException
+     * @throws ModeChangeException
+     */
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
+            Map<String, SimpleBinaryBindingConfig> itemsConfig, String deviceName, boolean letDataInBuffer)
+            throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
         byte devId = data.get();
         byte msgId = data.get();
         int address = 0;
@@ -540,119 +560,127 @@ public class SimpleBinaryProtocol {
         byte[] rawData = null;
         byte crc = 0, calcCrc;
 
-        switch (msgId) {
-            case (byte) 0xDA:
-                // check minimal length
-                if (data.remaining() < 4) {
-                    return null;
-                }
+        try {
 
-                address = data.getShort();
-                rawData = new byte[1];
-                rawData[0] = data.get();
+            switch (msgId) {
+                case (byte) 0xDA:
+                    // check minimal length
+                    if (data.remaining() < 4) {
+                        return null;
+                    }
+
+                    address = data.getShort();
+                    rawData = new byte[1];
+                    rawData[0] = data.get();
+                    data.rewind();
+                    rawPacket = new byte[5];
+                    data.get(rawPacket);
+                    crc = data.get();
+                    // check message crc
+                    calcCrc = evalCRC(rawPacket);
+                    if (crc != calcCrc) {
+                        throw new NoValidCRCException(crc, calcCrc);
+                    }
+
+                    break;
+                case (byte) 0xDB:
+                    // check minimal length
+                    if (data.remaining() < 5) {
+                        return null;
+                    }
+
+                    address = data.getShort();
+                    rawData = new byte[2];
+                    data.get(rawData);
+                    data.rewind();
+                    rawPacket = new byte[6];
+                    data.get(rawPacket);
+                    crc = data.get();
+                    // check message crc
+                    calcCrc = evalCRC(rawPacket);
+                    if (crc != calcCrc) {
+                        throw new NoValidCRCException(crc, calcCrc);
+                    }
+
+                    break;
+
+                case (byte) 0xDC:
+                case (byte) 0xDD:
+                    // check minimal length
+                    if (data.remaining() < 7) {
+                        return null;
+                    }
+
+                    address = data.getShort();
+                    rawData = new byte[4];
+                    data.get(rawData);
+                    data.rewind();
+                    rawPacket = new byte[8];
+                    data.get(rawPacket);
+                    crc = data.get();
+                    // check message crc
+                    calcCrc = evalCRC(rawPacket);
+                    if (crc != calcCrc) {
+                        throw new NoValidCRCException(crc, calcCrc);
+                    }
+
+                    break;
+
+                case (byte) 0xDE:
+                    // check minimal length
+                    if (data.remaining() < 6) {
+                        return null;
+                    }
+
+                    address = data.getShort();
+                    int length = data.getShort();
+
+                    // check declared length
+                    if (data.remaining() < length + 1) {
+                        return null;
+                    }
+
+                    byte[] array = new byte[length];
+                    data.get(array);
+                    rawData = array;
+                    data.rewind();
+                    rawPacket = new byte[6 + length];
+                    data.get(rawPacket);
+                    crc = data.get();
+                    // check message crc
+                    calcCrc = evalCRC(rawPacket);
+                    if (crc != calcCrc) {
+                        throw new NoValidCRCException(crc, calcCrc);
+                    }
+
+                    break;
+                case (byte) 0xE0:
+                case (byte) 0xE1:
+                case (byte) 0xE2:
+                case (byte) 0xE3:
+                case (byte) 0xE4:
+                case (byte) 0xE5:
+                    data.rewind();
+                    rawPacket = new byte[3];
+                    data.get(rawPacket);
+                    crc = data.get();
+                    // check message crc
+                    calcCrc = evalCRC(rawPacket);
+                    if (crc != calcCrc) {
+                        throw new NoValidCRCException(crc, calcCrc);
+                    }
+
+                    return new SimpleBinaryMessage(msgId, devId, -1); // ,findItem(itemsConfig, deviceName, devId,
+                                                                      // address)
+                default:
+                    // data.clear();
+
+                    throw new UnknownMessageException(String.format("Unknown message ID: 0x%02X", msgId));
+            }
+        } finally {
+            if (letDataInBuffer) {
                 data.rewind();
-                rawPacket = new byte[5];
-                data.get(rawPacket);
-                crc = data.get();
-                // check message crc
-                calcCrc = evalCRC(rawPacket);
-                if (crc != calcCrc) {
-                    throw new NoValidCRCException(crc, calcCrc);
-                }
-
-                break;
-            case (byte) 0xDB:
-                // check minimal length
-                if (data.remaining() < 5) {
-                    return null;
-                }
-
-                address = data.getShort();
-                rawData = new byte[2];
-                data.get(rawData);
-                data.rewind();
-                rawPacket = new byte[6];
-                data.get(rawPacket);
-                crc = data.get();
-                // check message crc
-                calcCrc = evalCRC(rawPacket);
-                if (crc != calcCrc) {
-                    throw new NoValidCRCException(crc, calcCrc);
-                }
-
-                break;
-
-            case (byte) 0xDC:
-            case (byte) 0xDD:
-                // check minimal length
-                if (data.remaining() < 7) {
-                    return null;
-                }
-
-                address = data.getShort();
-                rawData = new byte[4];
-                data.get(rawData);
-                data.rewind();
-                rawPacket = new byte[8];
-                data.get(rawPacket);
-                crc = data.get();
-                // check message crc
-                calcCrc = evalCRC(rawPacket);
-                if (crc != calcCrc) {
-                    throw new NoValidCRCException(crc, calcCrc);
-                }
-
-                break;
-
-            case (byte) 0xDE:
-                // check minimal length
-                if (data.remaining() < 6) {
-                    return null;
-                }
-
-                address = data.getShort();
-                int length = data.getShort();
-
-                // check declared length
-                if (data.remaining() < length + 1) {
-                    return null;
-                }
-
-                byte[] array = new byte[length];
-                data.get(array);
-                rawData = array;
-                data.rewind();
-                rawPacket = new byte[6 + length];
-                data.get(rawPacket);
-                crc = data.get();
-                // check message crc
-                calcCrc = evalCRC(rawPacket);
-                if (crc != calcCrc) {
-                    throw new NoValidCRCException(crc, calcCrc);
-                }
-
-                break;
-            case (byte) 0xE0:
-            case (byte) 0xE1:
-            case (byte) 0xE2:
-            case (byte) 0xE3:
-            case (byte) 0xE4:
-            case (byte) 0xE5:
-                data.rewind();
-                rawPacket = new byte[3];
-                data.get(rawPacket);
-                crc = data.get();
-                // check message crc
-                calcCrc = evalCRC(rawPacket);
-                if (crc != calcCrc) {
-                    throw new NoValidCRCException(crc, calcCrc);
-                }
-
-                return new SimpleBinaryMessage(msgId, devId, -1); // ,findItem(itemsConfig, deviceName, devId, address)
-            default:
-                // data.clear();
-
-                throw new UnknownMessageException(String.format("Unknown message ID: 0x%02X", msgId));
+            }
         }
 
         if (rawData != null) {
@@ -673,7 +701,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Try to find correct item
-     * 
+     *
      * @param itemsConfig
      * @param deviceName
      * @param devId
@@ -694,7 +722,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Return CRC8 of data
-     * 
+     *
      * @param data
      * @return
      */
@@ -704,7 +732,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Return CRC8 of data with specific length
-     * 
+     *
      * @param data
      * @param length
      * @return
@@ -741,7 +769,7 @@ public class SimpleBinaryProtocol {
 
     /**
      * Convert data array to string
-     * 
+     *
      * @param data
      * @param length
      * @return

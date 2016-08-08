@@ -62,16 +62,27 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     /** Lock for process commands to prevent run it twice **/
     protected final Lock lock = new ReentrantLock();
 
-    public enum ProcessDataResult {
-        OK,
-        DATA_NOT_COMPLETED,
-        PROCESSING_ERROR,
-        INVALID_CRC,
-        BAD_CONFIG,
-        NO_VALID_ADDRESS,
-        NO_VALID_ADDRESS_REWIND,
-        UNKNOWN_MESSAGE,
-        UNKNOWN_MESSAGE_REWIND
+    // public enum ProcessDataResult {
+    // OK,
+    // DATA_NOT_COMPLETED,
+    // PROCESSING_ERROR,
+    // INVALID_CRC,
+    // BAD_CONFIG,
+    // NO_VALID_ADDRESS,
+    // NO_VALID_ADDRESS_REWIND,
+    // UNKNOWN_MESSAGE,
+    // UNKNOWN_MESSAGE_REWIND
+    // }
+
+    public class ProcessDataResult {
+        public static final int DATA_NOT_COMPLETED = -1;
+        public static final int PROCESSING_ERROR = -2;
+        public static final int INVALID_CRC = -3;
+        public static final int BAD_CONFIG = -4;
+        public static final int NO_VALID_ADDRESS = -5;
+        public static final int NO_VALID_ADDRESS_REWIND = -6;
+        public static final int UNKNOWN_MESSAGE = -7;
+        public static final int UNKNOWN_MESSAGE_REWIND = -8;
     }
 
     /**
@@ -561,16 +572,74 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         }
     }
 
+    protected int getDeviceID(SimpleBinaryByteBuffer inBuffer) {
+        try {
+            // flip buffer
+            inBuffer.flip();
+
+            int receivedID = inBuffer.get();
+            inBuffer.rewind();
+
+            return receivedID;
+
+        } catch (ModeChangeException ex) {
+
+        } finally {
+            try {
+                inBuffer.compact();
+            } catch (ModeChangeException e) {
+
+            }
+        }
+
+        return -1;
+    }
+
+    protected boolean checkDeviceID(SimpleBinaryByteBuffer inBuffer, int expectedID) {
+        return expectedID == getDeviceID(inBuffer);
+    }
+
+    protected int verifyDataOnly(SimpleBinaryByteBuffer inBuffer) {
+        try {
+            // flip buffer
+            inBuffer.flip();
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("{} - Verifying data, lenght={} bytes", toString(), inBuffer.limit());
+            }
+
+            int receivedID = inBuffer.get();
+            inBuffer.rewind();
+            // decompile income message
+            SimpleBinaryMessage itemData = SimpleBinaryProtocol.decompileData(inBuffer, itemsConfig, deviceName);
+
+            // is decompiled
+            if (itemData != null) {
+                return receivedID;
+            }
+        } catch (Exception ex) {
+            logger.error("{} - Verify data error: {}", toString(), ex.getMessage());
+        } finally {
+            try {
+                inBuffer.compact();
+            } catch (ModeChangeException e) {
+
+            }
+        }
+        return -1;
+    }
+
     /**
      * Process incoming data
      *
      * @param inBuffer Buffer with receiver data
-     * @param masterSlaveBehavior Is communication master/slave or producer/consumer
+     * @param lastSentData Last data sent to device
      *
-     * @return Return true when processing should be stopped
+     * @return Return device ID or error code when lower than 0
      */
-    protected ProcessDataResult processData(SimpleBinaryByteBuffer inBuffer, boolean masterSlaveBehavior,
-            SimpleBinaryItemData lastSentData) {
+    protected int processData(SimpleBinaryByteBuffer inBuffer, SimpleBinaryItemData lastSentData) {
+
+        int receivedID = -1;
 
         try {
             // flip buffer
@@ -580,17 +649,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 logger.debug("{} - Reading input buffer, lenght={} bytes", toString(), inBuffer.limit());
             }
 
-            if (masterSlaveBehavior && lastSentData != null) {
-                int expectedID = lastSentData.getDeviceId();
-                int first = inBuffer.get();
-                inBuffer.rewind();
-
-                // check expected address
-                if (expectedID != first) {
-                    throw new WrongAddressException(expectedID, first);
-                }
-            }
-
+            receivedID = inBuffer.get();
+            inBuffer.rewind();
             // decompile income message
             SimpleBinaryMessage itemData = SimpleBinaryProtocol.decompileData(inBuffer, itemsConfig, deviceName);
 
@@ -602,7 +662,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 // compact buffer
                 inBuffer.compact();
 
-                return ProcessDataResult.OK;
+                return receivedID;
             } else {
                 logger.warn("{} - Cannot decompile incoming data", toString());
                 // rewind at start position (wait for next bytes)
@@ -664,45 +724,10 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 logger.error(e.getMessage());
             }
 
-            if (lastSentData != null) {
-                // set state
-                devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
-            }
+            // set state
+            devicesStates.setDeviceState(this.deviceName, receivedID, DeviceStates.DATA_ERROR);
 
             return ProcessDataResult.BAD_CONFIG;
-
-        } catch (WrongAddressException ex) {
-            logger.error("{} - Address not valid: {}", this.toString(), ex.getMessage());
-            // print details
-            printCommunicationInfo(inBuffer, lastSentData);
-
-            // only 4 bytes (minus 1 after delete first byte) is not enough to have complete message
-            if (inBuffer.limit() < 5) {
-                // clear buffer
-                inBuffer.clear();
-
-                logger.warn("{} - Address not valid: input buffer cleared", this.toString());
-
-                if (lastSentData != null) {
-                    // set state
-                    devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
-                }
-
-                return ProcessDataResult.NO_VALID_ADDRESS;
-            } else {
-                logger.warn("{} - Address not valid: {} bytes in buffer. Triyng to find correct message. ",
-                        this.toString(), inBuffer.limit());
-                try {
-                    // delete first byte
-                    inBuffer.rewind();
-                    inBuffer.get();
-                    inBuffer.compact();
-                } catch (ModeChangeException e) {
-                    logger.error(e.getMessage());
-                }
-
-                return ProcessDataResult.NO_VALID_ADDRESS_REWIND;
-            }
 
         } catch (UnknownMessageException ex) {
             logger.error("{} - Income unknown message: {}", this.toString(), ex.getMessage());
@@ -716,10 +741,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
                 logger.warn("{} - Income unknown message: input buffer cleared", this.toString());
 
-                if (lastSentData != null) {
-                    // set state
-                    devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
-                }
+                // set state
+                devicesStates.setDeviceState(this.deviceName, receivedID, DeviceStates.DATA_ERROR);
 
                 return ProcessDataResult.UNKNOWN_MESSAGE;
             } else {
@@ -745,10 +768,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
             inBuffer.initialize();
 
-            if (lastSentData != null) {
-                // set state
-                devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
-            }
+            // set state
+            devicesStates.setDeviceState(this.deviceName, receivedID, DeviceStates.DATA_ERROR);
 
             return ProcessDataResult.PROCESSING_ERROR;
 
@@ -758,10 +779,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             printCommunicationInfo(inBuffer, lastSentData);
             inBuffer.clear();
 
-            if (lastSentData != null) {
-                // set state
-                devicesStates.setDeviceState(this.deviceName, lastSentData.getDeviceId(), DeviceStates.DATA_ERROR);
-            }
+            // set state
+            devicesStates.setDeviceState(this.deviceName, receivedID, DeviceStates.DATA_ERROR);
 
             return ProcessDataResult.PROCESSING_ERROR;
         }

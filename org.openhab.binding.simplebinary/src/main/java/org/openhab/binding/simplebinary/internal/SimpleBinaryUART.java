@@ -391,10 +391,27 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                     if (itemsConfig != null) {
                         // check minimum length
                         while (inBuffer.position() > 3) {
-                            ProcessDataResult r = processData(inBuffer, true, getLastSentData());
+                            // check if received data has valid address (same as sent data)
+                            if (lastSentData != null && !checkDeviceID(inBuffer, getLastSentData().getDeviceId())) {
+                                logger.error("{} - Address not valid: {}", this.toString());
+                                // print details
+                                printCommunicationInfo(inBuffer, lastSentData);
+                                // clear buffer
+                                inBuffer.clear();
 
-                            if (r == ProcessDataResult.OK || r == ProcessDataResult.INVALID_CRC
-                                    || r == ProcessDataResult.BAD_CONFIG || r == ProcessDataResult.NO_VALID_ADDRESS
+                                logger.warn("{} - Address not valid: input buffer cleared", this.toString());
+
+                                // set state
+                                devicesStates.setDeviceState(this.deviceName, getLastSentData().getDeviceId(),
+                                        DeviceStates.DATA_ERROR);
+
+                                return;
+                            }
+
+                            int r = processData(inBuffer, getLastSentData());
+
+                            if (r > 0 || r == ProcessDataResult.INVALID_CRC || r == ProcessDataResult.BAD_CONFIG
+                                    || r == ProcessDataResult.NO_VALID_ADDRESS
                                     || r == ProcessDataResult.UNKNOWN_MESSAGE) {
                                 // waiting for answer?
                                 if (waitingForAnswer.get()) {

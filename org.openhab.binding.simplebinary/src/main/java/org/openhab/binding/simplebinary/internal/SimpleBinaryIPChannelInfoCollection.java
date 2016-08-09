@@ -74,18 +74,18 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
     }
 
     public SimpleBinaryIPChannelInfo getById(int id) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("getById - collection size{}. ID={}", this.size(), id);
-        }
+        // if (logger.isDebugEnabled()) {
+        // logger.debug("getById - collection size{}. ID={}", this.size(), id);
+        // }
 
         if (this.size() == 0) {
             return null;
         }
 
         for (SimpleBinaryIPChannelInfo i : this) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("for channel={},IP={}", i.getDeviceId(), i.getIp());
-            }
+            // if (logger.isDebugEnabled()) {
+            // logger.debug("for channel={},IP={}", i.getDeviceId(), i.getIp());
+            // }
             if (i.getDeviceId() == id) {
                 return i;
             }

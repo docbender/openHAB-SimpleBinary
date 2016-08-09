@@ -194,6 +194,8 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                             e.printStackTrace();
                                         } finally {
                                             chInfo.closed();
+                                            logger.warn("Device {}/{} was disconnected", chInfo.getDeviceId(),
+                                                    chInfo.getIp());
                                         }
 
                                         return;
@@ -236,7 +238,10 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                             }
                                         }
 
+                                        // look what is in income raw data
                                         int r = processData(inBuffer, chInfo.getLastSentData());
+                                        // clear last data
+                                        chInfo.setLastSentData(null);
 
                                         if (r >= 0 || r == ProcessDataResult.INVALID_CRC
                                                 || r == ProcessDataResult.BAD_CONFIG
@@ -254,9 +259,11 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                     }
 
                                     if (logger.isDebugEnabled()) {
-                                        logger.debug("{} - Channel {} - read finished", toString(), chInfo.getIp());
+                                        logger.debug("Channel {}/{} - read finished", chInfo.getDeviceId(),
+                                                chInfo.getIp());
                                     }
 
+                                    // ready for new data
                                     chInfo.getChannel().read(buffer, chInfo, this);
                                 }
 
@@ -374,9 +381,9 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
             chInfo.setWriteBuffer(buffer);
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("ID={},channel={}", data.getDeviceId(), chInfo.getChannel().toString());
-            }
+            // if (logger.isDebugEnabled()) {
+            // logger.debug("ID={},channel={}", data.getDeviceId(), chInfo.getChannel().toString());
+            // }
 
             // write into device
             chInfo.getChannel().write(buffer, chInfo, new CompletionHandler<Integer, SimpleBinaryIPChannelInfo>() {
@@ -394,6 +401,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                             e.printStackTrace();
                         } finally {
                             chInfo.closed();
+                            logger.warn("Device {}/{} was disconnected", chInfo.getDeviceId(), chInfo.getIp());
                         }
 
                         return;
@@ -409,6 +417,15 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                 @Override
                 public void failed(Throwable t, SimpleBinaryIPChannelInfo chInfo) {
                     logger.warn(t.getMessage());
+
+                    try {
+                        chInfo.getChannel().close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        chInfo.closed();
+                        logger.warn("Device {}/{} was disconnected", chInfo.getDeviceId(), chInfo.getIp());
+                    }
                 }
             });
 

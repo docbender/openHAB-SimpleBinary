@@ -533,7 +533,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                         }
                     }
                 }
-            } else {
+            } else if (poolControl == SimpleBinaryPoolControl.ONCHANGE) {
                 // create devices map with device address and state
                 Map<Integer, DeviceStates> deviceItems = new HashMap<Integer, DeviceStates>();
                 // fill new created map - every device has one record

@@ -104,7 +104,7 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
         Pattern rgxUARTKey = Pattern.compile("^port\\d*$");
         Pattern rgxUARTValue = Pattern.compile("^(\\S+:\\d+)(;((onscan)|(onchange)))?(;((forceRTS)|(forceRTSInv)))?$");
         Pattern rgxTCPServerKey = Pattern.compile("^tcpserver$");
-        Pattern rgxTCPServerValue = Pattern.compile("^((\\S+[:])?(\\d+))(;((onscan)|(onchange)))?$");
+        Pattern rgxTCPServerValue = Pattern.compile("^((\\S+[:])?(\\d+))(;((onscan)|(onchange)|(none)))?$");
         Pattern rgxTCPServerClientKey = Pattern.compile("^tcpserverclientlist$");
         Pattern rgxTCPServerClientValue = Pattern.compile(
                 "^((\\d+)[:](\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}[.]\\d{1,3})([:]iplock)?)$", Pattern.CASE_INSENSITIVE);
@@ -185,7 +185,7 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
                         return;
                     }
 
-                    SimpleBinaryPoolControl simpleBinaryPoolControl = SimpleBinaryPoolControl.ONCHANGE;
+                    SimpleBinaryPoolControl simpleBinaryPoolControl = SimpleBinaryPoolControl.NONE;
                     int port = SimpleBinaryIP.DEFAULT_PORT;
 
                     // check group 5
@@ -193,7 +193,10 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
 
                         if (matcher.group(5).equals("onscan")) {
                             simpleBinaryPoolControl = SimpleBinaryPoolControl.ONSCAN;
+                        } else if (matcher.group(5).equals("onchange")) {
+                            simpleBinaryPoolControl = SimpleBinaryPoolControl.ONCHANGE;
                         }
+
                     }
 
                     // port

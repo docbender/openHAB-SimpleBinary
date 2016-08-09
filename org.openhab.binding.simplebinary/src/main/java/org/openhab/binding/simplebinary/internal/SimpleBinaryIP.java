@@ -170,7 +170,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                     });
 
                             if (logger.isDebugEnabled()) {
-                                logger.debug("{} - New Channel opened:{}", toString(), chInfo.getIp());
+                                logger.debug("New Channel opened:{}", chInfo.getIp());
 
                             }
 

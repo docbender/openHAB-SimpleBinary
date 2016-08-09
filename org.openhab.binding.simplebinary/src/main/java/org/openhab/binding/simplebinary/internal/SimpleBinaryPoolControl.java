@@ -10,10 +10,12 @@ package org.openhab.binding.simplebinary.internal;
 
 /**
  * Enumeration of communication type used for configured device
- * 
+ *
  * @author Vita Tucek
  * @since 1.8.0
  */
 public enum SimpleBinaryPoolControl {
-	ONCHANGE, ONSCAN
+    ONCHANGE,
+    ONSCAN,
+    NONE
 }

@@ -892,6 +892,10 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 // SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
                 // set state
                 devicesStates.setDeviceState(this.deviceName, itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+            } else if (itemData.getMessageType() == SimpleBinaryMessageType.HI) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("{} - Device {} says Hi", toString(), itemData.getDeviceId());
+                }
             } else {
                 logger.warn(
                         "{} - Device {} - Unsupported message type received: " + itemData.getMessageType().toString(),

@@ -221,8 +221,22 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                             }
 
                                             if (r >= 0) {
-                                                if (!chInfo.assignDeviceId(r)) {
-                                                    logger.warn(
+                                                // received ID is not equal configured
+                                                if (chInfo.hasIdConfigured() && !chInfo.isIpLocked()
+                                                        && chInfo.getDeviceIdConfigured() != r) {
+                                                    logger.error(
+                                                            "Device with IP {} has mismatch between configured({}) and connected({}) device ID's. "
+                                                                    + "Remove it from configuration, change device ID or mark it in configuration as locked.",
+                                                            chInfo.getIp(), chInfo.getDeviceIdConfigured(), r);
+
+                                                    // TODO: should it send info to device?
+
+                                                    // ready for new data
+                                                    chInfo.getChannel().read(buffer, chInfo, this);
+
+                                                    return;
+                                                } else if (!chInfo.assignDeviceId(r)) {
+                                                    logger.error(
                                                             "DeviceID {} is already used by another connected device. This device will be ignored.",
                                                             r);
                                                     return;

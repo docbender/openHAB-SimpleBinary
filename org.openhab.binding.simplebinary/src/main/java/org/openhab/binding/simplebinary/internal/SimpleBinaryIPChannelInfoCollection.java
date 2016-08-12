@@ -43,17 +43,30 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
         String channelIp = SimpleBinaryIPChannelInfo.retrieveAddress(channel).getAddress().getHostAddress();
 
         for (SimpleBinaryIPChannelInfo i : this) {
-            String ip = i.getIpReceived();
-            // assign only locked connection
-            if (ip != null && ip.equals(channelIp) && i.isIpLocked()) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Channel is locked and already exists");
+            if (i.hasIpConfigured()) {
+                String ip = i.getIpConfigured();
+
+                // assign only locked connection
+                if (ip.equals(channelIp) && i.isIpLocked()) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Channel is locked and already exists");
+                    }
+                    i.assignChannel(channel, buffer, timeoutEvent);
+
+                    deviceStates.setDeviceState(deviceName, i.getDeviceId(), DeviceStates.CONNECTED);
+
+                    return i;
+                    // assign configured connection
+                } else if (ip.equals(channelIp)) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Channel exist in client configuration");
+                    }
+                    i.assignChannel(channel, buffer, timeoutEvent);
+
+                    deviceStates.setDeviceState(deviceName, i.getDeviceId(), DeviceStates.CONNECTED);
+
+                    return i;
                 }
-                i.assignChannel(channel, buffer, timeoutEvent);
-
-                deviceStates.setDeviceState(deviceName, i.getDeviceId(), DeviceStates.CONNECTED);
-
-                return i;
             }
         }
 

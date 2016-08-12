@@ -660,6 +660,7 @@ public class SimpleBinaryProtocol {
                 case (byte) 0xE3:
                 case (byte) 0xE4:
                 case (byte) 0xE5:
+                case (byte) 0xE6:
                     data.rewind();
                     rawPacket = new byte[3];
                     data.get(rawPacket);

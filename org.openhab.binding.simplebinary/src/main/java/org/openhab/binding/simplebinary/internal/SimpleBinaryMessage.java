@@ -21,7 +21,7 @@ public class SimpleBinaryMessage {
 
     /**
      * Constructor
-     * 
+     *
      * @param messageId Message ID
      * @param deviceId Device ID
      * @param itemAddress Item address
@@ -34,7 +34,7 @@ public class SimpleBinaryMessage {
 
     /**
      * Return device address
-     * 
+     *
      * @return
      */
     public int getDeviceId() {
@@ -43,7 +43,7 @@ public class SimpleBinaryMessage {
 
     /**
      * Return item address
-     * 
+     *
      * @return
      */
     public int getItemAddress() {
@@ -52,7 +52,7 @@ public class SimpleBinaryMessage {
 
     /**
      * Return message ID
-     * 
+     *
      * @return
      */
     public byte getMessageId() {
@@ -61,7 +61,7 @@ public class SimpleBinaryMessage {
 
     /**
      * Return message type depending on message ID
-     * 
+     *
      * @return
      */
     public SimpleBinaryMessageType getMessageType() {
@@ -91,6 +91,8 @@ public class SimpleBinaryMessage {
                 return SimpleBinaryMessageType.UNKNOWN_ADDRESS;
             case (byte) 0xE5:
                 return SimpleBinaryMessageType.SAVING_ERROR;
+            case (byte) 0xE6:
+                return SimpleBinaryMessageType.HI;
             default:
                 return SimpleBinaryMessageType.UNKNOWN;
         }

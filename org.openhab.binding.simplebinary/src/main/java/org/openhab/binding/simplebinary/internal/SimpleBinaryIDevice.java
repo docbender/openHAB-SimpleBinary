@@ -44,8 +44,10 @@ public interface SimpleBinaryIDevice {
      *            Command to send
      * @param config
      *            Item config
+     * @throws InterruptedException
      */
-    public void sendData(String itemName, Command command, SimpleBinaryBindingConfig config);
+    public void sendData(String itemName, Command command, SimpleBinaryBindingConfig config)
+            throws InterruptedException;
 
     /**
      * Check new data for all connected devices

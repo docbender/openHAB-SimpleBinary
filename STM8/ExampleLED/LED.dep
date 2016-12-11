@@ -1,0 +1,38 @@
+;	STMicroelectronics dependencies file
+
+[Version]
+Keyword=ST7Project
+Number=1.3
+
+[Root.Source Files.Source Files\splib.splib\src\stm8s_clk.c.Config.0]
+ExternDep= splib\src\stm8s_clk.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h"  splib\inc\stm8s_clk.h splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h  splib\inc\stm8s_awu.h splib\inc\stm8s_beep.h splib\inc\stm8s_exti.h  splib\inc\stm8s_flash.h splib\inc\stm8s_gpio.h splib\inc\stm8s_i2c.h  splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h splib\inc\stm8s_rst.h  splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h splib\inc\stm8s_tim2.h  splib\inc\stm8s_tim4.h splib\inc\stm8s_uart1.h splib\inc\stm8s_wwdg.h
+
+[Root.Source Files.Source Files\splib.splib\src\stm8s_gpio.c.Config.0]
+ExternDep= splib\src\stm8s_gpio.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h"  splib\inc\stm8s_gpio.h splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h  splib\inc\stm8s_awu.h splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h  splib\inc\stm8s_exti.h splib\inc\stm8s_flash.h splib\inc\stm8s_i2c.h  splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h splib\inc\stm8s_rst.h  splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h splib\inc\stm8s_tim2.h  splib\inc\stm8s_tim4.h splib\inc\stm8s_uart1.h splib\inc\stm8s_wwdg.h
+
+[Root.Source Files.Source Files\splib.splib\src\stm8s_tim4.c.Config.0]
+ExternDep= splib\src\stm8s_tim4.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h"  splib\inc\stm8s_tim4.h splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h  splib\inc\stm8s_awu.h splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h  splib\inc\stm8s_exti.h splib\inc\stm8s_flash.h splib\inc\stm8s_gpio.h  splib\inc\stm8s_i2c.h splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h  splib\inc\stm8s_rst.h splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h  splib\inc\stm8s_tim2.h splib\inc\stm8s_uart1.h splib\inc\stm8s_wwdg.h
+
+[Root.Source Files.Source Files\splib.splib\src\stm8s_uart1.c.Config.0]
+ExternDep= splib\src\stm8s_uart1.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h"  splib\inc\stm8s_uart1.h splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h  splib\inc\stm8s_awu.h splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h  splib\inc\stm8s_exti.h splib\inc\stm8s_flash.h splib\inc\stm8s_gpio.h  splib\inc\stm8s_i2c.h splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h  splib\inc\stm8s_rst.h splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h  splib\inc\stm8s_tim2.h splib\inc\stm8s_tim4.h splib\inc\stm8s_wwdg.h
+
+[Root.Source Files.basic_time_functions.c.Config.0]
+ExternDep= basic_time_functions.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h"  basic_time_functions.h splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h  splib\inc\stm8s_awu.h splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h  splib\inc\stm8s_exti.h splib\inc\stm8s_flash.h splib\inc\stm8s_gpio.h  splib\inc\stm8s_i2c.h splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h  splib\inc\stm8s_rst.h splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h  splib\inc\stm8s_tim2.h splib\inc\stm8s_tim4.h splib\inc\stm8s_uart1.h  splib\inc\stm8s_wwdg.h
+
+[Root.Source Files.crc8.c.Config.0]
+ExternDep= crc8.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h"
+
+[Root.Source Files.itemdata.c.Config.0]
+ExternDep= itemdata.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h" itemData.h  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\stdlib.h"  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\string.h"  splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h splib\inc\stm8s_awu.h  splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h splib\inc\stm8s_exti.h  splib\inc\stm8s_flash.h splib\inc\stm8s_gpio.h splib\inc\stm8s_i2c.h  splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h splib\inc\stm8s_rst.h  splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h splib\inc\stm8s_tim2.h  splib\inc\stm8s_tim4.h splib\inc\stm8s_uart1.h splib\inc\stm8s_wwdg.h crc8.h
+
+[Root.Source Files.main.c.Config.0]
+ExternDep= main.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h"  splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h splib\inc\stm8s_awu.h  splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h splib\inc\stm8s_exti.h  splib\inc\stm8s_flash.h splib\inc\stm8s_gpio.h splib\inc\stm8s_i2c.h  splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h splib\inc\stm8s_rst.h  splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h splib\inc\stm8s_tim2.h  splib\inc\stm8s_tim4.h splib\inc\stm8s_uart1.h splib\inc\stm8s_wwdg.h  basic_time_functions.h serial.h  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\stdlib.h"  simplebinary.h itemData.h  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\string.h"
+
+[Root.Source Files.serial.c.Config.0]
+ExternDep= serial.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h" serial.h  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\stdlib.h"  splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h splib\inc\stm8s_awu.h  splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h splib\inc\stm8s_exti.h  splib\inc\stm8s_flash.h splib\inc\stm8s_gpio.h splib\inc\stm8s_i2c.h  splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h splib\inc\stm8s_rst.h  splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h splib\inc\stm8s_tim2.h  splib\inc\stm8s_tim4.h splib\inc\stm8s_uart1.h splib\inc\stm8s_wwdg.h  basic_time_functions.h
+
+[Root.Source Files.simplebinary.c.Config.0]
+ExternDep= simplebinary.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h"  splib\inc\stm8s_gpio.h splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h  splib\inc\stm8s_awu.h splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h  splib\inc\stm8s_exti.h splib\inc\stm8s_flash.h splib\inc\stm8s_i2c.h  splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h splib\inc\stm8s_rst.h  splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h splib\inc\stm8s_tim2.h  splib\inc\stm8s_tim4.h splib\inc\stm8s_uart1.h splib\inc\stm8s_wwdg.h  basic_time_functions.h serial.h  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\stdlib.h" crc8.h  itemData.h "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\string.h"  simpleBinary.h
+
+[Root.Source Files.stm8_interrupt_vector.c.Config.0]
+ExternDep= stm8_interrupt_vector.c  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\mods0.h" serial.h  "C:\Program Files (x86)\COSMIC\FSE_Compilers\CXSTM8\HSTM8\stdlib.h"  splib\inc\stm8s.h stm8s_conf.h splib\inc\stm8s_adc1.h splib\inc\stm8s_awu.h  splib\inc\stm8s_beep.h splib\inc\stm8s_clk.h splib\inc\stm8s_exti.h  splib\inc\stm8s_flash.h splib\inc\stm8s_gpio.h splib\inc\stm8s_i2c.h  splib\inc\stm8s_itc.h splib\inc\stm8s_iwdg.h splib\inc\stm8s_rst.h  splib\inc\stm8s_spi.h splib\inc\stm8s_tim1.h splib\inc\stm8s_tim2.h  splib\inc\stm8s_tim4.h splib\inc\stm8s_uart1.h splib\inc\stm8s_wwdg.h  basic_time_functions.h

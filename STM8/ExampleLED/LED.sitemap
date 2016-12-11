@@ -1,0 +1,8 @@
++sitemap LED label="Main"
+{
+   Frame label="STM8S003 LED"
+   {
+      Switch item=TestSwitch
+      Text item=TestContact
+   }
+}

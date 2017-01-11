@@ -50,6 +50,12 @@ class simpleBinary
     void enableRTS(int pinNumber);    
     // Set delay between receive and send message (in ms) for stabilization of communication line 
     void setSendDelay(unsigned int delayms);
+    // Has data to send
+    bool available();
+    // Sends all data marked as new in one transaction (full-duplex connection only)
+    void sendNewData();
+    // Sends "Hi" message (full-duplex connection only)
+    void sendHi();
     
     // pointer to execution function on force all data as new
     void (*pForceFunction)(simpleBinary*); 

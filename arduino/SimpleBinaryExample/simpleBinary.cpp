@@ -3,8 +3,9 @@
 // Name:        simpleBinary.cpp
 // Author:      Vita Tucek
 // Created:     20.8.2015
+// Modified:    23.10.2016
 // License:     MIT
-// Description: Implementation of SimpleBinary protocol for use with OpenHAB
+// Description: Implementation of SimpleBinary protocol for OpenHAB
 //
 //---------------------------------------------------------------------------
 
@@ -13,11 +14,13 @@
 #include "simpleBinary.h"
 
 
-
 //when defined SEND_PACKET_WRONG_CRC in case received packet has wrong CRC answer "wrong data" is sent
 //#define SEND_PACKET_WRONG_CRC
 //when defined SEND_PACKET_UNKNOWN_DATA in case received packet contains data that has no action assigned answer "unknown data" is sent
 #define SEND_PACKET_UNKNOWN_DATA
+//timeout between two receives
+#define INCOMING_DATA_TIMEOUT 10
+
 
 /// Item initialization 
 ///
@@ -140,14 +143,24 @@ bool simpleBinary::saveArray(int address, const char *pData, int len)
 ///
 void simpleBinary::processSerial()
 {
+#ifdef INCOMING_DATA_TIMEOUT
+   unsigned long now = millis();
+   
    //clear old data
-   if(serbuflen > 0 && (abs(millis() - receiveTime) > 10))
+   if(serbuflen > 0)
    {
-      serbuflen = 0;
-   }
-
-   receiveTime = millis();
+      unsigned long diff = now - receiveTime;
       
+      if(diff > INCOMING_DATA_TIMEOUT)
+      {
+        serbuflen = 0;
+      }
+   }
+#endif   
+   //set last receive time
+   receiveTime = now;
+   
+   //read all incoming data
    while (serial->available() > 0) 
    {
       int data = serial->read();
@@ -155,7 +168,7 @@ void simpleBinary::processSerial()
       serbuf[serbuflen++] = data;
    }
 
-   if(serbuflen > 3)
+   while(serbuflen > 3)
    {     
       //search address
       while(serbuf[0] != _uartAddress)
@@ -173,190 +186,186 @@ void simpleBinary::processSerial()
       if(serbuflen < 4)
          return;
 
-      if(serbuf[0] == _uartAddress)    
+      int address;
+      char crc;
+              
+      switch(serbuf[1])
       {
-         int address;
-         char crc;
-                 
-         switch(serbuf[1])
-         {
-            //new data
-            case (char)0xD0:  
-                  crc = CRC8::evalCRC(serbuf,3);
+         //new data
+         case (char)0xD0:  
+               crc = CRC8::evalCRC(serbuf,3);
 
-               if(crc == serbuf[3])
+            if(crc == serbuf[3])
+            {
+               if(serbuf[2] == 0x00 || serbuf[2] == 0x01)
                {
-                  if(serbuf[2] == 0x00 || serbuf[2] == 0x01)
+                  if(serbuf[2] == 0x01)
                   {
-                     if(serbuf[2] == 0x01)
-                     {
-                        //force all output data as new through user function
-                        forceAllNewData();
-                     }
-                     
-                     //check data to send
-                     checkNewData();
+                     //force all output data as new through user function
+                     forceAllNewData();
                   }
+                  
+                  //check data to send
+                  checkNewData();
+               }
 #ifdef SEND_PACKET_UNKNOWN_DATA              
-                  else
-                     sendUnknownData();   
+               else
+                  sendUnknownData();   
 #endif                 
-               }
+            }
 #ifdef SEND_PACKET_WRONG_CRC
-               else
-                  sendWrongData(crc);
+            else
+               sendWrongData(crc);
 #endif               
-               serbuflen = 0;
-               break;
-               //read data  
-            case (char)0xD1: 
-               if(serbuflen < 5)
-                  break;
+            serbuflen = 0;
+            return;
+            //read data  
+         case (char)0xD1: 
+            if(serbuflen < 5)
+               return;
 
-               crc = CRC8::evalCRC(serbuf,4);
+            crc = CRC8::evalCRC(serbuf,4);
 
-               if(crc == serbuf[4])
-               {
-                  address =  serbuf[2] | (serbuf[3] << 8); 
-                  readData(address); 
-               }
+            if(crc == serbuf[4])
+            {
+               address =  serbuf[2] | (serbuf[3] << 8); 
+               readData(address); 
+            }
 #ifdef SEND_PACKET_WRONG_CRC            
+            else
+               sendWrongData(crc);
+#endif
+            serbuflen = 0;
+            return;
+            //write byte
+         case (char)0xDA:
+            if(serbuflen < 6)
+               return;
+            //crc check
+            crc = CRC8::evalCRC(serbuf,5);
+            
+            if(serbuf[5] == crc)   
+            {                       
+               //address
+               address = serbuf[2] | (serbuf[3] << 8);
+               //check address
+               if(!checkAddress(address))
+                  sendInvalidAddress();               
+               //write data into memory
+               if(saveByte(address,serbuf+4))
+                  sendOK();
                else
-                  sendWrongData(crc);
-#endif
-               serbuflen = 0;
-               break;
-               //write byte
-            case (char)0xDA:
-               if(serbuflen < 6)
-                  break;
-               //crc check
-               crc = CRC8::evalCRC(serbuf,5);
-               
-               if(serbuf[5] == crc)   
-               {                       
-                  //address
-                  address = serbuf[2] | (serbuf[3] << 8);
-                  //check address
-                  if(!checkAddress(address))
-                     sendInvalidAddress();               
-                  //write data into memory
-                  if(saveByte(address,serbuf+4))
-                     sendOK();
-                  else
-                     sendSavingError();
-               }
+                  sendSavingError();
+            }
 #ifdef SEND_PACKET_WRONG_CRC            
+            else
+               sendWrongData(crc);
+#endif
+            //clear buffer
+            serbuflen = 0;
+            return;
+            //write word
+         case (char)0xDB:
+            if(serbuflen < 7)
+               return;
+
+            //crc check
+            crc = CRC8::evalCRC(serbuf,6);
+
+            if(serbuf[6] == crc)
+            {
+               //address 
+               address = serbuf[2] | (serbuf[3] << 8);
+               //check address
+               if(!checkAddress(address))
+                  sendInvalidAddress();                 
+               //write data into memory
+               if(saveWord(address,serbuf+4))
+                  sendOK();
                else
-                  sendWrongData(crc);
-#endif
-               //clear buffer
-               serbuflen = 0;
-               break;
-               //write word
-            case (char)0xDB:
-               if(serbuflen < 7)
-                  break;
-
-               //crc check
-               crc = CRC8::evalCRC(serbuf,6);
-
-               if(serbuf[6] == crc)
-               {
-                  //address 
-                  address = serbuf[2] | (serbuf[3] << 8);
-                  //check address
-                  if(!checkAddress(address))
-                     sendInvalidAddress();                 
-                  //write data into memory
-                  if(saveWord(address,serbuf+4))
-                     sendOK();
-                  else
-                     sendSavingError();               
-               }
+                  sendSavingError();               
+            }
 #ifdef SEND_PACKET_WRONG_CRC            
-               else            
-                  sendWrongData(crc);
+            else            
+               sendWrongData(crc);
 #endif
-               //clear buffer
-               serbuflen = 0;
-               break;
-               //write dword
-            case (char)0xDC:
-            case (char)0xDD:
-               if(serbuflen < 9)
-                  break;
+            //clear buffer
+            serbuflen = 0;
+            return;
+            //write dword
+         case (char)0xDC:
+         case (char)0xDD:
+            if(serbuflen < 9)
+               return;
 
-               //crc check
-               crc = CRC8::evalCRC(serbuf,8);
-               
-               if(serbuf[8] == crc)            
-               {
-                  //address
-                  address = serbuf[2] | (serbuf[3] << 8);
+            //crc check
+            crc = CRC8::evalCRC(serbuf,8);
+            
+            if(serbuf[8] == crc)            
+            {
+               //address
+               address = serbuf[2] | (serbuf[3] << 8);
 
-                  //check address
-                  if(!checkAddress(address))
-                     sendInvalidAddress();
-                  //write data into memory
-                  if(saveDword(address,serbuf+4))
-                     sendOK();
-                  else
-                     sendSavingError();
-               }
-#ifdef SEND_PACKET_WRONG_CRC            
+               //check address
+               if(!checkAddress(address))
+                  sendInvalidAddress();
+               //write data into memory
+               if(saveDword(address,serbuf+4))
+                  sendOK();
                else
-                  sendWrongData(crc);
-#endif
-               //clear buffer
-               serbuflen = 0;
-               break;
-               //write array
-            case (char)0xDE:
-               if(serbuflen < 6)
-                  break;
-               
-               int datalen;
-               datalen = (serbuf[4] | (serbuf[5] << 8));
-               //correct packet length check
-               if(serbuflen < 7 + datalen)
-                  break;
-
-               //crc check
-               crc = CRC8::evalCRC(serbuf,6+datalen);              
-               if(serbuf[7+datalen] == crc)
-               {
-                  //address
-                  address = serbuf[2] | (serbuf[3] << 8);
-                  //check address
-                  if(!checkAddress(address))
-                     sendInvalidAddress();
-                  char *pData = serbuf + 6;
-                  //write data into memory              
-                  if(saveArray(address,pData, datalen))
-                     sendOK();
-                  else
-                     sendSavingError();            
-               }
+                  sendSavingError();
+            }
 #ifdef SEND_PACKET_WRONG_CRC            
-               else
-                  sendWrongData(crc);
+            else
+               sendWrongData(crc);
 #endif
-               //clear buffer
-               serbuflen = 0;
-               break;                        
-            default:
-               //serbuflen = 0;
-               serbuflen--;
-               //sendUnknownData();
-               break;            
-         }
-      }
-      else
-      {
-         //serbuflen = 0;
-         serbuflen--;
-         return;
+            //clear buffer
+            serbuflen = 0;
+            return;
+            //write array
+         case (char)0xDE:
+            if(serbuflen < 6)
+               return;
+            
+            int datalen;
+            datalen = (serbuf[4] | (serbuf[5] << 8));
+            //correct packet length check
+            if(serbuflen < 7 + datalen)
+               return;
+
+            //crc check
+            crc = CRC8::evalCRC(serbuf,6+datalen);              
+            if(serbuf[7+datalen] == crc)
+            {
+               //address
+               address = serbuf[2] | (serbuf[3] << 8);
+               //check address
+               if(!checkAddress(address))
+                  sendInvalidAddress();
+               char *pData = serbuf + 6;
+               //write data into memory              
+               if(saveArray(address,pData, datalen))
+                  sendOK();
+               else
+                  sendSavingError();            
+            }
+#ifdef SEND_PACKET_WRONG_CRC            
+            else
+               sendWrongData(crc);
+#endif
+            //clear buffer
+            serbuflen = 0;
+            return;                        
+         default:
+            //serbuflen = 0;
+            serbuflen--;
+
+            //move data by one byte - suggested by ModuloFS
+            for(int i=0;i<serbuflen;i++)
+            {
+               serbuf[i] = serbuf[i+1];
+            }
+            break;            
       }
    }
 }
@@ -655,3 +664,52 @@ void simpleBinary::forceAllNewData()
    (*pForceFunction)(this);  
 }
 
+/// Has data to send
+///
+bool simpleBinary::available()
+{
+   //through all items
+   for(int i=0;i<_size;i++)
+   {   
+      if(_data[i].hasNewData())
+         return true;
+   }
+
+   return false;
+}
+
+/// Sends all data marked as new in one transaction (full-duplex connection only)
+///
+void simpleBinary::sendNewData()
+{
+   bool newData = false;
+   
+   //through all items
+   for(int i=0;i<_size;i++)
+   {   
+      if(_data[i].hasNewData())
+      {
+         sendData(&(_data[i]));   
+
+         newData = true;
+      } 
+   }
+
+   //no new data available
+   if(!newData)  
+      sendNoData();  
+}
+
+/// Sends "Hi" message (full-duplex connection only)
+///
+void simpleBinary::sendHi()
+{
+   char* data = new char[4];
+  
+   data[0] = _uartAddress;
+   data[1] = 0xE6;   
+   data[2] = 0x00;
+   data[3] = CRC8::evalCRC(data,3);
+  
+   write(data,4);
+}

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2010-2015, openHAB.org and others.
+ * Copyright (c) 2010-2016, openHAB.org and others.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * Implement this class if you are going create an actively polling service like querying a Website/Device.
  *
  * @author Vita Tucek
- * @since 1.8.0
+ * @since 1.9.0
  */
 public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindingProvider> {
 
@@ -99,7 +99,6 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
         }
 
         devices.clear();
-        // items.clear();
 
         Pattern rgxUARTKey = Pattern.compile("^port\\d*$");
         Pattern rgxUARTValue = Pattern.compile("^(\\S+:\\d+)(;((onscan)|(onchange)))?(;((forceRTS)|(forceRTSInv)))?$");
@@ -112,7 +111,7 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
         logger.debug("Looking for device configuration...");
 
         for (Map.Entry<String, Object> item : configuration.entrySet()) {
-            // logger.debug("key:" + item.getKey() + "/value:" + item.getValue());
+            logger.trace("key:{}/value:{}", item.getKey(), item.getValue());
 
             // port
             if (rgxUARTKey.matcher(item.getKey()).matches()) {
@@ -371,8 +370,8 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
                 try {
                     device.sendData(itemName, command, config);
                 } catch (Exception ex) {
-                    logger.error("internalReceiveCommand(): line:" + ex.getStackTrace()[0].getLineNumber() + "|method:"
-                            + ex.getStackTrace()[0].getMethodName());
+                    logger.error("internalReceiveCommand(): line:{}|method:{}", ex.getStackTrace()[0].getLineNumber(),
+                            ex.getStackTrace()[0].getMethodName());
                 }
             } else {
                 logger.warn("No device for item: {}", itemName);

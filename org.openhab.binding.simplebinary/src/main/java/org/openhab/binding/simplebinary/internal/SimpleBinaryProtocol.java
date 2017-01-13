@@ -156,8 +156,8 @@ public class SimpleBinaryProtocol {
         // bus address
         data[0] = (byte) deviceConfig.getDeviceAddress();
         // item address / ID
-        data[2] = (byte) (deviceConfig.getDeviceAddress() & 0xFF);
-        data[3] = (byte) ((deviceConfig.getDeviceAddress() >> 8) & 0xFF);
+        data[2] = (byte) (deviceConfig.getItemAddress() & 0xFF);
+        data[3] = (byte) ((deviceConfig.getItemAddress() >> 8) & 0xFF);
 
         switch (itemConfig.getDataType()) {
             case BYTE:

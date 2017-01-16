@@ -175,6 +175,10 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
                             }
 
+                            logger.debug("Channel {}/{} - sendAllItemsStates()", chInfo.getDeviceId(), chInfo.getIp());
+                            // send all items state now
+                            // sendAllItemsStates();
+
                             // callback read
                             channel.read(buffer, chInfo, new CompletionHandler<Integer, SimpleBinaryIPChannelInfo>() {
                                 @Override

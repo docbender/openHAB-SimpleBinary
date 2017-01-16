@@ -873,6 +873,12 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
             int deviceId = ((SimpleBinaryItem) itemData).getDeviceId();
 
+            // get device state
+            DeviceStates devstate = devicesStates.getDeviceState(deviceId);
+            if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
+                    || devstate == DeviceStates.RESPONSE_ERROR) {
+                sendAllItemsStates();
+            }
             // set state
             devicesStates.setDeviceState(this.deviceName, deviceId, DeviceStates.CONNECTED);
 
@@ -886,6 +892,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                             ((SimpleBinaryItem) itemData).name, state);
                 }
 
+                ((SimpleBinaryItem) itemData).getConfig().setState(state);
+
                 if (eventPublisher != null) {
                     eventPublisher.postUpdate(((SimpleBinaryItem) itemData).name, state);
                 }
@@ -896,7 +904,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                             ((SimpleBinaryItem) itemData).getConfig().devices.size());
                     SimpleBinaryBindingConfig cfg = ((SimpleBinaryItem) itemData).getConfig();
                     for (DeviceConfig d : cfg.devices) {
-                        if (d.getDeviceAddress() != deviceId && d.dataDirection != DataDirectionFlow.INPUT) {
+                        if (d.dataDirection != DataDirectionFlow.INPUT
+                                && (d.getDeviceAddress() != deviceId || !d.getPortName().equals(this.deviceName))) {
                             logger.debug("Resend to device {}", d);
                             SimpleBinaryGenericDevice device = this.configuredDevices.get(d.deviceName);
                             try {
@@ -928,6 +937,13 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             if (logger.isDebugEnabled() && lastSentData != null && lastSentData.getItemAddress() >= 0) {
                 logger.debug("{} - Device {} ItemAddress={}", toString(), itemData.getDeviceId(),
                         lastSentData.getItemAddress());
+            }
+
+            // get device state
+            DeviceStates devstate = devicesStates.getDeviceState(itemData.getDeviceId());
+            if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
+                    || devstate == DeviceStates.RESPONSE_ERROR) {
+                sendAllItemsStates();
             }
 
             // set state
@@ -995,6 +1011,38 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
                 // set state
                 devicesStates.setDeviceState(this.deviceName, itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+            }
+        }
+    }
+
+    /**
+     * For device items provide send state to device
+     */
+    void sendAllItemsStates() {
+        if (itemsConfig == null) {
+            return;
+        }
+
+        for (Map.Entry<String, SimpleBinaryBindingConfig> item : itemsConfig.entrySet()) {
+            SimpleBinaryBindingConfig cfg = item.getValue();
+            for (DeviceConfig dev : cfg.devices) {
+
+                if (!dev.getPortName().equals(this.deviceName) || dev.getDataDirection() == DataDirectionFlow.INPUT) {
+                    continue;
+                }
+
+                if (cfg.getState() == null) {
+                    continue;
+                }
+
+                // logger.debug("sendAllItemsStates() {}/{}", item.getKey(), cfg.getState());
+
+                try {
+                    this.sendData(item.getKey(), cfg.getState(), cfg, dev);
+                } catch (Exception ex) {
+                    logger.error("getItemStates(): line:{}|method:{}", ex.getStackTrace()[0].getLineNumber(),
+                            ex.getStackTrace()[0].getMethodName());
+                }
             }
         }
     }

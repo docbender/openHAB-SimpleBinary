@@ -117,7 +117,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         // clear device states
         devicesStates.clear();
         // set initial state for configured devices
-        devicesStates.setStateToAllConfiguredDevices(this.deviceName, DeviceStates.UNKNOWN);
+        devicesStates.setStateToAllConfiguredDevices(this.deviceName, DeviceStates.NOT_RESPONDING);
         // reset connected state
         connected = false;
         // setWaitingForAnswer(false);
@@ -147,7 +147,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                 SimpleBinaryIPChannelInfoCollection a) {
 
                             if (logger.isDebugEnabled()) {
-                                logger.debug("New incoming connection");
+                                logger.debug("New incoming connection. Thread={}", Thread.currentThread().getId());
                             }
 
                             // get ready for next connection
@@ -172,12 +172,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
                             if (logger.isDebugEnabled()) {
                                 logger.debug("New Channel opened:{}", chInfo.getIp());
-
                             }
-
-                            logger.debug("Channel {}/{} - sendAllItemsStates()", chInfo.getDeviceId(), chInfo.getIp());
-                            // send all items state now
-                            // sendAllItemsStates();
 
                             // callback read
                             channel.read(buffer, chInfo, new CompletionHandler<Integer, SimpleBinaryIPChannelInfo>() {
@@ -203,6 +198,9 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                             logger.warn("Device {}/{} was disconnected", chInfo.getDeviceId(),
                                                     chInfo.getIp());
                                         }
+
+                                        devicesStates.setDeviceState(deviceName, chInfo.getDeviceId(),
+                                                DeviceStates.NOT_RESPONDING);
 
                                         return;
                                     }
@@ -260,8 +258,6 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
                                         // look what is in income raw data
                                         int r = processData(inBuffer, chInfo.getLastSentData());
-                                        // clear last data
-                                        chInfo.setLastSentData(null);
 
                                         if (r >= 0 || r == ProcessDataResult.INVALID_CRC
                                                 || r == ProcessDataResult.BAD_CONFIG
@@ -285,6 +281,8 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
                                     // ready for new data
                                     chInfo.getChannel().read(buffer, chInfo, this);
+
+                                    processCommandQueue(chInfo.getDeviceId());
                                 }
 
                                 @Override
@@ -293,8 +291,15 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                 }
                             });
 
-                            // look for data to send
-                            processCommandQueue(chInfo.getDeviceId());
+                            // "Hi" message to obtain device ID was not delivered?
+                            if (chInfo.getDeviceId() < 0) {
+                                logger.warn(
+                                        "{} - Channel IP={} - device does not have ID assigned ID. Configure device ID in binding configuration or implement sendHi() message into device. (sendHi must be called when device is connected) ",
+                                        this.toString(), chInfo.getIp());
+                            } else {
+                                // look for data to send
+                                processCommandQueue(chInfo.getDeviceId());
+                            }
                         }
 
                         @Override
@@ -351,7 +356,22 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         }
 
         portState.setState(PortStates.CLOSED);
+        devicesStates.setStateToAllConfiguredDevices(this.deviceName, DeviceStates.NOT_RESPONDING);
         connected = false;
+    }
+
+    /*
+     * Can send if specific device does not wait for answer.
+     */
+    @Override
+    protected boolean canSend(int devId) {
+        for (SimpleBinaryIPChannelInfo c : channels) {
+            if (c.getDeviceId() == devId) {
+                return !(c.waitingForAnswer.get() || c.getChannel() == null || !c.getChannel().isOpen());
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -388,7 +408,13 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                     SimpleBinaryProtocol.arrayToString(data.getData(), data.getData().length));
         }
 
-        if (chInfo.compareAndSetWaitingForAnswer()) {
+        if (!chInfo.compareAndSetWaitingForAnswer()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("{} - Sending data to device {} discarted. Another send/wait is processed.",
+                        this.toString(), data.getDeviceId());
+            }
+            return false;
+        } else {
             // write string to tcp channel
 
             ByteBuffer buffer = ByteBuffer.allocate(data.getData().length);
@@ -397,6 +423,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
             buffer.flip();
 
             chInfo.setWriteBuffer(buffer);
+            chInfo.setLastSentData(data);
 
             // write into device
             chInfo.getChannel().write(buffer, chInfo, new CompletionHandler<Integer, SimpleBinaryIPChannelInfo>() {
@@ -416,6 +443,8 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                         } finally {
                             chInfo.closed();
                             logger.warn("Device {}/{} was disconnected", chInfo.getDeviceId(), chInfo.getIp());
+
+                            chInfo.setLastSentData(null);
                         }
 
                         return;
@@ -424,6 +453,9 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                     if (chInfo.getBuffer().remaining() > 0) {
                         chInfo.getChannel().write(chInfo.getWriteBuffer(), chInfo, this);
                     } else {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("Device {}/{} - Write finished", chInfo.getDeviceId(), chInfo.getIp());
+                        }
                         chInfo.clearWriteBuffer();
                     }
                 }
@@ -440,18 +472,12 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                     } finally {
                         chInfo.closed();
                         logger.warn("Device {}/{} was disconnected", chInfo.getDeviceId(), chInfo.getIp());
+
+                        devicesStates.setDeviceState(deviceName, chInfo.getDeviceId(), DeviceStates.NOT_RESPONDING);
                     }
                 }
             });
 
-            chInfo.setLastSentData(data);
-        } else {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} - Sending data to device {} discarted. Another send/wait is processed.",
-                        this.toString(), data.getDeviceId());
-            }
-
-            return false;
         }
 
         return true;

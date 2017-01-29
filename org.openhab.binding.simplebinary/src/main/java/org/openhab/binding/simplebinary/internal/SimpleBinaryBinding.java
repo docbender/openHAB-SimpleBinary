@@ -8,6 +8,8 @@
  */
 package org.openhab.binding.simplebinary.internal;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -481,8 +483,13 @@ public class SimpleBinaryBinding extends AbstractActiveBinding<SimpleBinaryBindi
                 try {
                     device.sendData(itemConfig.item.getName(), state, itemConfig, d);
                 } catch (Exception ex) {
-                    logger.error("updateState(): line:{}|method:{}", ex.getStackTrace()[0].getLineNumber(),
-                            ex.getStackTrace()[0].getMethodName());
+                    logger.error("updateState(): file:{}|line:{}|method:{}|message:{}",
+                            ex.getStackTrace()[0].getFileName(), ex.getStackTrace()[0].getLineNumber(),
+                            ex.getStackTrace()[0].getMethodName(), ex.getMessage());
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    ex.printStackTrace(pw);
+                    logger.error(sw.toString());
                 }
             } else {
                 logger.warn("No device for item: {}", itemConfig.item.getName());

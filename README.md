@@ -93,7 +93,7 @@ Example of binding configuration:
     Color     TestColor01              { simplebinary="tcpserver:2:2:rgb:O" }
     
 ### Inter-device communication
-Binding support inter-device communication. To configure this another device/binding can be specified separated by comma in item configuration. In examples values from first device are written into openHAB (input-I direction) and same value is immediately written into second device (output-Odirection):
+Binding support inter-device communication. To configure this another device/binding can be specified separated by comma in item configuration. In examples values from first device are written into openHAB (input-I direction) and same value is immediately written into second device (output-O direction):
 
     Number    Temperature    "Value[%f]"    { simplebinary="port:1:1:float:I", simplebinary="tcpserver:1:1:float:O" }
     Number    TemperatureCPU "Value[%f]"    { exec="<[/bin/cat /sys/class/thermal/thermal_zone0/temp:30000:JS(divideTemp.js)]", simplebinary="tcpserver:1:2:float:O" }    
@@ -324,7 +324,7 @@ The extent of implementation depends on the required features and data types (se
 At first device should check if message is correctly received (CRC check). Secondly device should check if message is for him by compare message address and his own assigned address. **If the address is different device must not respond!** Otherwise device must response in corresponding way (see chapter Protocol).
 
 ##Implementation example
-Implementation example for Arduino can be found in Arduino library repo folder [arduino](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino).
+Implementation example for Arduino can be found in [Arduino library repo folder](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino).
 
 It consists of two main classes. Class _simpleBinary_ which contains protocol implementation itself and class _itemData_ which provides item data storage and handling with item.
 

@@ -2,7 +2,7 @@
 
 This binding for openHAB has ability to connect DIY devices (based on Arduino or whatever else). Binding uses serial communication or implemented TCP server. 
 
-Used protocol which is easy to implement. Implementation examples for [Arduino](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_Serial), [STM8](https://github.com/docbender/openHAB-SimpleBinary/tree/master/STM8/ExampleLED), [ESP8266](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_TCP) is part of repository. 
+Used protocol which is easy to implement. Implementation examples for [Arduino](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_Serial), [STM8](https://github.com/docbender/openHAB-SimpleBinary/tree/master/STM8/ExampleLED), [ESP8266](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_TCP) is part of repository. [Arduino library](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino) is also available.
 
 Compiled binding is inserted into release branch: https://github.com/docbender/openHAB-SimpleBinary/releases
 
@@ -325,7 +325,7 @@ It consists of two main classes. Class _simpleBinary_ which contains protocol im
 <b>Class simpleBinary</b> - public methods
 <table>
   <tr><td> </td><td><b>simpleBinary</b>(int uartAddress, int size)<br>Constructor. <br>Parameters: <b>uartAddress</b> - device address at communication line, <b>size</b> - number of exchanged items</td></tr>
-  <tr><td>void</td><td><b>initItem</b>(int idx, int address, itemType type, void (*pFce)(itemData*))<br>Initilize item. <br>Parameters: <b>idx</b> - item index in array, <b>address</b> - item address used during communication, <b>type</b> - item data type, last parameter is pointer to function that is executed on data receive(NULL for no action).</td></tr>
+  <tr><td>void</td><td><b>initItem</b>(int indexAndAddress, itemType type, void (*pFce)(itemData*))<br>Initilize item. <br>Parameters: <b>indexAndAddress</b> - item index in configuration array and also item address used during communication, <b>type</b> - item data type, last parameter is pointer to function that is executed on data receive(NULL for no action).</td></tr>
   <tr><td>void</td><td><b>processSerial</b>()<br>Process data received by UART.</td></tr>
   <tr><td>bool</td><td><b>checkAddress</b>(int address)<br>Check if address exist in items array.<br>Parameters: <b>address</b> - item address used during communication
 </td></tr>

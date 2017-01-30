@@ -1,10 +1,13 @@
 //---------------------------------------------------------------------------
 //
-// Name:        simpleBinary.cpp
+// Name:        ReadWriteValues.cpp
 // Author:      Vita Tucek
 // Created:     11.9.2015
+// Modified:    30.1.2017
 // License:     MIT
-// Description: Usage example of SimpleBinary communication with OpenHAB binding
+// Description: Usage example of SimpleBinary communication Arduino Nano
+//              with OpenHAB binding
+//               
 //
 //---------------------------------------------------------------------------
 
@@ -17,32 +20,33 @@
 #define UART_SPEED  9600
 #define UART_ADDRESS 1
 
-//definice promennych vymeny dat
+//binding data definitions
 simpleBinary *items;
 
 void setup() {
   //UART inicialization
   Serial.begin(UART_SPEED);
+  //UART RX Complete Interrupt Enable
   UCSR0B |= 0x80;
     
   //items initialization
   items = new simpleBinary(UART_ADDRESS, 11, Serial, forceAllItemsAsNew);
 
   //rgb with connection to executeRGB function
-  items->initItem(0,100,RGB, executeRGB);
+  items->initItem(0,RGB, executeRGB);
   //write only
-  items->initItem(1,101,FLOAT, NULL);
+  items->initItem(1,FLOAT, NULL);
   //write only
-  items->initItem(2,102,FLOAT, NULL);
+  items->initItem(2,FLOAT, NULL);
   //other items with connection to executeData function
-  items->initItem(3,1,BYTE, executeData);
-  items->initItem(4,2,WORD, executeData);  
-  items->initItem(5,11,BYTE, executeData);
-  items->initItem(6,12,WORD, executeData);
-  items->initItem(7,3,DWORD, executeData);
-  items->initItem(8,13,DWORD, executeData);
-  items->initItem(9,4,FLOAT, executeData);
-  items->initItem(10,14,FLOAT, executeData);
+  items->initItem(3,BYTE, executeData);
+  items->initItem(4,WORD, executeData);  
+  items->initItem(5,BYTE, executeData);
+  items->initItem(6,WORD, executeData);
+  items->initItem(7,DWORD, executeData);
+  items->initItem(8,DWORD, executeData);
+  items->initItem(9,FLOAT, executeData);
+  items->initItem(10,FLOAT, executeData);
 }
 
 void loop() 
@@ -62,24 +66,24 @@ void loop()
 //function resend data to another item
 void executeData(itemData *item)
 {
-  if(item->getAddress() == 1)
+  if(item->getAddress() == 5)
   {
     //save data
     (*items)[5].saveByte(item->getData());
     //mark item that hold new data
     (*items)[5].setNewData();
   }
-  else if(item->getAddress() == 2)
+  else if(item->getAddress() == 6)
   {
     (*items)[6].saveWord(item->getData());
     (*items)[6].setNewData();
   }
-  else if(item->getAddress() == 3)
+  else if(item->getAddress() == 8)
   {
     (*items)[8].saveDword(item->getData());
     (*items)[8].setNewData();
   }
-  else if(item->getAddress() == 4)
+  else if(item->getAddress() == 10)
   {
     (*items)[10].saveDword(item->getData());
     (*items)[10].setNewData();

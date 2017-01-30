@@ -1,0 +1,2 @@
+Switch 	TestSwitch	"LED switch"			{ simplebinary="port:1:0:byte:O" }
+Contact 	TestContact	"LED state [%s]"			{ simplebinary="port:1:1:byte:I" }

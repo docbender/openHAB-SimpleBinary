@@ -1,10 +1,11 @@
 //---------------------------------------------------------------------------
 //
-// Name:        SimpleBinaryExampleLED.ino
+// Name:        ControlLED_TCP.ino
 // Author:      Vita Tucek
 // Created:     9.8.2016
+// Modified:    30.1.2017
 // License:     MIT
-// Description: Blinking LED on ESP8266 example using SimpleBinary communication 
+// Description: Blinking LED on ESP8266 example using SimpleBinary TCP communication 
 //              with OpenHAB binding. LED state is reported back into openHAB
 //
 //---------------------------------------------------------------------------
@@ -33,26 +34,25 @@ WiFiClient client;
 uint32_t lastTry = 0;
 bool connectWait = false;                    
 
-//definice promennych vymeny dat
-simpleBinary *items;
+//binding definition - device address, items count, device stream
+simpleBinary items(CLIENT_ID, 2, client);
+//configured items
 itemData *pLEDCommandItem,*pLEDStatusItem;
 
 
 //---------------------------------------------------------------------------------------------------------
 void setup() {   
    pinMode(LED_PIN, OUTPUT);
-
-   items = new simpleBinary(CLIENT_ID, 2, client);   
-   //initialize first item with address 1, data type BYTE (represent openHAB switch) 
+ 
+   //initialize first item with address 0, data type BYTE (represent openHAB switch) 
    //and pointer to function that is provide on state change
-   pLEDCommandItem = items->initItem(0,1,BYTE, executeData);
+   pLEDCommandItem = items.initItem(0,BYTE, executeData);
 
-   //initialize second item with address 2, data type BYTE (represent openHAB contact) 
+   //initialize second item with address 1, data type BYTE (represent openHAB contact) 
    //no action executed because no incoming data expected
-   pLEDStatusItem = items->initItem(1,2,BYTE);
+   pLEDStatusItem = items.initItem(1,BYTE);
 
-   pLEDStatusItem->saveSet(1);  
-   
+   pLEDStatusItem->saveSet(1);     
    
    // delete old config
    WiFi.disconnect(true);
@@ -82,7 +82,7 @@ void loop() {
       {
          connectWait = false;
          //send "Hi" message to server
-         items->sendHi();
+         items.sendHi();
          //on connect mark data to send
          pLEDStatusItem->setNewData();         
       }
@@ -92,13 +92,14 @@ void loop() {
    if(client.available())
    {
       //process them
-      items->processSerial();
+      items.processSerial();
+      yield();
    }
    
    //connected and new data ready to send
-   if(items->available() && client.connected())
+   if(items.available() && client.connected())
    {
-      items->sendNewData();
+      items.sendNewData();
    }
 }
 
@@ -123,7 +124,7 @@ void WiFiEvent(WiFiEvent_t event) {
 void executeData(itemData *item)
 {
    //check correct address - not necessary if only one item is paired with function
-   if(item->getAddress() == 1)
+   if(item->getAddress() == 0)
    {
       //read item data 
       bool state = (item->getData()[0] == 0);

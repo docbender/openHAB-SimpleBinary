@@ -3,6 +3,7 @@
 // Name:        simpleBinary.h
 // Author:      Vita Tucek
 // Created:     20.8.2015
+// Modified:    10.1.2017
 // License:     MIT
 // Description: Implementation of SimpleBinary protocol for use with OpenHAB
 //
@@ -27,9 +28,9 @@ class simpleBinary
     itemData& operator[](int idx) { return _data[idx]; };
 
     //Item initialization 
-    itemData* initItem(int idx, int address, itemType type);
+    itemData* initItem(int indexAndAddress, itemType type);
     //Item initialization 
-    itemData* initItem(int idx, int address, itemType type, void (*pFce)(itemData*));
+    itemData* initItem(int indexAndAddress, itemType type, void (*pFce)(itemData*));
     // check if address exist in items array
     bool checkAddress(int address) const;
     // Read and send data on given address

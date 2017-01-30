@@ -1,11 +1,13 @@
 //---------------------------------------------------------------------------
 //
-// Name:        SimpleBinaryExampleLED.cpp
+// Name:        ControlLED_Serial.cpp
 // Author:      Vita Tucek
 // Created:     6.2.2016
+// Modified:    30.1.2017
 // License:     MIT
-// Description: Blinking LED on Arduino example using SimpleBinary communication 
-//              with OpenHAB binding. LED state is reported back into openHAB
+// Description: Blinking LED on Arduino Nano example using SimpleBinary serial 
+//              communication with OpenHAB binding. 
+//              LED state is reported back into openHAB
 //
 //---------------------------------------------------------------------------
 
@@ -19,24 +21,22 @@
 #define UART_SPEED  9600
 #define UART_ADDRESS 1
 
-//definice promennych vymeny dat
-simpleBinary *items;
+//library definition - set device(UART) address, items count and device(Serial) stream
+simpleBinary items(UART_ADDRESS, 2, Serial);
 
 void setup() {
    //UART inicialization
    Serial.begin(UART_SPEED);
+   //UART RX Complete Interrupt Enable
    UCSR0B |= 0x80;
-   
-   //items initialization
-   items = new simpleBinary(UART_ADDRESS, 2, Serial);
 
    //initialize first item with address 1, data type BYTE (represent openHAB switch) 
    //and pointer to function that is provide on state change
-   items->initItem(0,1,BYTE, executeData);
+   items.initItem(0,BYTE, executeData);
 
    //initialize second item with address 2, data type BYTE (represent openHAB contact) 
    //no action executed because no incoming data expected
-   items->initItem(1,2,BYTE);
+   items.initItem(1,BYTE);
 }
 
 void loop() 
@@ -45,7 +45,7 @@ void loop()
    if (Serial.available()) 
    {
       //process them
-      items->processSerial();
+      items.processSerial();
    }
    else
    {    
@@ -65,8 +65,9 @@ void executeData(itemData *item)
       digitalWrite(LED_PIN,state);
       
       //report current status back
-      (*items)[1].save(state ? 1 : 0);
+      items[1].save(state ? 1 : 0);
       //mark item has new data that have to be sent
-      (*items)[1].setNewData();
+      items[1].setNewData();
+      //both above functions ("save" and "setNewData") can be replaced by one "saveSet" function
    }
 }

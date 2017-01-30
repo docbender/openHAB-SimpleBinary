@@ -3,7 +3,7 @@
 // Name:        simpleBinary.cpp
 // Author:      Vita Tucek
 // Created:     20.8.2015
-// Modified:    23.10.2016
+// Modified:    10.1.2017
 // License:     MIT
 // Description: Implementation of SimpleBinary protocol for OpenHAB
 //
@@ -24,25 +24,25 @@
 
 /// Item initialization 
 ///
-/// \param idx      Item index in configuration array 
-/// \param address  Item address  
+/// \param indexAndAddress  Item index in configuration array 
+///      and also item address for communication 
 /// \param type     Item data type
 ///
-itemData* simpleBinary::initItem(int idx, int address, itemType type)
+itemData* simpleBinary::initItem(int indexAndAddress, itemType type)
 {
-   return _data[idx].init(address, type, NULL);  
+   return _data[indexAndAddress].init(indexAndAddress, type, NULL);  
 }
 
 /// Item initialization 
 ///
-/// \param idx      Item index in configuration array 
-/// \param address  Item address  
+/// \param indexAndAddress  Item index in configuration array 
+///      and also item address for communication 
 /// \param type     Item data type
 /// \param (*pFce)(itemData*) Pointer to function that is executed on data receive. NULL for no action  
 ///
-itemData* simpleBinary::initItem(int idx, int address, itemType type, void (*pFce)(itemData*))
+itemData* simpleBinary::initItem(int indexAndAddress, itemType type, void (*pFce)(itemData*))
 {
-   return _data[idx].init(address, type, pFce);  
+   return _data[indexAndAddress].init(indexAndAddress, type, pFce);  
 }
 
 /// check if address exist in items array

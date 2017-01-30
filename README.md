@@ -4,8 +4,6 @@ This binding for openHAB has ability to connect DIY devices (based on Arduino or
 
 Used protocol which is easy to implement. Implementation examples for [Arduino](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_Serial), [STM8](https://github.com/docbender/openHAB-SimpleBinary/tree/master/STM8/ExampleLED), [ESP8266](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_TCP) is part of repository. 
 
-[GitHub Pages](https://pages.github.com/)
-
 Compiled binding is inserted into release branch: https://github.com/docbender/openHAB-SimpleBinary/releases
 
 Binding is working with openHAB 1.9 as well as with openHAB2 in 1.x compatibility mode.

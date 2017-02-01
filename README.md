@@ -1,8 +1,8 @@
 ## Introduction
 
-This binding for openHAB has ability to connect DIY devices (based on Arduino or whatever else). Binding uses serial communication or network communication over implemented TCP server. 
+This binding for openHAB has ability to connect directly DIY devices (based on Arduino or whatever else). Binding uses serial communication or network communication over implemented TCP server. 
 
-Used protocol is easy to implement. Implementation examples for [Arduino](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_Serial)(serial), [STM8](https://github.com/docbender/openHAB-SimpleBinary/tree/master/STM8/ExampleLED), [ESP8266](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_TCP)(TCP) is part of repository. [Arduino IDE library](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino) is also available.
+Used protocol is easy to implement. Implementation examples for [Arduino](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_Serial) over serial, [STM8](https://github.com/docbender/openHAB-SimpleBinary/tree/master/STM8/ExampleLED), [ESP8266](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_TCP) over TCP is part of repository. [Arduino IDE library](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino) is also available.
 
 Compiled binding is inserted into release branch: https://github.com/docbender/openHAB-SimpleBinary/releases
 

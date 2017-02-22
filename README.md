@@ -318,6 +318,17 @@ This packet is for connection model producer/consumer (TCP client/server connect
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
+###Want all data
+This packet is sent by device to tell that he want's all his data. In master/slave configuration it could be send as response for new data request (0xD0). 
+Note: all data are normally sent when device is connected.
+<table>
+  <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
+  <tr><td>0</td><td>0xXX</td><td>Device address</td></tr>
+  <tr><td>1</td><td>0xE7</td><td>Message type</td></tr>
+  <tr><td>2</td><td>0x00</td><td></td></tr>
+  <tr><td>3</td><td>CRC8</td><td></td></tr>
+</table>
+
 ##Implementation
 The extent of implementation depends on the required features and data types (see chapter Protocol).
 

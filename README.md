@@ -20,7 +20,7 @@ Communication can operate in 2 data read modes - OnScan and OnChange.
 ## TCP server
 At binding startup TCP server start listening on user defined port. In basic 256 clients are supported. Every connected client gets actual items states after device ID verification.
 
-Known limitations: keep-alive missing, client ID must be explicitly specified -> max.256 clients(protocol limitation).
+Known limitations: max.256 clients(protocol limitation).
 
 ## Operating modes
 Communication can operate it 2 modes reading data from connected devices - OnScan and OnChange. In OnScan mode all data are reading cyclically. In OnChange mode only new data are sent to openHAB. Each device is polled whether has new data and then sends new data to openHAB. One of his modes must be choose in serial port connection. TCP server connection not use any of these modes as default. Because TCP connection is full-duplex, spontaneous states send is preferred and expected.

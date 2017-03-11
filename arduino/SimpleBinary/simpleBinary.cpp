@@ -237,6 +237,38 @@ void simpleBinary::processSerial()
 #endif
             serbuflen = 0;
             return;
+         //welcome   
+         case (byte)0xD2:
+            crc = CRC8::evalCRC(serbuf, 3);
+            if (crc == serbuf[3])
+            {            
+               _uartAddress = serbuf[2];
+               sendOK();
+            }
+#if SEND_PACKET_WRONG_CRC
+            else
+            {
+               sendWrongData(crc);               
+            }
+#endif
+            serbuflen = 0;          
+            return;
+         //deny   
+         case (byte)0xD3:
+            crc = CRC8::evalCRC(serbuf, 3);
+            if (crc == serbuf[3])
+            {            
+               if(onDenyAccess != NULL)   
+                  (*onDenyAccess)(); 
+            }
+#if SEND_PACKET_WRONG_CRC
+            else
+            {
+               sendWrongData(crc);               
+            }
+#endif
+            serbuflen = 0;          
+            return;            
             //write byte
          case (char)0xDA:
             if(serbuflen < 6)
@@ -630,6 +662,9 @@ void simpleBinary::write(const char* data, int length)
    }
    else
       serial->write(data,length);
+   
+   if(keepAliveEnabled)
+      lastOut = millis();
 }
 
 /// Set pin number to use as RTS signal
@@ -674,6 +709,11 @@ bool simpleBinary::available()
       if(_data[i].hasNewData())
          return true;
    }
+   
+   if(keepAliveEnabled)
+      //last data was sent 30s before -> mark new data available -> noData will be sent
+      if(millis() - lastOut > 30000)
+         return true;
 
    return false;
 }
@@ -712,4 +752,25 @@ void simpleBinary::sendHi()
    data[3] = CRC8::evalCRC(data,3);
   
    write(data,4);
+}
+
+/// Sends "WantAllData" message (full-duplex connection only)
+///
+void simpleBinary::sendWantAllData()
+{
+   char* data = new char[4];
+  
+   data[0] = _uartAddress;
+   data[1] = 0xE7;   
+   data[2] = 0x00;
+   data[3] = CRC8::evalCRC(data,3);
+  
+   write(data,4);
+}
+
+/// Enable/disable send keepalive packet
+///
+void simpleBinary::enableKeepAlive(bool enable)
+{
+   keepAliveEnabled = enable;
 }

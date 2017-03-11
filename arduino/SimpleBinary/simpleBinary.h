@@ -57,12 +57,17 @@ class simpleBinary
     void sendNewData();
     // Sends "Hi" message (full-duplex connection only)
     void sendHi();
+    // Sends "WantAllData" message (full-duplex connection only)
+    void sendWantAllData();    
+    // Enable/disable send keepalive packet (full-duplex connection)
+    void enableKeepAlive(bool enable); 
     
     // pointer to execution function on force all data as new
     void (*pForceFunction)(simpleBinary*); 
+    void (*onDenyAccess)(); 
 
   private:
-     //device address on line (RS485 address)
+     //device address on line (aka RS485 address)
      int _uartAddress; 
      //items count
      int _size;
@@ -85,7 +90,11 @@ class simpleBinary
      //index where last time new data was founded
      int _newDataLastIndex; 
      //information about search loop in progress
-     bool _newDataCheckInProgress;     
+     bool _newDataCheckInProgress; 
+     //flag keepalive is enabled
+     bool keepAliveEnabled = false;
+     //time when data was lastly written into stream
+     uint32_t lastOut = 0;
 
      Stream *serial;
 

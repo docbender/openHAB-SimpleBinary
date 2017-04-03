@@ -280,8 +280,8 @@ public class SimpleBinaryProtocol {
 
                     ((DimmerItem) itemConfig.item).setState(new PercentType(brightness));
                 } else {
-                    logger.error("Unsupported command type {} for datatype {}", command.getClass().toString(),
-                            itemConfig.getDataType());
+                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
+                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
                     return null;
                 }
                 break;
@@ -305,8 +305,8 @@ public class SimpleBinaryProtocol {
                     data[4] = 0x0;
                     data[5] = (byte) (cmd.equals(UpDownType.UP) ? 0x4 : 0x8);
                 } else {
-                    logger.error("Unsupported command type {} for datatype {}", command.getClass().toString(),
-                            itemConfig.getDataType());
+                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
+                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
                     return null;
                 }
                 break;
@@ -318,8 +318,8 @@ public class SimpleBinaryProtocol {
                     data[6] = (byte) ((cmd.intValue() >> 16) & 0xFF);
                     data[7] = (byte) ((cmd.intValue() >> 24) & 0xFF);
                 } else {
-                    logger.error("Unsupported command type {} for datatype {}", command.getClass().toString(),
-                            itemConfig.getDataType());
+                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
+                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
                     return null;
                 }
                 break;
@@ -334,8 +334,8 @@ public class SimpleBinaryProtocol {
                     data[6] = (byte) ((bits >> 16) & 0xFF);
                     data[7] = (byte) ((bits >> 24) & 0xFF);
                 } else {
-                    logger.error("Unsupported command type {} for datatype {}", command.getClass().toString(),
-                            itemConfig.getDataType());
+                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
+                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
                     return null;
                 }
                 break;
@@ -405,8 +405,8 @@ public class SimpleBinaryProtocol {
                     }
                     hsbVal = new HSBType(hsbVal.getHue(), hsbVal.getSaturation(), (PercentType) command);
                 } else {
-                    logger.error("Unsupported command type {} for datatype {}", command.getClass().toString(),
-                            itemConfig.getDataType());
+                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
+                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
                     return null;
                 }
 
@@ -504,8 +504,8 @@ public class SimpleBinaryProtocol {
                         }
                     }
                 } else {
-                    logger.error("Unsupported command type {} for datatype {}", command.getClass().toString(),
-                            itemConfig.getDataType());
+                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
+                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
                     return null;
                 }
                 break;

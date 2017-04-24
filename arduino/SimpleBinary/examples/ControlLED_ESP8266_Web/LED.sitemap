@@ -1,0 +1,8 @@
++sitemap LED label="Main"
+{
+   Frame label="ESP8266 LED"
+   {
+      Switch item=TestSwitch
+      Text item=TestContact
+   }
+}

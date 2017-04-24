@@ -774,3 +774,18 @@ void simpleBinary::enableKeepAlive(bool enable)
 {
    keepAliveEnabled = enable;
 }
+
+/// Get device address
+int simpleBinary::getDeviceAddress(void)
+{
+   return _uartAddress;
+}
+
+/// Set device address
+///
+/// \param UartAddress  Device address    
+///
+void simpleBinary::setDeviceAddress(int UartAddress)
+{
+   _uartAddress = UartAddress;
+}

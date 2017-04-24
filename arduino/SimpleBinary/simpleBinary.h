@@ -61,6 +61,10 @@ class simpleBinary
     void sendWantAllData();    
     // Enable/disable send keepalive packet (full-duplex connection)
     void enableKeepAlive(bool enable); 
+    // Get device address
+    int getDeviceAddress(void);
+    // Set device address
+    void setDeviceAddress(int UartAddress);    
     
     // pointer to execution function on force all data as new
     void (*pForceFunction)(simpleBinary*); 

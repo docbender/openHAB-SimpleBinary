@@ -220,9 +220,20 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                                 // * is not in conflict with configured / connected devices -> can be
                                                 // serviced
 
+                                                if (logger.isDebugEnabled()) {
+                                                    logger.debug(
+                                                            "TCPserver - Channel {} - Starting assign ID process. From device ID={} received",
+                                                            chInfo.getIp(), r.deviceId);
+                                                }
+
                                                 if (!chInfo.isIpLocked()) {
                                                     // device is presented in configuration
                                                     if (chInfo.hasIdConfigured()) {
+                                                        if (logger.isDebugEnabled()) {
+                                                            logger.debug(
+                                                                    "TCPserver - Channel {} - device from this IP is configured with ID={}",
+                                                                    chInfo.getIp(), chInfo.getDeviceIdConfigured());
+                                                        }
                                                         // received ID is not equal configured
                                                         if (chInfo.getDeviceIdConfigured() != r.deviceId) {
                                                             logger.error(
@@ -233,7 +244,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
                                                             // send info to device
                                                             sendDataOut(SimpleBinaryProtocol.compileDenyDataFrame(
-                                                                    (byte) r.deviceId, (byte) 0x1), chInfo);
+                                                                    r.deviceId, (byte) 0x1), chInfo);
                                                             // close channel
                                                             closeChannel(chInfo);
 
@@ -243,16 +254,25 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                                         chInfo.assignDeviceId();
 
                                                         // assign ID for non-configured device
-                                                    } else if (!chInfo.assignDeviceId((byte) r.deviceId)) {
+                                                    } else if (!chInfo.assignDeviceId(r.deviceId)) {
                                                         logger.error("TCPserver - DeviceID {} will be ignored.",
                                                                 r.deviceId);
                                                         // send info to device
-                                                        sendDataOut(SimpleBinaryProtocol.compileDenyDataFrame(
-                                                                (byte) r.deviceId, (byte) 0x2), chInfo);
+                                                        sendDataOut(SimpleBinaryProtocol
+                                                                .compileDenyDataFrame(r.deviceId, (byte) 0x2), chInfo);
                                                         closeChannel(chInfo);
                                                         return;
+                                                    } else if (logger.isDebugEnabled()) {
+                                                        logger.debug(
+                                                                "TCPserver - Channel {} - no configuration found. Assign ID process finished",
+                                                                chInfo.getIp());
                                                     }
                                                 } else {
+                                                    if (logger.isDebugEnabled()) {
+                                                        logger.debug(
+                                                                "TCPserver - Channel {} - device is configured as IP locked",
+                                                                chInfo.getIp());
+                                                    }
                                                     chInfo.assignDeviceId();
                                                     if (chInfo.hasIdMismatch()) {
                                                         logger.info(
@@ -262,10 +282,14 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                                 }
 
                                                 // send Welcome response
-                                                sendDataOut(
-                                                        SimpleBinaryProtocol.compileWelcomeDataFrame(
-                                                                (byte) r.getDeviceId(), (byte) chInfo.getDeviceId()),
-                                                        chInfo);
+                                                sendDataOut(SimpleBinaryProtocol.compileWelcomeDataFrame(
+                                                        r.getDeviceId(), chInfo.getDeviceId()), chInfo);
+                                            } else {
+                                                logger.error(
+                                                        "TCPserver - Channel {} - device will be ignored. Non valid packet.",
+                                                        chInfo.getIp());
+                                                closeChannel(chInfo);
+                                                return;
                                             }
                                         }
 

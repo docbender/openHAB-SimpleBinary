@@ -81,6 +81,8 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     protected AtomicBoolean waitingForAnswer = new AtomicBoolean(false);
     /** flag reading **/
     protected AtomicBoolean readingData = new AtomicBoolean(false);
+    /** Flag indicating try to open port that is not presented in the system **/
+    private boolean alreadyPortNotFound = false;
 
     /**
      * Constructor
@@ -136,11 +138,17 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         } catch (NoSuchPortException ex) {
             portState.setState(PortStates.NOT_EXIST);
 
-            logger.warn("{} not found", this.toString());
-            logger.warn("Available ports: " + getCommPortListString());
+            if (!alreadyPortNotFound) {
+                logger.warn("{} not found", this.toString());
+                logger.info("Available ports: " + getCommPortListString());
+
+                alreadyPortNotFound = true;
+            }
 
             return false;
         }
+
+        alreadyPortNotFound = false;
 
         if (portId != null) {
             // initialize serial port
@@ -282,8 +290,12 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     @Override
     protected boolean sendDataOut(SimpleBinaryItemData data) {
         if (!this.connected) {
-            logger.warn("{} - Port is closed. Unable to send data to device {}.", this.toString(), data.getDeviceId());
-            return false;
+            logger.debug("{} - Port is closed. Try to reopen.");
+            if (!this.open()) {
+                logger.warn("{} - Port is closed. Unable to send data to device {}.", this.toString(),
+                        data.getDeviceId());
+                return false;
+            }
         }
 
         // data line stabilization
@@ -501,6 +513,13 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     @Override
     public void checkNewData() {
+        if (!connected) {
+            logger.debug("{} - Port is closed. Try to reopen.");
+            if (!this.open()) {
+                return;
+            }
+        }
+
         super.checkNewData();
     }
 

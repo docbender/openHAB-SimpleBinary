@@ -15,6 +15,7 @@
 /// constructor
 itemData::itemData()
 {
+  _nda = false;
   pExecFunction = NULL;
 }
 

@@ -3,7 +3,7 @@
 // Name:        simpleBinaryWebEsp8266.h
 // Author:      Vita Tucek
 // Created:     10.4.2017
-// Modified:    
+// Modified:    4.5.2017
 // License:     MIT
 // Description: Web server for SimpleBinary
 //
@@ -12,6 +12,7 @@
 #ifndef _SIMPLEBINARY_WEB_ESP8266_H_
 #define _SIMPLEBINARY_WEB_ESP8266_H_
 
+#ifdef ESP8266
 #include <ESP8266WebServer.h>
 
 class simpleBinaryWebEsp8266
@@ -25,7 +26,7 @@ class simpleBinaryWebEsp8266
       //web server initialization 
       void begin(int currentAddress, UpdateEventHandler onAddressUpdated);
       //web server initialization
-      void begin(int currentAddress, UpdateEventHandler onAddressUpdated, EventHandler onPageLoading);
+      virtual void begin(int currentAddress, UpdateEventHandler onAddressUpdated, EventHandler onPageLoading);
       //web server handle procedure (should be called periodically)
       void handleClient(void);
       //set actual device address to be available to display
@@ -35,7 +36,7 @@ class simpleBinaryWebEsp8266
       //json with table values
       String json;
       
-   private:
+   protected:
       //web server
       ESP8266WebServer server;
       //stored device address
@@ -50,4 +51,5 @@ class simpleBinaryWebEsp8266
       int saveResult;
 };
 
+#endif
 #endif

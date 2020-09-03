@@ -3,12 +3,12 @@
 // Name:        simpleBinaryWebEsp8266.cpp
 // Author:      Vita Tucek
 // Created:     10.4.2017
-// Modified:    
+// Modified:    4.5.2017
 // License:     MIT
 // Description: Web server for SimpleBinary
 //
 //---------------------------------------------------------------------------
-
+#ifdef ESP8266
 #include "simpleBinaryWebEsp8266.h"
 
 //construct html page 
@@ -74,7 +74,11 @@ String simpleBinaryWebEsp8266::page()
  
 //constructor
 simpleBinaryWebEsp8266::simpleBinaryWebEsp8266(){
-   saveResult = 0;
+   saveResult = 0;  
+}
+
+//web server initialization
+void simpleBinaryWebEsp8266::begin(int currentAddress, UpdateEventHandler onAddressUpdated, EventHandler onPageLoading){
    //home page
    server.on("/", HTTP_GET,[&]() {    
       if(pageLoad!=NULL)
@@ -108,14 +112,14 @@ simpleBinaryWebEsp8266::simpleBinaryWebEsp8266(){
    //file not found
    server.onNotFound([&](){
       server.send(404, F("text/html"), F("<html><body><center><h2>404 FileNotFound</h2></center></body></html>"));
-   });   
-}
-
-//web server initialization
-void simpleBinaryWebEsp8266::begin(int currentAddress, UpdateEventHandler onAddressUpdated, EventHandler onPageLoading){
+   });
+   
+   //set address
    address = currentAddress;
+   //set event handlers
    addressUpdate = onAddressUpdated;
    pageLoad = onPageLoading;
+   //start webserver
    server.begin();
 }
 
@@ -154,3 +158,4 @@ String simpleBinaryWebEsp8266::makeJson(std::pair<const char*, const char*> valu
    text += " }";
    return text;
 }
+#endif

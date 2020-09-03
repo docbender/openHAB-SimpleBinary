@@ -20,7 +20,7 @@ class simpleBinary
 {     
   public:    
     simpleBinary(int UartAddress, int Size, Stream& SerialStream, void (*PForceFunction)(simpleBinary*)=NULL ):sendDelay(0),receiveTime(0),serbuflen(0),_uartAddress(UartAddress),_size(Size),_newDataStartIndex(0), _newDataCheckInProgress(false)  
-            {  _data = new itemData[Size]; serial = &SerialStream; pForceFunction = PForceFunction; };    
+            {  _data = new itemData[Size](); serial = &SerialStream; pForceFunction = PForceFunction; };    
 
     ~simpleBinary() { delete[] _data; };
     

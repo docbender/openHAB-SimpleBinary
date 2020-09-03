@@ -245,7 +245,7 @@ void simpleBinary::processSerial()
                _uartAddress = serbuf[2];
                sendOK();
             }
-#if SEND_PACKET_WRONG_CRC
+#ifdef SEND_PACKET_WRONG_CRC
             else
             {
                sendWrongData(crc);               
@@ -261,7 +261,7 @@ void simpleBinary::processSerial()
                if(onDenyAccess != NULL)   
                   (*onDenyAccess)(); 
             }
-#if SEND_PACKET_WRONG_CRC
+#ifdef SEND_PACKET_WRONG_CRC
             else
             {
                sendWrongData(crc);               

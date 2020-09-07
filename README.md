@@ -6,7 +6,7 @@ Used protocol is easy to implement. Implementation examples for [Arduino](https:
 
 Compiled binding is inserted into release branch: https://github.com/docbender/openHAB-SimpleBinary/releases
 
-Binding is working with openHAB 1.8 as well as with openHAB2 in 1.x compatibility mode.
+Binding is working with openHAB 3.0.
 
 ## Serial port
 It is possible to configure several ports not only one. At one line it is possible to connect several devices (ready for RS422/RS485).

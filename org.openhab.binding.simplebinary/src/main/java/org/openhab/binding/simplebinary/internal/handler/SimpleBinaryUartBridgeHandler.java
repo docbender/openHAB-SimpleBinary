@@ -19,6 +19,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.config.SimpleBinaryUartConfiguration;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPoolControl;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryUART;
+import org.openhab.core.io.transport.serial.SerialPortManager;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
@@ -38,8 +39,12 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
 
     private @Nullable SimpleBinaryUartConfiguration config;
 
-    public SimpleBinaryUartBridgeHandler(Bridge bridge) {
+    private @NonNullByDefault({}) SerialPortManager serialPortManager;
+
+    public SimpleBinaryUartBridgeHandler(Bridge bridge, SerialPortManager serialPortManager) {
         super(bridge);
+
+        this.serialPortManager = serialPortManager;
     }
 
     @Override
@@ -100,7 +105,7 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
                     config.invertedRTS, config.charset, config.pollRate);
         }
 
-        connection = new SimpleBinaryUART("", config.port, config.baudRate,
+        connection = new SimpleBinaryUART(serialPortManager, config.port, config.baudRate,
                 SimpleBinaryPoolControl.valueOf(config.pollControl), config.forceRTS, config.invertedRTS,
                 config.pollRate, charset);
 

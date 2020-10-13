@@ -4,29 +4,229 @@
 	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
 	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
-	<!-- Sample Thing Type -->
-	<thing-type id="sample">
-		<label>simplebinary Binding Thing</label>
-		<description>Sample thing for simplebinary Binding</description>
-
+	<!-- SimpleBinary UART bridge -->
+	<bridge-type id="uart_bridge">
+		<label>SimpleBinary UART Bridge</label>
+		<description>Represent gateway for devices connected through UART interface.</description>
 		<channels>
-			<channel id="channel1" typeId="sample-channel"/>
-		</channels>
-
+		    <channel id="ChannelVersion" typeId="chVersionTypeID" />
+            <channel id="ChannelTagCount" typeId="chTagCountTypeID" />            
+            <channel id="ChannelRequests" typeId="chRequestsTypeID" />
+            <channel id="ChannelBytes" typeId="chBytesTypeID" />            
+        </channels>        
 		<config-description>
-			<parameter name="config1" type="text" required="true">
-				<label>Sample Parameter</label>
-				<description>This is a sample text configuration parameter</description>
+			<parameter name="port" type="text" required="true">
+				<label>Port</label>
+				<description>UART port address</description>
+				<context>serial-port</context>
 			</parameter>
+			<parameter name="baudRate" type="integer" min="110" required="true">
+				<label>Baud rate</label>
+				<description>Communication speed [bits/s]</description>
+				<default>9600</default>
+			</parameter>
+			<parameter name="pollRate" type="integer" min="0" required="true">
+             <label>Poll rate [ms]</label>
+             <description>Determine period of data read from device. </description>
+             <default>1000</default>
+             <advanced>true</advanced>
+         </parameter>
+			<parameter name="forceRTS" type="boolean">
+             <label>Force RTS</label>
+             <description>Communication port force RTS pin activation</description>
+             <default>false</default>
+             <advanced>true</advanced>
+         </parameter>
+         <parameter name="invertedRTS" type="boolean">
+             <label>Invert RTS</label>
+             <description>Invert RTS pin state</description>
+             <default>false</default>
+             <advanced>true</advanced>
+         </parameter>         
+         <parameter name="charset" type="text">
+             <label>Code page</label>
+             <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
+             <default></default>
+             <advanced>true</advanced>
+         </parameter>
 		</config-description>
+	</bridge-type>
+   
+   <!-- SimpleBinary TCP bridge -->
+	<bridge-type id="tcp_bridge">
+		<label>SimpleBinary TCP Bridge</label>
+		<description>Represent gateway for devices connected via Ethernet</description>
+		<channels>
+		    <channel id="ChannelVersion" typeId="chVersionTypeID" />
+            <channel id="ChannelTagCount" typeId="chTagCountTypeID" />            
+            <channel id="ChannelRequests" typeId="chRequestsTypeID" />
+            <channel id="ChannelBytes" typeId="chBytesTypeID" />            
+        </channels>        
+		<config-description>
+			<parameter name="address" type="text" required="true">
+				<label>PLC IP/Host address</label>
+				<description>Network IP/Host address of PLC</description>
+				<context>network-address</context>
+			</parameter>
+			<parameter name="port" type="integer" min="1" max="65535" required="true">
+				<label>Port number</label>
+				<description>TCP port number</description>
+				<default>43243</default>
+            <advanced>true</advanced>
+			</parameter>
+         <parameter name="charset" type="text">
+             <label>Code page</label>
+             <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
+             <default></default>
+             <advanced>true</advanced>
+         </parameter>
+		</config-description>
+	</bridge-type>   
 
+	<!-- Generic Thing Type -->
+	<thing-type id="generic_device"
+		extensible="chNumber,chColor,chString,chContact,chSwitch,chDimmer,chRollershutter">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="uart_bridge"/>
+         <bridge-type-ref id="tcp_bridge"/>
+		</supported-bridge-type-refs>
+		<label>SimpleBinary Thing</label>
+		<description>Generic thing for SimpleBinary Binding. This thing requires bridge to be defined.</description>
 	</thing-type>
 
-	<!-- Sample Channel Type -->
-	<channel-type id="sample-channel">
-		<item-type>simplebinaryItem</item-type>
-		<label>simplebinary Binding Channel</label>
-		<description>Sample channel for simplebinary Binding</description>
+	<!-- Channels -->
+    <!-- Bridge Channels -->
+    <channel-type id="chVersionTypeID">
+        <item-type>String</item-type>
+        <label>Version</label>
+        <description>Binding version</description>
+        <state readOnly="true" />        
+    </channel-type>    
+    <channel-type id="chTagCountTypeID">
+        <item-type>Number</item-type>
+        <label>Channels count</label>
+        <description>Channels count</description>
+        <state readOnly="true" />        
+    </channel-type> 
+    <channel-type id="chRequestsTypeID">
+        <item-type>Number</item-type>
+        <label>Request/s</label>
+        <description>Requests per second to device</description>
+        <state pattern="%d 1/s" readOnly="true" />        
+    </channel-type> 
+    <channel-type id="chBytesTypeID">
+        <item-type>Number</item-type>
+        <label>Bytes/s</label>
+        <description>Bytes per second grabbed from device</description>
+        <state pattern="%d B/s" readOnly="true" />        
+    </channel-type> 
+        
+    <!-- Thing Channels -->
+	<channel-type id="chNumber">
+		<item-type>Number</item-type>
+		<label>Number Value</label>
+		<description>Supported SimpleBinary data types are Byte, Word, Dword, Float</description>
+		<config-description>
+			<parameter name="stateAddress" type="text">
+				<label>State address</label>
+				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address]:[data type] (e.g. 1:1:byte).</description>
+			</parameter>
+			<parameter name="commandAddress" type="text">
+				<label>Command address</label>
+				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address]:[data type] (e.g. 1:1:byte).</description>
+			</parameter>
+		</config-description>
 	</channel-type>
-
+	<channel-type id="chColor">
+		<item-type>Color</item-type>
+		<label>Color Value</label>
+		<description>In SimpleBinary represented as Dword. Each byte is single color part.</description>
+		<config-description>
+			<parameter name="stateAddress" type="text">
+				<label>State address</label>
+				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
+			</parameter>
+			<parameter name="commandAddress" type="text">
+				<label>Command address</label>
+				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="chString">
+		<item-type>String</item-type>
+		<label>Text Value</label>
+		<description>Represented as array of Bytes.</description>
+		<config-description>
+			<parameter name="stateAddress" type="text">
+				<label>State address</label>
+				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address]:[lenght] (e.g. 1:1:32).</description>
+			</parameter>
+			<parameter name="commandAddress" type="text">
+				<label>Command address</label>
+				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address]:[lenght] (e.g. 1:1:32).</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="chContact">
+		<item-type>Contact</item-type>
+		<label>Open/Close Contact</label>
+		<description>SimpleBinary data type is Byte. 0 - Close, 1 - Open</description>
+		<config-description>
+			<parameter name="stateAddress" type="text">
+				<label>State address</label>
+				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+			</parameter>
+			<parameter name="commandAddress" type="text">
+				<label>Command address</label>
+				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="chSwitch">
+		<item-type>Switch</item-type>
+		<label>On/Off Switch</label>
+		<description>SimpleBinary data type is Byte. 0 - Off, 1 - On</description>
+		<config-description>
+			<parameter name="stateAddress" type="text">
+				<label>State address</label>
+				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+			</parameter>
+			<parameter name="commandAddress" type="text">
+				<label>Command address</label>
+				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="chDimmer">
+		<item-type>Dimmer</item-type>
+		<label>Percentage Value</label>
+		<description>SimpleBinary data type is Byte. Range is 0-100</description>
+		<config-description>
+			<parameter name="stateAddress" type="text">
+				<label>State address</label>
+				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+			</parameter>
+			<parameter name="commandAddress" type="text">
+				<label>Command address</label>
+				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="chRollershutter">
+		<item-type>Rollershutter</item-type>
+		<label>Rollershutter</label>
+		<description>SimpleBinary data type is Byte. Status byte for position (0-100%), command byte for Stop/Up/Down -
+			2-Stop,4-Up,8-Down</description>
+		<config-description>
+			<parameter name="stateAddress" type="text">
+				<label>State address</label>
+				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+			</parameter>
+			<parameter name="commandAddress" type="text">
+				<label>Command address</label>
+				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+			</parameter>
+		</config-description>
+	</channel-type>
 </thing:thing-descriptions>
+

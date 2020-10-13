@@ -26,7 +26,7 @@ public class NoValidItemInConfig extends Exception {
         super(msg);
     }
 
-    public NoValidItemInConfig(String deviceName, int devId, int address) {
+    public NoValidItemInConfig(int devId, int address) {
         super("Item was not found in configuration (device address=" + devId + "; item address=" + address);
     }
 }

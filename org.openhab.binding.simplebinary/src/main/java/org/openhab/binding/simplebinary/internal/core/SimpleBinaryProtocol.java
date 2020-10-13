@@ -8,15 +8,10 @@
  */
 package org.openhab.binding.simplebinary.internal.core;
 
-import java.util.Map;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericBindingProvider.DeviceConfig;
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
-import org.openhab.core.items.Item;
-import org.openhab.core.library.items.ColorItem;
-import org.openhab.core.library.items.DimmerItem;
-import org.openhab.core.library.items.RollershutterItem;
-import org.openhab.core.library.items.SwitchItem;
+import org.openhab.binding.simplebinary.internal.SimpleBinaryBindingConstants;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.IncreaseDecreaseType;
@@ -26,7 +21,6 @@ import org.openhab.core.library.types.PercentType;
 import org.openhab.core.library.types.StopMoveType;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.library.types.UpDownType;
-import org.openhab.core.types.State;
 import org.openhab.core.types.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,20 +61,20 @@ public class SimpleBinaryProtocol {
     /**
      * Compile data "read data" request packet
      *
-     * @param itemConfig
+     * @param itemAddress
      *            Requested item configuration
      * @return
      */
-    public static SimpleBinaryItemData compileReadDataFrame(DeviceConfig itemConfig) {
+    public static SimpleBinaryItemData compileReadDataFrame(SimpleBinaryAddress itemAddress) {
         byte[] data = new byte[5];
 
-        data[0] = (byte) (itemConfig.getDeviceAddress() & 0xFF);
+        data[0] = (byte) (itemAddress.getDeviceId() & 0xFF);
         data[1] = (byte) 0xD1;
-        data[2] = (byte) (itemConfig.getItemAddress() & 0xFF);
-        data[3] = (byte) ((itemConfig.getItemAddress() & 0xFF00) >> 8);
+        data[2] = (byte) (itemAddress.getAddress() & 0xFF);
+        data[3] = (byte) ((itemAddress.getAddress() & 0xFF00) >> 8);
         data[4] = evalCRC(data, 4);
 
-        return new SimpleBinaryItemData((byte) 0xD1, itemConfig.getDeviceAddress(), data);
+        return new SimpleBinaryItemData((byte) 0xD1, itemAddress.getDeviceId(), data);
     }
 
     /**
@@ -124,40 +118,42 @@ public class SimpleBinaryProtocol {
     /**
      * Compile command data for specific item
      *
-     * @param itemName
+     * @param channel
      * @param command
-     * @param config
      * @return
+     * @throws Exception
      */
-    public static SimpleBinaryItem compileDataFrame(String itemName, Type command, SimpleBinaryBindingConfig itemConfig,
-            DeviceConfig deviceConfig) {
-        byte[] data = compileDataFrameEx(itemName, command, itemConfig, deviceConfig);
+    public static SimpleBinaryItem compileDataFrame(SimpleBinaryChannel channel, Type command, Charset charset)
+            throws Exception {
+        byte[] data = compileDataFrameEx(channel, command, charset);
 
         if (data == null) {
             return null;
         }
 
-        return new SimpleBinaryItem(itemName, itemConfig, data[1], deviceConfig.getDeviceAddress(),
-                deviceConfig.getItemAddress(), data);
+        return new SimpleBinaryItem(channel, data[1], channel.getCommandAddress().getDeviceId(),
+                channel.getCommandAddress().getAddress(), data);
     }
 
     /**
      * Compile command data for specific item
      *
-     * @param itemName
+     * @param channel
      * @param command
-     * @param config
+     * @param charset
      * @return
+     * @throws Exception
      */
-    public static byte[] compileDataFrameEx(String itemName, Type command, SimpleBinaryBindingConfig itemConfig,
-            DeviceConfig deviceConfig) {
+    public static byte[] compileDataFrameEx(SimpleBinaryChannel channel, Type command, Charset charset)
+            throws Exception {
         byte[] data;
+        var address = channel.getCommandAddress();
 
         if (logger.isDebugEnabled()) {
-            logger.debug("compileDataFrame(): item:{}|datatype:{}", itemName, itemConfig.getDataType());
+            logger.debug("compileDataFrame(): channel:{}|datatype:{}", channel.channelId, address.getType());
         }
 
-        switch (itemConfig.getDataType()) {
+        switch (address.getType()) {
             case BYTE:
                 data = new byte[6];
                 data[1] = (byte) 0xDA;
@@ -178,7 +174,7 @@ public class SimpleBinaryProtocol {
                 data[1] = (byte) 0xDD;
                 break;
             case ARRAY:
-                int arraylen = itemConfig.getDataLenght();
+                int arraylen = address.getLength();
                 data = new byte[7 + arraylen];
                 data[1] = (byte) 0xDE;
                 // length
@@ -192,325 +188,264 @@ public class SimpleBinaryProtocol {
         int datalen = data.length;
 
         // bus address
-        data[0] = (byte) (deviceConfig.getDeviceAddress() & 0xFF);
+        data[0] = (byte) (address.getDeviceId() & 0xFF);
         // item address / ID
-        data[2] = (byte) (deviceConfig.getItemAddress() & 0xFF);
-        data[3] = (byte) ((deviceConfig.getItemAddress() >> 8) & 0xFF);
+        data[2] = (byte) (address.getAddress() & 0xFF);
+        data[3] = (byte) ((address.getAddress() >> 8) & 0xFF);
 
-        switch (itemConfig.getDataType()) {
-            case BYTE:
-                if (command instanceof PercentType) {
-                    PercentType cmd = (PercentType) command;
-                    data[4] = cmd.byteValue();
+        if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_NUMBER)) {
+            if (!(command instanceof DecimalType)) {
+                throw new Exception(
+                        String.format("Cannot create WriteDataFrame. Command for ChannelType=%s must be DecimalType",
+                                channel.channelType.getId()));
+            }
+            DecimalType cmd = (DecimalType) command;
+            if (address.getType() == SimpleBinaryTypes.BYTE) {
+                data[4] = cmd.byteValue();
+            } else if (address.getType() == SimpleBinaryTypes.WORD) {
+                data[4] = (byte) (cmd.intValue() & 0xFF);
+                data[5] = (byte) ((cmd.intValue() >> 8) & 0xFF);
+            } else if (address.getType() == SimpleBinaryTypes.DWORD) {
+                data[4] = (byte) (cmd.intValue() & 0xFF);
+                data[5] = (byte) ((cmd.intValue() >> 8) & 0xFF);
+                data[6] = (byte) ((cmd.intValue() >> 16) & 0xFF);
+                data[7] = (byte) ((cmd.intValue() >> 24) & 0xFF);
+            } else if (address.getType() == SimpleBinaryTypes.FLOAT) {
+                float value = cmd.floatValue();
+                int bits = Float.floatToIntBits(value);
 
-                    if (itemConfig.getItemType().isAssignableFrom(DimmerItem.class)) {
-                        ((DimmerItem) itemConfig.item).setState(new PercentType(cmd.byteValue()));
-                    } else if (itemConfig.getItemType().isAssignableFrom(RollershutterItem.class)) {
-                        ((RollershutterItem) itemConfig.item).setState(new PercentType(cmd.byteValue()));
-                    }
-                } else if (command instanceof DecimalType) {
-                    DecimalType cmd = (DecimalType) command;
-                    data[4] = cmd.byteValue();
-                } else if (command instanceof OpenClosedType) {
-                    OpenClosedType cmd = (OpenClosedType) command;
-                    if (cmd == OpenClosedType.OPEN) {
-                        data[4] = 1;
-                    } else {
-                        data[4] = 0;
-                    }
-                } else if (command instanceof OnOffType) {
-                    OnOffType cmd = (OnOffType) command;
+                data[4] = (byte) (bits & 0xFF);
+                data[5] = (byte) ((bits >> 8) & 0xFF);
+                data[6] = (byte) ((bits >> 16) & 0xFF);
+                data[7] = (byte) ((bits >> 24) & 0xFF);
+            } else {
+                throw new Exception(String.format(
+                        "Cannot create WriteDataFrame. Command for ChannelType=%s has unsupported datatype=%s",
+                        channel.channelType.getId(), address.getType()));
+            }
+        } else if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_STRING)) {
+            if (!(command instanceof StringType)) {
+                throw new Exception(
+                        String.format("Cannot create WriteDataFrame. Command for ChannelType=%s must be StringType",
+                                channel.channelType.getId()));
+            }
+            StringType cmd = (StringType) command;
+            String str = cmd.toString();
 
-                    if (itemConfig.getItemType().isAssignableFrom(SwitchItem.class)) {
-                        if (cmd == OnOffType.ON) {
-                            data[4] = 1;
-                        } else {
-                            data[4] = 0;
-                        }
-                    } else if (itemConfig.getItemType().isAssignableFrom(DimmerItem.class)) {
-                        if (cmd == OnOffType.ON) {
-                            State state = (itemConfig.item).getStateAs(PercentType.class);
-                            PercentType val = state != null ? ((PercentType) state) : null;
-                            if (val == null) {
-                                data[4] = 100;
-                                ((DimmerItem) itemConfig.item).setState(PercentType.HUNDRED);
-                            } else {
-                                data[4] = val.byteValue();
-                                ((DimmerItem) itemConfig.item).setState(PercentType.ZERO);
-                            }
-                        } else {
-                            data[4] = 0;
-                        }
-                    } else {
-                        logger.error("Unsupported command type {} for datatype {}", command.getClass().toString(),
-                                itemConfig.getDataType());
-                    }
+            data = new byte[address.getLength()];
 
-                } else if (command instanceof IncreaseDecreaseType
-                        && itemConfig.getItemType().isAssignableFrom(DimmerItem.class)) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("IncreaseDecreaseType - DimmerItem");
-                    }
+            var bytes = str.getBytes(charset);
 
-                    DecimalType val = (((DimmerItem) (itemConfig.item)).getStateAs(DecimalType.class));
-
-                    if (val == null) {
-                        return null;
-                    }
-
-                    int brightness = Math.round((val.floatValue() * 100));
-
-                    IncreaseDecreaseType upDownCmd = (IncreaseDecreaseType) command;
-
-                    if (upDownCmd == IncreaseDecreaseType.INCREASE) {
-                        brightness += INCREASE_STEP;
-
-                        if (brightness > 100) {
-                            brightness = 100;
-                        }
-                    } else {
-                        brightness -= INCREASE_STEP;
-
-                        if (brightness < 0) {
-                            brightness = 0;
-                        }
-                    }
-
-                    data[4] = (byte) brightness;
-
-                    ((DimmerItem) itemConfig.item).setState(new PercentType(brightness));
+            for (int i = 0; i < address.getLength(); i++) {
+                if (i < bytes.length) {
+                    data[6 + i] = bytes[i];
                 } else {
-                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
-                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
-                    return null;
+                    data[6 + i] = 0x0;
                 }
-                break;
-            case WORD:
-                if (command instanceof PercentType) {
-                    PercentType cmd = (PercentType) command;
-                    data[4] = cmd.byteValue();
-                    data[5] = 0x0;
-                } else if (command instanceof DecimalType) {
-                    DecimalType cmd = (DecimalType) command;
-                    data[4] = (byte) (cmd.intValue() & 0xFF);
-                    data[5] = (byte) ((cmd.intValue() >> 8) & 0xFF);
-                } else if (command instanceof StopMoveType) {
-                    StopMoveType cmd = (StopMoveType) command;
+            }
+        } else if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_SWITCH)) {
+            if (!(command instanceof OnOffType)) {
+                throw new Exception(
+                        String.format("Cannot create WriteDataFrame. Command for ChannelType=%s must be OnOffType",
+                                channel.channelType.getId()));
+            }
 
-                    data[4] = 0x0;
-                    data[5] = (byte) (cmd.equals(StopMoveType.MOVE) ? 0x1 : 0x2);
-                } else if (command instanceof UpDownType) {
-                    UpDownType cmd = (UpDownType) command;
+            OnOffType cmd = (OnOffType) command;
 
-                    data[4] = 0x0;
-                    data[5] = (byte) (cmd.equals(UpDownType.UP) ? 0x4 : 0x8);
-                } else {
-                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
-                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
-                    return null;
-                }
-                break;
-            case DWORD:
-                if (command instanceof DecimalType) {
-                    DecimalType cmd = (DecimalType) command;
-                    data[4] = (byte) (cmd.intValue() & 0xFF);
-                    data[5] = (byte) ((cmd.intValue() >> 8) & 0xFF);
-                    data[6] = (byte) ((cmd.intValue() >> 16) & 0xFF);
-                    data[7] = (byte) ((cmd.intValue() >> 24) & 0xFF);
-                } else {
-                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
-                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
-                    return null;
-                }
-                break;
-            case FLOAT:
-                if (command instanceof DecimalType) {
-                    DecimalType cmd = (DecimalType) command;
-                    float value = cmd.floatValue();
-                    int bits = Float.floatToIntBits(value);
+            if (cmd == OnOffType.ON) {
+                data[4] = 1;
+            } else {
+                data[4] = 0;
+            }
+        } else if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_CONTACT)) {
+            if (!(command instanceof OpenClosedType)) {
+                throw new Exception(
+                        String.format("Cannot create WriteDataFrame. Command for ChannelType=%s must be OpenClosedType",
+                                channel.channelType.getId()));
+            }
 
-                    data[4] = (byte) (bits & 0xFF);
-                    data[5] = (byte) ((bits >> 8) & 0xFF);
-                    data[6] = (byte) ((bits >> 16) & 0xFF);
-                    data[7] = (byte) ((bits >> 24) & 0xFF);
-                } else {
-                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
-                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
-                    return null;
-                }
-                break;
-            case HSB:
-            case RGB:
-            case RGBW:
-                Item item = itemConfig.item;
-                State state = item.getStateAs(HSBType.class);
+            OpenClosedType cmd = (OpenClosedType) command;
 
-                HSBType hsbVal = state == null ? null : (state instanceof HSBType ? (HSBType) state : null);
+            if (cmd == OpenClosedType.OPEN) {
+                data[4] = 1;
+            } else {
+                data[4] = 0;
+            }
+        } else if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_COLOR)) {
+            HSBType hsbVal = null;
 
+            if (command instanceof OnOffType) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug(item.toString());
+                    logger.debug("OnOffType");
                 }
+                OnOffType onOffCmd = (OnOffType) command;
 
-                if (command instanceof OnOffType) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("OnOffType");
-                    }
-                    OnOffType onOffCmd = (OnOffType) command;
-
-                    if (onOffCmd == OnOffType.OFF) {
-                        hsbVal = HSBType.BLACK;
-                    } else {
-                        if (hsbVal == null) {
-                            hsbVal = HSBType.WHITE;
-                        }
-                    }
-                } else if (command instanceof IncreaseDecreaseType) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("IncreaseDecreaseType");
-                    }
-
-                    if (hsbVal == null) {
-                        hsbVal = HSBType.BLACK;
-                    }
-                    int brightness = hsbVal.getBrightness().intValue();
-
-                    IncreaseDecreaseType upDownCmd = (IncreaseDecreaseType) command;
-
-                    if (upDownCmd == IncreaseDecreaseType.INCREASE) {
-                        brightness += INCREASE_STEP;
-
-                        if (brightness > 100) {
-                            brightness = 100;
-                        }
-                    } else {
-                        brightness -= INCREASE_STEP;
-
-                        if (brightness < 0) {
-                            brightness = 0;
-                        }
-                    }
-
-                    hsbVal = new HSBType(hsbVal.getHue(), hsbVal.getSaturation(), new PercentType(brightness));
-                } else if (command instanceof HSBType) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("HSBType");
-                    }
-                    hsbVal = (HSBType) command;
-                } else if (command instanceof PercentType) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("PercentType");
-                    }
+                if (onOffCmd == OnOffType.OFF) {
+                    hsbVal = HSBType.BLACK;
+                } else {
                     if (hsbVal == null) {
                         hsbVal = HSBType.WHITE;
                     }
-                    hsbVal = new HSBType(hsbVal.getHue(), hsbVal.getSaturation(), (PercentType) command);
-                } else {
-                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
-                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
-                    return null;
+                }
+            } else if (command instanceof IncreaseDecreaseType) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("IncreaseDecreaseType");
                 }
 
-                if (hsbVal != null) {
-                    if (logger.isTraceEnabled()) {
-                        logger.trace("Item {}: Red={} Green={} Blue={}", item.getName(), hsbVal.getRed(),
-                                hsbVal.getGreen(), hsbVal.getBlue());
-                        logger.trace("         Hue={} Sat={} Bri={}", hsbVal.getHue(), hsbVal.getSaturation(),
-                                hsbVal.getBrightness());
-                    }
-
-                    if (item instanceof ColorItem && hsbVal.getBrightness().intValue() > 0) {
-                        ((ColorItem) item).setState(hsbVal);
-                    }
-
-                    HSBType cmd = hsbVal;
-
-                    if (itemConfig.getDataType() == SimpleBinaryTypes.HSB) {
-                        data[4] = cmd.getHue().byteValue();
-                        data[5] = cmd.getSaturation().byteValue();
-                        data[6] = cmd.getBrightness().byteValue();
-                        data[7] = 0x0;
-                    } else if (itemConfig.getDataType() == SimpleBinaryTypes.RGB) {
-                        long red = Math.round((cmd.getRed().doubleValue() * 2.55));
-                        long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
-                        long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
-
-                        if (red > 255) {
-                            red = 255;
-                        }
-                        if (green > 255) {
-                            green = 255;
-                        }
-                        if (blue > 255) {
-                            blue = 255;
-                        }
-
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
-                        }
-
-                        data[4] = (byte) (red & 0xFF);
-                        data[5] = (byte) (green & 0xFF);
-                        data[6] = (byte) (blue & 0xFF);
-                        data[7] = 0x0;
-                    } else if (itemConfig.getDataType() == SimpleBinaryTypes.RGBW) {
-                        long red = Math.round((cmd.getRed().doubleValue() * 2.55));
-                        long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
-                        long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
-                        byte white;
-
-                        if (red > 255) {
-                            red = 255;
-                        }
-                        if (green > 255) {
-                            green = 255;
-                        }
-                        if (blue > 255) {
-                            blue = 255;
-                        }
-
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
-                        }
-
-                        byte[] rgbw = calcWhite(red, green, blue);
-                        red = rgbw[0];
-                        green = rgbw[1];
-                        blue = rgbw[2];
-                        white = rgbw[3];
-
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("         Converted to RGBW: Red={} Green={} Blue={} White={}", red & 0xFF,
-                                    green & 0xFF, blue & 0xFF, white & 0xFF);
-                        }
-
-                        data[4] = (byte) (red & 0xFF);
-                        data[5] = (byte) (green & 0xFF);
-                        data[6] = (byte) (blue & 0xFF);
-                        data[7] = white;
-                    }
+                if (hsbVal == null) {
+                    hsbVal = HSBType.BLACK;
                 }
+                int brightness = hsbVal.getBrightness().intValue();
 
-                break;
-            case ARRAY:
-                if (command instanceof StringType) {
-                    StringType cmd = (StringType) command;
-                    String str = cmd.toString();
+                IncreaseDecreaseType upDownCmd = (IncreaseDecreaseType) command;
 
-                    for (int i = 0; i < itemConfig.getDataLenght(); i++) {
-                        if (str.length() <= itemConfig.getDataLenght()) {
-                            data[6 + i] = (byte) str.charAt(i);
-                        } else {
-                            data[6 + i] = 0x0;
-                        }
+                if (upDownCmd == IncreaseDecreaseType.INCREASE) {
+                    brightness += INCREASE_STEP;
+
+                    if (brightness > 100) {
+                        brightness = 100;
                     }
                 } else {
-                    logger.error("Unsupported command type {} for target datatype {}. Command={}.",
-                            command.getClass().toString(), itemConfig.getDataType(), command.toString());
-                    return null;
+                    brightness -= INCREASE_STEP;
+
+                    if (brightness < 0) {
+                        brightness = 0;
+                    }
                 }
-                break;
-            default:
+
+                hsbVal = new HSBType(hsbVal.getHue(), hsbVal.getSaturation(), new PercentType(brightness));
+            } else if (command instanceof HSBType) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("HSBType");
+                }
+                hsbVal = (HSBType) command;
+            } else if (command instanceof PercentType) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("PercentType");
+                }
+                if (hsbVal == null) {
+                    hsbVal = HSBType.WHITE;
+                }
+                hsbVal = new HSBType(hsbVal.getHue(), hsbVal.getSaturation(), (PercentType) command);
+            } else {
+                logger.error("Unsupported command type {} for target datatype {}. Command={}.",
+                        command.getClass().toString(), address.getType(), command.toString());
                 return null;
+            }
+
+            if (hsbVal != null) {
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Channel {}: Red={} Green={} Blue={}", channel.channelId, hsbVal.getRed(),
+                            hsbVal.getGreen(), hsbVal.getBlue());
+                    logger.trace("         Hue={} Sat={} Bri={}", hsbVal.getHue(), hsbVal.getSaturation(),
+                            hsbVal.getBrightness());
+                }
+
+                /*
+                 * if (item instanceof ColorItem && hsbVal.getBrightness().intValue() > 0) {
+                 * ((ColorItem) item).setState(hsbVal);
+                 * }
+                 */
+
+                HSBType cmd = hsbVal;
+
+                if (address.getType() == SimpleBinaryTypes.HSB) {
+                    data[4] = cmd.getHue().byteValue();
+                    data[5] = cmd.getSaturation().byteValue();
+                    data[6] = cmd.getBrightness().byteValue();
+                    data[7] = 0x0;
+                } else if (address.getType() == SimpleBinaryTypes.RGB) {
+                    long red = Math.round((cmd.getRed().doubleValue() * 2.55));
+                    long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
+                    long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
+
+                    if (red > 255) {
+                        red = 255;
+                    }
+                    if (green > 255) {
+                        green = 255;
+                    }
+                    if (blue > 255) {
+                        blue = 255;
+                    }
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
+                    }
+
+                    data[4] = (byte) (red & 0xFF);
+                    data[5] = (byte) (green & 0xFF);
+                    data[6] = (byte) (blue & 0xFF);
+                    data[7] = 0x0;
+                } else if (address.getType() == SimpleBinaryTypes.RGBW) {
+                    long red = Math.round((cmd.getRed().doubleValue() * 2.55));
+                    long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
+                    long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
+                    byte white;
+
+                    if (red > 255) {
+                        red = 255;
+                    }
+                    if (green > 255) {
+                        green = 255;
+                    }
+                    if (blue > 255) {
+                        blue = 255;
+                    }
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
+                    }
+
+                    byte[] rgbw = calcWhite(red, green, blue);
+                    red = rgbw[0];
+                    green = rgbw[1];
+                    blue = rgbw[2];
+                    white = rgbw[3];
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("         Converted to RGBW: Red={} Green={} Blue={} White={}", red & 0xFF,
+                                green & 0xFF, blue & 0xFF, white & 0xFF);
+                    }
+
+                    data[4] = (byte) (red & 0xFF);
+                    data[5] = (byte) (green & 0xFF);
+                    data[6] = (byte) (blue & 0xFF);
+                    data[7] = white;
+                } else {
+                    throw new Exception(
+                            String.format("Cannot create WriteDataFrame. Command %s for ChannelType=%s not implemented",
+                                    command.getClass(), channel.channelType.getId()));
+                }
+            }
+        } else if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_DIMMER)) {
+            if (command instanceof PercentType) {
+                data[4] = ((PercentType) command).byteValue();
+            } else if (command instanceof OnOffType) {
+                if (((OnOffType) command) == OnOffType.ON) {
+                    data[4] = 100;
+                } else {
+                    data[4] = 0;
+                }
+            } else {
+                throw new Exception(
+                        String.format("Cannot create WriteDataFrame. Command %s for ChannelType=%s not implemented",
+                                command.getClass(), channel.channelType.getId()));
+            }
+        } else if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_ROLLERSHUTTER)) {
+            if (command instanceof StopMoveType) {
+                data[4] = (byte) (((StopMoveType) command).equals(StopMoveType.MOVE) ? 0x1 : 0x2);
+            } else if (command instanceof UpDownType) {
+                data[4] = (byte) (((UpDownType) command).equals(UpDownType.UP) ? 0x4 : 0x8);
+            } else {
+                throw new Exception(
+                        String.format("Cannot create WriteDataFrame. Command %s for ChannelType=%s not implemented",
+                                command.getClass(), channel.channelType.getId()));
+            }
+        } else {
+            throw new Exception(
+                    String.format("Cannot create WriteDataFrame. Command for ChannelType=%s not implemented.",
+                            channel.channelType.getId()));
         }
 
         data[datalen - 1] = evalCRC(data, datalen - 1);
@@ -572,18 +507,16 @@ public class SimpleBinaryProtocol {
      *
      * @param data
      * @param itemsConfig
-     * @param deviceName
      * @return Decompiled data message
      * @throws NoValidCRCException
      * @throws NoValidItemInConfig
      * @throws UnknownMessageException
      * @throws ModeChangeException
      */
-    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
-            Map<String, SimpleBinaryBindingConfig> itemsConfig, String deviceName)
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<SimpleBinaryChannel> items)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
 
-        return decompileData(data, itemsConfig, deviceName, null, false);
+        return decompileData(data, items, null, false);
     }
 
     /**
@@ -591,7 +524,6 @@ public class SimpleBinaryProtocol {
      *
      * @param data
      * @param itemsConfig
-     * @param deviceName
      * @param forcedDeviceId
      * @return Decompiled data message
      * @throws NoValidCRCException
@@ -599,11 +531,11 @@ public class SimpleBinaryProtocol {
      * @throws UnknownMessageException
      * @throws ModeChangeException
      */
-    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
-            Map<String, SimpleBinaryBindingConfig> itemsConfig, String deviceName, Byte forcedDeviceId)
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<SimpleBinaryChannel> items,
+            Byte forcedDeviceId)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
 
-        return decompileData(data, itemsConfig, deviceName, forcedDeviceId, false);
+        return decompileData(data, items, forcedDeviceId, false);
     }
 
     /**
@@ -611,7 +543,6 @@ public class SimpleBinaryProtocol {
      *
      * @param data
      * @param itemsConfig
-     * @param deviceName
      * @param letDataInBuffer
      * @return Decompiled data message
      * @throws NoValidCRCException
@@ -619,30 +550,28 @@ public class SimpleBinaryProtocol {
      * @throws UnknownMessageException
      * @throws ModeChangeException
      */
-    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
-            Map<String, SimpleBinaryBindingConfig> itemsConfig, String deviceName, boolean letDataInBuffer)
-            throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
-
-        return decompileData(data, itemsConfig, deviceName, null, letDataInBuffer);
-    }
-
-    /**
-     * Decompile received message
-     *
-     * @param data
-     * @param itemsConfig
-     * @param deviceName
-     * @param letDataInBuffer
-     * @param forcedDeviceId
-     * @return Decompiled data message
-     * @throws NoValidCRCException
-     * @throws NoValidItemInConfig
-     * @throws UnknownMessageException
-     * @throws ModeChangeException
-     */
-    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
-            Map<String, SimpleBinaryBindingConfig> itemsConfig, String deviceName, Byte forcedDeviceId,
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<SimpleBinaryChannel> items,
             boolean letDataInBuffer)
+            throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
+
+        return decompileData(data, items, null, letDataInBuffer);
+    }
+
+    /**
+     * Decompile received message
+     *
+     * @param data
+     * @param itemsConfig
+     * @param letDataInBuffer
+     * @param forcedDeviceId
+     * @return Decompiled data message
+     * @throws NoValidCRCException
+     * @throws NoValidItemInConfig
+     * @throws UnknownMessageException
+     * @throws ModeChangeException
+     */
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<SimpleBinaryChannel> items,
+            Byte forcedDeviceId, boolean letDataInBuffer)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
         byte devId = data.get();
         if (forcedDeviceId != null) {
@@ -783,16 +712,15 @@ public class SimpleBinaryProtocol {
         }
 
         if (rawData != null) {
-            Map.Entry<String, SimpleBinaryBindingConfig> itemConfig = findItem(itemsConfig, deviceName, devId, address);
+            var item = findItem(items, devId, address);
 
-            if (itemConfig == null) {
-                throw new NoValidItemInConfig(deviceName, devId & 0xFF, address);
+            if (item == null) {
+                throw new NoValidItemInConfig(devId & 0xFF, address);
             }
 
-            SimpleBinaryItem item = new SimpleBinaryItem(itemConfig.getKey(), itemConfig.getValue(), msgId, devId,
-                    address, rawData);
+            SimpleBinaryItem itemData = new SimpleBinaryItem(item, msgId, devId, address, rawData);
 
-            return item;
+            return itemData;
         }
 
         return null;
@@ -802,23 +730,16 @@ public class SimpleBinaryProtocol {
      * Try to find correct item
      *
      * @param itemsConfig
-     * @param deviceName
      * @param devId
      * @param address
      * @return
      */
-    public static Map.Entry<String, SimpleBinaryBindingConfig> findItem(
-            Map<String, SimpleBinaryBindingConfig> itemsConfig, String deviceName, int devId, int address) {
-        for (Map.Entry<String, SimpleBinaryBindingConfig> item : itemsConfig.entrySet()) {
-            SimpleBinaryBindingConfig cfg = item.getValue();
-            for (DeviceConfig d : cfg.devices) {
-                if (d.getPortName().equals(deviceName) && d.getDeviceAddress() == devId
-                        && d.getItemAddress() == address) {
-                    return item;
-                }
+    public static SimpleBinaryChannel findItem(ArrayList<SimpleBinaryChannel> items, int devId, int address) {
+        for (var item : items) {
+            if (item.getStateAddress().getDeviceId() == devId && item.getStateAddress().getAddress() == address) {
+                return item;
             }
         }
-
         return null;
     }
 

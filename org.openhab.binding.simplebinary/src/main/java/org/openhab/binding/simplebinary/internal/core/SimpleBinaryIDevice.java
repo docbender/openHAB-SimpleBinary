@@ -8,13 +8,10 @@
  */
 package org.openhab.binding.simplebinary.internal.core;
 
-import java.util.Map;
+import java.util.ArrayList;
 
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericBindingProvider.DeviceConfig;
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericBindingProvider.SimpleBinaryInfoBindingConfig;
-import org.openhab.core.events.EventPublisher;
-import org.openhab.core.types.Type;
+import org.eclipse.jdt.annotation.NonNull;
+import org.openhab.core.types.Command;
 
 /**
  * Device interface
@@ -46,20 +43,20 @@ public interface SimpleBinaryIDevice {
     public void close();
 
     /**
+     * Release resources
+     *
+     */
+    void dispose();
+
+    /**
      * Send data to device
      *
-     * @param itemName
-     *            Item name
+     * @param channel
+     *            Channel
      * @param command
      *            Command to send
-     * @param itemConfig
-     *            Item config
-     * @param deviceConfig
-     *            Device config
-     * @throws InterruptedException
      */
-    public void sendData(String itemName, Type command, SimpleBinaryBindingConfig itemConfig, DeviceConfig deviceConfig)
-            throws InterruptedException;
+    public void sendData(SimpleBinaryChannel channel, Command command);
 
     /**
      * Check new data for all connected devices
@@ -68,20 +65,11 @@ public interface SimpleBinaryIDevice {
     public void checkNewData();
 
     /**
-     * Method to set binding configuration
+     * Set read write areas
      *
-     * @param eventPublisher
-     * @param itemsConfig
-     * @param itemsInfoConfig
      */
-    public void setBindingData(EventPublisher eventPublisher, Map<String, SimpleBinaryBindingConfig> itemsConfig,
-            Map<String, SimpleBinaryInfoBindingConfig> itemsInfoConfig,
-            Map<String, SimpleBinaryGenericDevice> configuredDevices);
-
-    /**
-     * Method to clear inner binding configuration
-     */
-    public void unsetBindingData();
+    public void setDataAreas(@NonNull ArrayList<Integer> devices,
+            @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems);
 
     /**
      * Function return device string representation

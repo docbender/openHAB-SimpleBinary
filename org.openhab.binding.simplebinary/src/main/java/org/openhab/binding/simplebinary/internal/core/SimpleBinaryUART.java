@@ -14,25 +14,25 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.util.Enumeration;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TooManyListenersException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPortState.PortStates;
+import org.openhab.core.io.transport.serial.PortInUseException;
+import org.openhab.core.io.transport.serial.SerialPort;
+import org.openhab.core.io.transport.serial.SerialPortEvent;
+import org.openhab.core.io.transport.serial.SerialPortEventListener;
+import org.openhab.core.io.transport.serial.SerialPortIdentifier;
+import org.openhab.core.io.transport.serial.SerialPortManager;
+import org.openhab.core.io.transport.serial.UnsupportedCommOperationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import gnu.io.CommPortIdentifier;
-import gnu.io.NoSuchPortException;
-import gnu.io.PortInUseException;
-import gnu.io.SerialPort;
-import gnu.io.SerialPortEvent;
-import gnu.io.SerialPortEventListener;
-import gnu.io.UnsupportedCommOperationException;
 
 /**
  * Serial device class
@@ -50,9 +50,10 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
     /** port baud rate */
     private int baud = 9600;
-
+    /** serial manager */
+    private @NonNullByDefault({}) SerialPortManager serialPortManager;
     /** port id */
-    private CommPortIdentifier portId;
+    private SerialPortIdentifier portId;
     /** port instance */
     private SerialPort serialPort;
     /** input data stream */
@@ -88,6 +89,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     /**
      * Constructor
      *
+     * @param serialPortManager
      * @param deviceName
      * @param port
      * @param baud
@@ -95,13 +97,15 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      * @param forceRTS
      * @param invertedRTS
      */
-    public SimpleBinaryUART(String deviceName, String port, int baud, SimpleBinaryPoolControl simpleBinaryPoolControl,
-            boolean forceRTS, boolean invertedRTS, int pollRate, Charset charset) {
-        super(deviceName, port, simpleBinaryPoolControl);
+    public SimpleBinaryUART(SerialPortManager serialPortManager, String port, int baud,
+            SimpleBinaryPoolControl simpleBinaryPoolControl, boolean forceRTS, boolean invertedRTS, int pollRate,
+            Charset charset) {
+        super(port, simpleBinaryPoolControl, pollRate, charset);
 
         this.baud = baud;
         this.forceRTS = forceRTS;
         this.invertedRTS = invertedRTS;
+        this.serialPortManager = serialPortManager;
     }
 
     /**
@@ -125,28 +129,32 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         }
 
         portState.setState(PortStates.CLOSED);
-        // clear device states
-        devicesStates.clear();
         // set initial state for configured devices
-        devicesStates.setStateToAllConfiguredDevices(this.deviceName, DeviceStates.UNKNOWN);
+        devices.setStateToAllConfiguredDevices(DeviceStates.UNKNOWN);
         // reset connected state
         connected = false;
         setWaitingForAnswer(false);
 
+        portId = null;
+
         try {
             // get port ID
-            portId = CommPortIdentifier.getPortIdentifier(this.deviceID);
-        } catch (NoSuchPortException ex) {
-            portState.setState(PortStates.NOT_EXIST);
+            portId = serialPortManager.getIdentifier(this.deviceID);
+        } catch (Exception ex) {
+            logger.error("{}.", this.toString(), ex);
+        } finally {
+            if (portId == null) {
+                portState.setState(PortStates.NOT_EXIST);
 
-            if (!alreadyPortNotFound) {
-                logger.warn("{} not found", this.toString());
-                logger.info("Available ports: " + getCommPortListString());
+                if (!alreadyPortNotFound) {
+                    logger.warn("{} not found", this.toString());
+                    logger.info("Available ports: " + getCommPortListString());
 
-                alreadyPortNotFound = true;
+                    alreadyPortNotFound = true;
+                }
+
+                return false;
             }
-
-            return false;
         }
 
         alreadyPortNotFound = false;
@@ -154,7 +162,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         if (portId != null) {
             // initialize serial port
             try {
-                serialPort = portId.open("openHAB", 2000);
+                serialPort = portId.open("openHAB", 1000);
             } catch (PortInUseException e) {
                 portState.setState(PortStates.NOT_AVAILABLE);
 
@@ -196,7 +204,8 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
             serialPort.notifyOnDataAvailable(true);
             if (this.forceRTS) {
                 // OUTPUT_BUFFER_EMPTY
-                serialPort.notifyOnOutputEmpty(true);
+                // serialPort.notifyOnOutputEmpty(true);
+                // FIXME: org.openhab.core.io.transport.serial.* not implemented notifyOnOutputEmpty - need to test
             }
 
             try {
@@ -229,13 +238,10 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     @SuppressWarnings("rawtypes")
     private String getCommPortListString() {
         StringBuilder sb = new StringBuilder();
-        Enumeration portList = CommPortIdentifier.getPortIdentifiers();
-        while (portList.hasMoreElements()) {
-            CommPortIdentifier id = (CommPortIdentifier) portList.nextElement();
-            if (id.getPortType() == CommPortIdentifier.PORT_SERIAL) {
-                sb.append(id.getName() + "\n");
-            }
-        }
+        Stream<SerialPortIdentifier> portList = serialPortManager.getIdentifiers();
+        portList.filter(s -> s.getName().length() > 0).forEach((p) -> {
+            sb.append(p.getName() + "\n");
+        });
 
         return sb.toString();
     }
@@ -374,7 +380,6 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     /**
      * Serial events
      *
-     * @see gnu.io.SerialPortEventListener#serialEvent(gnu.io.SerialPortEvent)
      */
     @Override
     public void serialEvent(SerialPortEvent event) {
@@ -390,18 +395,24 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                 break;
             case SerialPortEvent.OUTPUT_BUFFER_EMPTY:
                 // reset RTS
-                if (this.forceRTS && (serialPort.isRTS() && !invertedRTS || !serialPort.isRTS() && invertedRTS)) {
-
-                    // comply minimum sending time. Added because on ubuntu14.04 event OUTPUT_BUFFER_EMPTY is called
-                    // periodically even before some data are send.
-                    if (System.currentTimeMillis() > sentTimeTicks) {
-                        serialPort.setRTS(invertedRTS);
-
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("{} - RTS reset", this.toString());
-                        }
-                    }
+                if (!this.forceRTS) {
+                    break;
                 }
+                // FIXME: isRTS not part of serialPort. Need to implement workaround
+                /*
+                 * if (serialPort.isRTS() && !invertedRTS || !serialPort.isRTS() && invertedRTS) {
+                 *
+                 * // comply minimum sending time. Added because on ubuntu14.04 event OUTPUT_BUFFER_EMPTY is called
+                 * // periodically even before some data are send.
+                 * if (System.currentTimeMillis() > sentTimeTicks) {
+                 * serialPort.setRTS(invertedRTS);
+                 *
+                 * if (logger.isDebugEnabled()) {
+                 * logger.debug("{} - RTS reset", this.toString());
+                 * }
+                 * }
+                 * }
+                 */
                 break;
             case SerialPortEvent.DATA_AVAILABLE:
                 readingData.set(true);
@@ -414,54 +425,51 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                     }
 
                     // check data
-                    if (itemsConfig != null) {
-                        // check minimum length
-                        while (inBuffer.position() > 3) {
-                            // check if received data has valid address (same as sent data)
-                            if (lastSentData != null && !checkDeviceID(inBuffer, getLastSentData().getDeviceId())) {
-                                logger.error("{} - Address not valid: received/sent={}/{}", this.toString(),
-                                        getDeviceID(inBuffer), getLastSentData().getDeviceId());
-                                // print details
-                                printCommunicationInfo(inBuffer, lastSentData);
-                                // clear buffer
-                                inBuffer.clear();
+                    // check minimum length
+                    while (inBuffer.position() > 3) {
+                        // check if received data has valid address (same as sent data)
+                        if (lastSentData != null && !checkDeviceID(inBuffer, getLastSentData().getDeviceId())) {
+                            logger.error("{} - Address not valid: received/sent={}/{}", this.toString(),
+                                    getDeviceID(inBuffer), getLastSentData().getDeviceId());
+                            // print details
+                            printCommunicationInfo(inBuffer, lastSentData);
+                            // clear buffer
+                            inBuffer.clear();
 
-                                logger.warn("{} - Address not valid: input buffer cleared", this.toString());
+                            logger.warn("{} - Address not valid: input buffer cleared", this.toString());
 
-                                // set state
-                                devicesStates.setDeviceState(this.deviceName, getLastSentData().getDeviceId(),
-                                        DeviceStates.DATA_ERROR);
+                            // set state
+                            devices.setDeviceState(getLastSentData().getDeviceId(), DeviceStates.DATA_ERROR);
 
-                                return;
+                            return;
+                        }
+
+                        int r = processData(inBuffer, getLastSentData());
+
+                        if (r > 0 || r == ProcessDataResult.INVALID_CRC || r == ProcessDataResult.BAD_CONFIG
+                                || r == ProcessDataResult.NO_VALID_ADDRESS || r == ProcessDataResult.UNKNOWN_MESSAGE) {
+                            // waiting for answer?
+                            if (waitingForAnswer.get()) {
+                                // stop block sent
+                                setWaitingForAnswer(false);
                             }
+                        } else if (r == ProcessDataResult.DATA_NOT_COMPLETED
+                                || r == ProcessDataResult.PROCESSING_ERROR) {
+                            break;
+                        }
 
-                            int r = processData(inBuffer, getLastSentData());
-
-                            if (r > 0 || r == ProcessDataResult.INVALID_CRC || r == ProcessDataResult.BAD_CONFIG
-                                    || r == ProcessDataResult.NO_VALID_ADDRESS
-                                    || r == ProcessDataResult.UNKNOWN_MESSAGE) {
-                                // waiting for answer?
-                                if (waitingForAnswer.get()) {
-                                    // stop block sent
-                                    setWaitingForAnswer(false);
-                                }
-                            } else if (r == ProcessDataResult.DATA_NOT_COMPLETED
-                                    || r == ProcessDataResult.PROCESSING_ERROR) {
+                        // check for new data
+                        while (inputStream.available() > 0) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("{} - another new data - {}bytes", this.toString(),
+                                        inputStream.available());
+                            }
+                            if (!readIncomingData()) {
                                 break;
-                            }
-
-                            // check for new data
-                            while (inputStream.available() > 0) {
-                                if (logger.isDebugEnabled()) {
-                                    logger.debug("{} - another new data - {}bytes", this.toString(),
-                                            inputStream.available());
-                                }
-                                if (!readIncomingData()) {
-                                    break;
-                                }
                             }
                         }
                     }
+
                     if (!waitingForAnswer.get()) {
                         // look for data to send
                         processCommandQueue();
@@ -614,7 +622,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
          * logger.warn("{}-{}...", t.getKey(), s);
          * }
          */
-        devicesStates.setDeviceState(this.deviceName, address, DeviceStates.NOT_RESPONDING);
+        devices.setDeviceState(address, DeviceStates.NOT_RESPONDING);
 
         if (logger.isDebugEnabled()) {
             logger.debug("{} - Input buffer cleared", this.toString());

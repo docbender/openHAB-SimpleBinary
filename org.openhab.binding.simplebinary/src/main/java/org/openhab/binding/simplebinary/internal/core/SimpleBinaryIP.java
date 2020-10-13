@@ -25,10 +25,7 @@ import java.util.Calendar;
 import java.util.Map;
 
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericBindingProvider.SimpleBinaryBindingConfig;
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericBindingProvider.SimpleBinaryInfoBindingConfig;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPortState.PortStates;
-import org.openhab.core.events.EventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,14 +52,12 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
     /**
      * Constructor
      *
-     * @param deviceName
      * @param ip
      * @param port
      * @param simpleBinaryPoolControl
      */
-    public SimpleBinaryIP(String deviceName, String ip, int port, SimpleBinaryPoolControl simpleBinaryPoolControl,
-            Charset charset) {
-        super(deviceName, "TCPserver", simpleBinaryPoolControl, charset);
+    public SimpleBinaryIP(String ip, int port, Charset charset) {
+        super("TCPserver", SimpleBinaryPoolControl.NONE, 1000, charset);
 
         this.bindAddress = ip;
         this.port = port;
@@ -86,14 +81,16 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         return port;
     }
 
-    @Override
-    public void setBindingData(EventPublisher eventPublisher, Map<String, SimpleBinaryBindingConfig> itemsConfig,
-            Map<String, SimpleBinaryInfoBindingConfig> itemsInfoConfig,
-            Map<String, SimpleBinaryGenericDevice> configuredDevices) {
-        super.setBindingData(eventPublisher, itemsConfig, itemsInfoConfig, configuredDevices);
-
-        this.channels = new SimpleBinaryIPChannelInfoCollection(devicesStates, deviceName);
-    }
+    /*
+     * @Override
+     * public void setBindingData(EventPublisher eventPublisher, Map<String, SimpleBinaryBindingConfig> itemsConfig,
+     * Map<String, SimpleBinaryInfoBindingConfig> itemsInfoConfig,
+     * Map<String, SimpleBinaryGenericDevice> configuredDevices) {
+     * super.setBindingData(eventPublisher, itemsConfig, itemsInfoConfig, configuredDevices);
+     *
+     * this.channels = new SimpleBinaryIPChannelInfoCollection(devicesStates, deviceName);
+     * }
+     */
 
     /**
      * Check if port is opened
@@ -117,10 +114,8 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         }
 
         portState.setState(PortStates.CLOSED);
-        // clear device states
-        devicesStates.clear();
         // set initial state for configured devices
-        devicesStates.setStateToAllConfiguredDevices(this.deviceName, DeviceStates.NOT_RESPONDING);
+        devices.setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
         // reset connected state
         connected = false;
         // setWaitingForAnswer(false);
@@ -410,7 +405,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         }
 
         portState.setState(PortStates.CLOSED);
-        devicesStates.setStateToAllConfiguredDevices(this.deviceName, DeviceStates.NOT_RESPONDING);
+        devices.setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
         connected = false;
     }
 
@@ -544,7 +539,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
             logger.info("{} - Device {}/{} was disconnected", toString(), chInfo.getDeviceId(), chInfo.getIp());
         }
 
-        devicesStates.setDeviceState(deviceName, chInfo.getDeviceId(), DeviceStates.NOT_RESPONDING);
+        devices.setDeviceState(chInfo.getDeviceId(), DeviceStates.NOT_RESPONDING);
     }
 
     public void addDevice(String deviceID, String ipAddress, boolean isIpLocked) {
@@ -573,14 +568,14 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
      */
     @Override
     public void checkConnectionTimeout() {
-        if (devicesStates == null || channels == null || channels.size() == 0) {
+        if (devices == null || channels == null || channels.size() == 0) {
             return;
         }
 
         Calendar limitTime = Calendar.getInstance();
         limitTime.add(Calendar.SECOND, -60);
 
-        for (Map.Entry<Integer, SimpleBinaryDeviceState> device : devicesStates.entrySet()) {
+        for (Map.Entry<Integer, SimpleBinaryDeviceState> device : devices.entrySet()) {
             Calendar c = device.getValue().getLastCommunication();
             if (c == null || c.after(limitTime)) {
                 continue;

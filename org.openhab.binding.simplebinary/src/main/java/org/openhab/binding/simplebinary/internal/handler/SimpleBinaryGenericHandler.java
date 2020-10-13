@@ -119,6 +119,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
      *
      * @param bridgeStatusInfo Current bridge status
      */
+    @SuppressWarnings("null")
     @Override
     public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
         if (bridgeStatusInfo.getStatus() == ThingStatus.OFFLINE) {
@@ -151,8 +152,15 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
 
         // get cached values
         if (command instanceof RefreshType) {
-            logger.error("{} - command: RefreshType not implemented", thing.getLabel());
-            // updateState(channelUID, value);
+            SimpleBinaryChannel channel = channels.get(channelUID);
+            if (channel == null) {
+                logger.warn("{} - cannot get value to refresh. Channel {} not found.", thing.getLabel(), channelUID);
+            } else {
+                State s = channel.getState();
+                if (s != null) {
+                    updateState(channelUID, s);
+                }
+            }
             return;
         }
 
@@ -167,11 +175,6 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         SimpleBinaryChannel channel = channels.get(channelUID);
 
         connection.sendData(channel, command);
-    }
-
-    @Override
-    public void handleRemoval() {
-        super.handleRemoval();
     }
 
     @Override

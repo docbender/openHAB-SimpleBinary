@@ -18,7 +18,6 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.config.SimpleBinaryTcpConfiguration;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryIP;
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPoolControl;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
@@ -46,8 +45,8 @@ public class SimpleBinaryTcpBridgeHandler extends SimpleBinaryBridgeHandler {
     public void initialize() {
         config = getConfigAs(SimpleBinaryTcpConfiguration.class);
 
-        logger.debug("{} - Bridge configuration: Host/IP={},Port={},PollControl={},Charset={}", getThing().getLabel(),
-                config.address, config.port, config.pollControl, config.charset);
+        logger.debug("{} - Bridge configuration: Host/IP={},Port={},Charset={}", getThing().getLabel(), config.address,
+                config.port, config.charset);
 
         // configuration validation
         boolean valid = true;
@@ -60,13 +59,6 @@ public class SimpleBinaryTcpBridgeHandler extends SimpleBinaryBridgeHandler {
 
         if (config.port < 0 || config.port > 65535) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Invalid port number");
-            valid = false;
-            return;
-        }
-
-        if (config.pollControl < 0 || config.pollControl > 2) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                    "Invalid Poll Control value specified");
             valid = false;
             return;
         }
@@ -86,12 +78,11 @@ public class SimpleBinaryTcpBridgeHandler extends SimpleBinaryBridgeHandler {
 
         if (!valid) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR);
-            logger.error("{} - Bridge configuration is invalid. Host/IP={},Port={},PollControl={},Charset={}",
-                    getThing().getLabel(), config.address, config.port, config.pollControl, config.charset);
+            logger.error("{} - Bridge configuration is invalid. Host/IP={},Port={},Charset={}", getThing().getLabel(),
+                    config.address, config.port, config.charset);
         }
 
-        connection = new SimpleBinaryIP("", config.address, config.port,
-                SimpleBinaryPoolControl.valueOf(config.pollControl), charset);
+        connection = new SimpleBinaryIP(config.address, config.port, charset);
 
         super.initialize();
     }

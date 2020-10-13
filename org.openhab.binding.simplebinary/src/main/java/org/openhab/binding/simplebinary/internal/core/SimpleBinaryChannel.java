@@ -37,24 +37,18 @@ public class SimpleBinaryChannel {
     public String commandAddress;
     private State value;
     private String error;
-    private SimpleBinaryPLCAddress stateAddressPlc;
-    private SimpleBinaryPLCAddress commandAddressPlc;
+    private SimpleBinaryAddress stateAddressEx;
+    private SimpleBinaryAddress commandAddressEx;
     private SimpleBinaryGenericHandler thing;
     private long valueUpdateTime = 0;
 
-    final private static Pattern numberAddressPattern = Pattern
-            .compile("^(([IQAEM][BWD])(\\d+)(F?))$|^(DB(\\d+)\\.DB([BWD])(\\d+)(F?))$");
-    final private static Pattern stringAddressPattern = Pattern
-            .compile("^(([IQAEM]B)(\\d+)\\[(\\d+)\\])$|^(DB(\\d+)\\.DBB(\\d+)\\[(\\d+)\\])$");
-    final private static Pattern switchAddressPattern = Pattern.compile(
-            "^(([IQAEM]B)(\\d+))$|^(DB(\\d+)\\.DBB(\\d+))$|^(([IQAEM])(\\d+)\\.([0-7]))$|^(DB(\\d+)\\.DBX(\\d+)\\.([0-7]))$");
-    final private static Pattern contactAddressPattern = Pattern.compile(
-            "^(([IQAEM]B)(\\d+))$|^(DB(\\d+)\\.DBB(\\d+))$|^(([IQAEM])(\\d+)\\.([0-7]))$|^(DB(\\d+)\\.DBX(\\d+)\\.([0-7]))$");
-    final private static Pattern dimmerAddressPattern = Pattern
-            .compile("^(([IQAEM]B)(\\d+))$|^(DB(\\d+)\\.DBB(\\d+))$");
-    final private static Pattern colorAddressPattern = Pattern.compile("^(([IQAEM]D)(\\d+))$|^(DB(\\d+)\\.DBD(\\d+))$");
-    final private static Pattern rollershutterAddressPattern = Pattern
-            .compile("^(([IQAEM]B)(\\d+))$|^(DB(\\d+)\\.DBB(\\d+))$");
+    final private static Pattern numberAddressPattern = Pattern.compile("^((\\d+):(\\d+):(byte|word|dword|float))$");
+    final private static Pattern stringAddressPattern = Pattern.compile("^((\\d+):(\\d+):(\\d+))$");
+    final private static Pattern switchAddressPattern = Pattern.compile("^((\\d+):(\\d+))$");
+    final private static Pattern contactAddressPattern = Pattern.compile("^((\\d+):(\\d+))$");
+    final private static Pattern dimmerAddressPattern = Pattern.compile("^((\\d+):(\\d+))$");
+    final private static Pattern colorAddressPattern = Pattern.compile("^((\\d+):(\\d+):(rgb|rgbw|hsb))$");
+    final private static Pattern rollershutterAddressPattern = Pattern.compile("^((\\d+):(\\d+))$");
 
     @Override
     public String toString() {
@@ -82,11 +76,11 @@ public class SimpleBinaryChannel {
             return false;
         }
 
-        if (stateAddress != null && (stateAddressPlc = checkAddress(stateAddress)) == null) {
+        if (stateAddress != null && (stateAddressEx = checkAddress(stateAddress)) == null) {
             return false;
         }
 
-        if (commandAddress != null && (commandAddressPlc = checkAddress(commandAddress)) == null) {
+        if (commandAddress != null && (commandAddressEx = checkAddress(commandAddress)) == null) {
             return false;
         }
 
@@ -98,122 +92,75 @@ public class SimpleBinaryChannel {
         value = null;
     }
 
-    public @Nullable SimpleBinaryPLCAddress checkAddress(String address) {
+    public @Nullable SimpleBinaryAddress checkAddress(String address) {
         final Matcher matcher;
         switch (channelType.getId()) {
             case SimpleBinaryBindingConstants.CHANNEL_NUMBER:
                 matcher = numberAddressPattern.matcher(address);
                 if (!matcher.matches()) {
                     error = String.format(
-                            "Unsupported address '%s' for typeID=%s. Supported types B,W,D. Address example IB10, MW100, DB1.DBD0, DB1.DBD0F",
+                            "Unsupported address '%s' for typeID=%s. Address format is <deviceID>:<address>:<type>. Address example 1:1:byte",
                             address, channelType.getId());
                     return null;
                 }
-                if (matcher.group(1) == null) {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(6)), matcher.group(7),
-                            Integer.parseInt(matcher.group(8)),
-                            matcher.group(9) != null && !matcher.group(9).isEmpty());
-                } else {
-                    return new SimpleBinaryPLCAddress(matcher.group(2), Integer.parseInt(matcher.group(3)),
-                            matcher.group(4) != null && !matcher.group(4).isEmpty());
-                }
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
+                        matcher.group(4));
             case SimpleBinaryBindingConstants.CHANNEL_STRING:
                 matcher = stringAddressPattern.matcher(address);
                 if (!matcher.matches()) {
                     error = String.format(
-                            "Unsupported address '%s' for typeID=%s. Supported types BYTE. Length must be specified. Address example MB100[16]",
+                            "Unsupported address '%s' for typeID=%s. Address format is <deviceID>:<address>:<length>. Address example 1:1:32",
                             address, channelType.getId());
                     return null;
                 }
-                if (matcher.group(1) == null) {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(6)),
-                            Integer.parseInt(matcher.group(7)), 0, Integer.parseInt(matcher.group(8)));
-                } else {
-                    return new SimpleBinaryPLCAddress(matcher.group(2), Integer.parseInt(matcher.group(3)), 0,
-                            Integer.parseInt(matcher.group(4)));
-                }
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
+                        Integer.parseInt(matcher.group(4)));
             case SimpleBinaryBindingConstants.CHANNEL_SWITCH:
                 matcher = switchAddressPattern.matcher(address);
                 if (!matcher.matches()) {
                     error = String.format(
-                            "Unsupported address '%s' for typeID=%s. Supported types BYTE, BIT. Address example MB100, M100.0",
+                            "Unsupported address '%s' for typeID=%s. Address format is <deviceID>:<address>. Address example 1:1",
                             address, channelType.getId());
                     return null;
                 }
-                if (matcher.group(1) != null) {
-                    return new SimpleBinaryPLCAddress(matcher.group(2), Integer.parseInt(matcher.group(3)));
-                } else if (matcher.group(4) != null) {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(5)), "B",
-                            Integer.parseInt(matcher.group(6)));
-                } else if (matcher.group(7) != null) {
-                    return new SimpleBinaryPLCAddress(matcher.group(8), Integer.parseInt(matcher.group(9)),
-                            Integer.parseInt(matcher.group(10)));
-                } else {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(12)),
-                            Integer.parseInt(matcher.group(13)), Integer.parseInt(matcher.group(14)));
-                }
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
             case SimpleBinaryBindingConstants.CHANNEL_CONTACT:
                 matcher = contactAddressPattern.matcher(address);
                 if (!matcher.matches()) {
                     error = String.format(
-                            "Unsupported address '%s' for typeID=%s. Supported types BYTE, BIT. Address example MB100, M100.0",
+                            "Unsupported address '%s' for typeID=%s. Address format is <deviceID>:<address>. Address example 1:1",
                             address, channelType.getId());
                     return null;
                 }
-                if (matcher.group(1) != null) {
-                    return new SimpleBinaryPLCAddress(matcher.group(2), Integer.parseInt(matcher.group(3)));
-                } else if (matcher.group(4) != null) {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(5)), "B",
-                            Integer.parseInt(matcher.group(6)));
-                } else if (matcher.group(7) != null) {
-                    return new SimpleBinaryPLCAddress(matcher.group(8), Integer.parseInt(matcher.group(9)),
-                            Integer.parseInt(matcher.group(10)));
-                } else {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(12)),
-                            Integer.parseInt(matcher.group(13)), Integer.parseInt(matcher.group(14)));
-                }
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
             case SimpleBinaryBindingConstants.CHANNEL_DIMMER:
                 matcher = dimmerAddressPattern.matcher(address);
                 if (!matcher.matches()) {
                     error = String.format(
-                            "Unsupported address '%s' for typeID=%s. Supported types BYTE. Address example MB100",
+                            "Unsupported address '%s' for typeID=%s. Address format is <deviceID>:<address>. Address example 1:1",
                             address, channelType.getId());
                     return null;
                 }
-                if (matcher.group(1) == null) {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(5)), "B",
-                            Integer.parseInt(matcher.group(6)));
-                } else {
-                    return new SimpleBinaryPLCAddress(matcher.group(2), Integer.parseInt(matcher.group(3)));
-                }
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
             case SimpleBinaryBindingConstants.CHANNEL_COLOR:
                 matcher = colorAddressPattern.matcher(address);
                 if (!matcher.matches()) {
                     error = String.format(
-                            "Unsupported address '%s' for typeID=%s. Supported types DWORD. Address example MD100",
+                            "Unsupported address '%s' for typeID=%s. Address format is <deviceID>:<address>:<color type>. Address example 1:1:rgb",
                             address, channelType.getId());
                     return null;
                 }
-                if (matcher.group(1) == null) {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(5)), "D",
-                            Integer.parseInt(matcher.group(6)));
-                } else {
-                    return new SimpleBinaryPLCAddress(matcher.group(2), Integer.parseInt(matcher.group(3)));
-                }
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
+                        matcher.group(4));
             case SimpleBinaryBindingConstants.CHANNEL_ROLLERSHUTTER:
                 matcher = rollershutterAddressPattern.matcher(address);
                 if (!matcher.matches()) {
                     error = String.format(
-                            "Unsupported address '%s' for typeID=%s. Supported types BYTE. Address example MB100",
+                            "Unsupported address '%s' for typeID=%s. Address format is <deviceID>:<address>. Address example 1:1",
                             address, channelType.getId());
                     return null;
                 }
-                if (matcher.group(1) == null) {
-                    return new SimpleBinaryPLCAddress(Integer.parseInt(matcher.group(5)), "B",
-                            Integer.parseInt(matcher.group(6)));
-                } else {
-                    return new SimpleBinaryPLCAddress(matcher.group(2), Integer.parseInt(matcher.group(3)));
-                }
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
             default:
                 return null;
         }
@@ -223,12 +170,12 @@ public class SimpleBinaryChannel {
         return error;
     }
 
-    public @Nullable SimpleBinaryPLCAddress getStateAddress() {
-        return stateAddressPlc;
+    public @Nullable SimpleBinaryAddress getStateAddress() {
+        return stateAddressEx;
     }
 
-    public @Nullable SimpleBinaryPLCAddress getCommandAddress() {
-        return commandAddressPlc;
+    public @Nullable SimpleBinaryAddress getCommandAddress() {
+        return commandAddressEx;
     }
 
     public void setState(State state) {

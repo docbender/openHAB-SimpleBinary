@@ -30,11 +30,6 @@ public class SimpleBinaryTcpConfiguration {
     public int port = 43243;
 
     /**
-     * Communication poll control
-     */
-    public int pollControl = 0;
-
-    /**
      * String data code page
      */
     public String charset = "";

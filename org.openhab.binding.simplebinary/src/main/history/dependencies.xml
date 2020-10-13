@@ -2,6 +2,18 @@
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.6.0" name="org.openhab.binding.simplebinary-3.0.0-SNAPSHOT">
     <feature version="0.0.0">
         <feature>openhab-runtime-base</feature>
+        <feature>wrap</feature>
+        <bundle>mvn:com.neuronrobotics/nrjavaserial/5.2.1</bundle>
+        <bundle>mvn:commons-net/commons-net/3.3</bundle>
+        <bundle>mvn:org.daisy.libs/jnaerator/0.11-p1</bundle>
         <bundle>mvn:org.openhab.addons.bundles/org.openhab.binding.simplebinary/3.0.0-SNAPSHOT</bundle>
+        <bundle>mvn:org.openhab.core.bundles/org.openhab.core.io.console/3.0.0-SNAPSHOT</bundle>
+        <bundle>mvn:org.openhab.core.bundles/org.openhab.core.io.transport.serial.rxtx/3.0.0-SNAPSHOT</bundle>
+        <bundle>mvn:org.openhab.core.bundles/org.openhab.core.io.transport.serial/3.0.0-SNAPSHOT</bundle>
+        <bundle>wrap:mvn:com.nativelibs4java/jna-jnaerator/0.11</bundle>
+        <bundle>wrap:mvn:com.nativelibs4java/jnaerator-runtime/0.11</bundle>
+        <bundle>wrap:mvn:com.nativelibs4java/ochafik-util/0.11</bundle>
+        <bundle>wrap:mvn:net.java.dev.jna/jna/3.4.0</bundle>
+        <bundle>wrap:mvn:net.java.dev.jna/platform/3.5.1</bundle>
     </feature>
 </features>

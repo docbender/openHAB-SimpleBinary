@@ -17,8 +17,8 @@ import java.util.ArrayList;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.simatic.internal.simatic.SimaticChannel;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryBindingConstants;
+import org.openhab.binding.simplebinary.internal.core.SimpleBinaryChannel;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericDevice;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.StringType;
@@ -50,6 +50,8 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
     // bridge channels
     protected @Nullable ChannelUID chVersion, chTagCount, chRequests, chBytes;
 
+    private int channelCount = 0;
+
     public SimpleBinaryBridgeHandler(Bridge bridge) {
         super(bridge);
 
@@ -67,6 +69,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         });
     }
 
+    @SuppressWarnings("null")
     @Override
     public void initialize() {
         updateState(chVersion, new StringType(SimpleBinaryBindingConstants.VERSION));
@@ -96,7 +99,11 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         scheduler.execute(() -> {
             while (!connection.open()) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
-                connection.reconnectWithDelaying();
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    logger.error("{}.", getThing().getLabel(), e);
+                }
             }
         });
     }
@@ -127,8 +134,11 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
 
         // get cached values
         if (command instanceof RefreshType) {
-            logger.error("{} - command: RefreshType not implemented", thing.getLabel());
-            // updateState(channelUID, value);
+            if (channelUID.equals(chVersion)) {
+                updateState(channelUID, new StringType(SimpleBinaryBindingConstants.VERSION));
+            } else if (channelUID.equals(chTagCount)) {
+                updateState(channelUID, new DecimalType(channelCount));
+            }
         }
     }
 
@@ -153,6 +163,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         }
 
         var stateItems = new ArrayList<@NonNull SimpleBinaryChannel>(stateChannelCount);
+        var stateDevices = new ArrayList<Integer>();
 
         for (Thing th : getThing().getThings()) {
             var h = ((SimpleBinaryGenericHandler) th.getHandler());
@@ -162,19 +173,16 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             for (SimpleBinaryChannel ch : h.channels.values()) {
                 if (ch.getStateAddress() != null) {
                     stateItems.add(ch);
+                    if (!stateDevices.contains(ch.getStateAddress().getDeviceId())) {
+                        stateDevices.add(ch.getStateAddress().getDeviceId());
+                    }
                 }
             }
         }
 
         if (connection != null) {
             var c = connection;
-            c.setDataAreas(stateItems);
-
-            if (c.isConnected()) {
-                updateState(chAreasCount, new DecimalType(c.getReadAreas().size()));
-                updateState(chAreas,
-                        new StringType((c.getReadAreas().size() == 0) ? "none" : c.getReadAreas().toString()));
-            }
+            c.setDataAreas(stateDevices, stateItems);
         }
 
         updateState(chTagCount, new DecimalType(channelCount));

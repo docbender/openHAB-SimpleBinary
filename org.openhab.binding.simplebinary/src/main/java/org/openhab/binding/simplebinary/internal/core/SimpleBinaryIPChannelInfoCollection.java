@@ -49,7 +49,7 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
                 if (channelIp.equals(i.getIpConfigured())) {
                     i.assignChannel(channel, buffer, timeoutEvent);
 
-                    deviceStates.setDeviceState(deviceName, i.getDeviceId(), DeviceStates.CONNECTED);
+                    deviceStates.setDeviceState(i.getDeviceId(), DeviceStates.CONNECTED);
 
                     if (logger.isDebugEnabled()) {
                         if (i.isIpLocked()) {
@@ -76,7 +76,7 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
     }
 
     public boolean remove(SimpleBinaryIPChannelInfo o) {
-        deviceStates.setDeviceState(deviceName, o.getDeviceId(), DeviceStates.NOT_RESPONDING);
+        deviceStates.setDeviceState(o.getDeviceId(), DeviceStates.NOT_RESPONDING);
 
         return super.remove(o);
     }

@@ -4,7 +4,7 @@
 	xsi:schemaLocation="https://openhab.org/schemas/binding/v1.0.0 https://openhab.org/schemas/binding-1.0.0.xsd">
 
 	<name>SimpleBinary Binding</name>
-	<description>This is the binding for SimpleBinary.</description>
+	<description>This is the binding for RS232/485 and Ethernet devices..</description>
 	<author>VitaTucek</author>
 
 </binding:binding>

@@ -3,7 +3,6 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
 	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
-
 	<!-- SimpleBinary UART bridge -->
 	<bridge-type id="uart_bridge">
 		<label>SimpleBinary UART Bridge</label>
@@ -50,8 +49,7 @@
              <advanced>true</advanced>
          </parameter>
 		</config-description>
-	</bridge-type>
-   
+	</bridge-type>   
    <!-- SimpleBinary TCP bridge -->
 	<bridge-type id="tcp_bridge">
 		<label>SimpleBinary TCP Bridge</label>
@@ -63,11 +61,6 @@
             <channel id="ChannelBytes" typeId="chBytesTypeID" />            
         </channels>        
 		<config-description>
-			<parameter name="address" type="text" required="true">
-				<label>PLC IP/Host address</label>
-				<description>Network IP/Host address of PLC</description>
-				<context>network-address</context>
-			</parameter>
 			<parameter name="port" type="integer" min="1" max="65535" required="true">
 				<label>Port number</label>
 				<description>TCP port number</description>
@@ -81,19 +74,17 @@
              <advanced>true</advanced>
          </parameter>
 		</config-description>
-	</bridge-type>   
-
+	</bridge-type>
 	<!-- Generic Thing Type -->
 	<thing-type id="generic_device"
 		extensible="chNumber,chColor,chString,chContact,chSwitch,chDimmer,chRollershutter">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="uart_bridge"/>
-         <bridge-type-ref id="tcp_bridge"/>
+            <bridge-type-ref id="tcp_bridge"/>
 		</supported-bridge-type-refs>
 		<label>SimpleBinary Thing</label>
 		<description>Generic thing for SimpleBinary Binding. This thing requires bridge to be defined.</description>
 	</thing-type>
-
 	<!-- Channels -->
     <!-- Bridge Channels -->
     <channel-type id="chVersionTypeID">
@@ -119,8 +110,7 @@
         <label>Bytes/s</label>
         <description>Bytes per second grabbed from device</description>
         <state pattern="%d B/s" readOnly="true" />        
-    </channel-type> 
-        
+    </channel-type>        
     <!-- Thing Channels -->
 	<channel-type id="chNumber">
 		<item-type>Number</item-type>

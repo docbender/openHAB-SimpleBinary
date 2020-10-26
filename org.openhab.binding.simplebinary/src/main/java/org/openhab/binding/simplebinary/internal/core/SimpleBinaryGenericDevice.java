@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -98,6 +99,10 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     private @Nullable ScheduledFuture<?> periodicJob = null;
 
     private final AtomicBoolean reconnecting = new AtomicBoolean(false);
+
+    AtomicLong readed = new AtomicLong(0);
+    AtomicLong readedBytes = new AtomicLong(0);
+    long metricsStart = 0;
 
     /**
      * Constructor
@@ -774,6 +779,20 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         }
 
         processCommandQueue();
+
+        long diff;
+        if ((diff = (System.currentTimeMillis() - metricsStart)) >= 5000 || metricsStart == 0) {
+            long requests = (long) Math.ceil(readed.get() * 1000.0 / diff);
+            long bytes = (long) Math.ceil(readedBytes.get() * 1000.0 / diff);
+
+            metricsStart = System.currentTimeMillis();
+            readed.set(0);
+            readedBytes.set(0);
+
+            if (onUpdate != null) {
+                onUpdate.onMetricsUpdated(requests, bytes);
+            }
+        }
     }
 
     protected int getDeviceID(SimpleBinaryByteBuffer inBuffer) {
@@ -874,6 +893,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 return ProcessDataResult.DATA_NOT_COMPLETED;
             }
 
+            int datasize = inBuffer.remaining();
             receivedID = inBuffer.get();
             inBuffer.rewind();
             // decompile income message
@@ -883,6 +903,9 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             if (itemData != null) {
                 // process data
                 processDecompiledData(itemData, lastSentData);
+
+                readed.incrementAndGet();
+                readedBytes.addAndGet(datasize - inBuffer.remaining());
 
                 // compact buffer
                 inBuffer.compact();
@@ -924,7 +947,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             return ProcessDataResult.PROCESSING_ERROR;
 
         } catch (NoValidCRCException ex) {
-            logger.error("{} - Invalid CRC while reading: {}", this.toString(), ex.getMessage());
+            logger.error("{} - ", this.toString(), ex.getMessage());
             // print details
             printCommunicationInfo(inBuffer, lastSentData);
             // compact buffer
@@ -943,7 +966,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             return ProcessDataResult.INVALID_CRC;
 
         } catch (NoValidItemInConfig ex) {
-            logger.error("{} - Item not found in items config: {}", this.toString(), ex.getMessage());
+            logger.error("{} - {}", this.toString(), ex.getMessage());
             // print details
             printCommunicationInfo(inBuffer, lastSentData);
             // compact buffer

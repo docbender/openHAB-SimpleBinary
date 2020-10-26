@@ -27,17 +27,19 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 
     /**
      * Device collection constructor
-     *
-     * @param deviceName
-     *            Port
-     * @param deviceItemsConfigs
-     *            Items configuration
-     * @param eventPublisher
-     *            Event bus publisher
+     * 
      */
-    public SimpleBinaryDeviceStateCollection(ArrayList<Integer> devices) {
+    public SimpleBinaryDeviceStateCollection() {
         super();
+    }
 
+    /**
+     * Device collection constructor
+     *
+     * @param devices
+     *            Device list
+     */
+    public void put(ArrayList<Integer> devices) {
         for (var i : devices) {
             put(i, new SimpleBinaryDeviceState());
         }

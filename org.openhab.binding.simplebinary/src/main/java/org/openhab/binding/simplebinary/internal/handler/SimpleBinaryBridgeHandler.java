@@ -46,7 +46,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryBridgeHandler.class);
 
     public @Nullable SimpleBinaryGenericDevice connection = null;
-
+    protected volatile boolean disposed = false;
     // bridge channels
     protected @Nullable ChannelUID chVersion, chTagCount, chRequests, chBytes;
 
@@ -97,7 +97,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
 
         // background initialization
         scheduler.execute(() -> {
-            while (!connection.open()) {
+            while (!disposed && connection != null && !connection.open()) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
                 try {
                     Thread.sleep(5000);
@@ -121,6 +121,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
 
     @Override
     public void dispose() {
+        disposed = true;
         if (connection != null) {
             connection.dispose();
             connection = null;

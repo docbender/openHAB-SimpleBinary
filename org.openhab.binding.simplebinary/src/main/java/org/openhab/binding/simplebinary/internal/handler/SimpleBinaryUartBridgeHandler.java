@@ -71,9 +71,9 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
             return;
         }
 
-        if (config.pollControl < 0 || config.pollControl > 2) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                    "Invalid Poll Control value specified");
+        if (config.pollControl == null
+                || !(config.pollControl.equals("ONCHANGE") || config.pollControl.equals("ONSCAN"))) {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Invalid Pool Control.");
             valid = false;
             return;
         }

@@ -124,6 +124,10 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     @Override
     public Boolean open() {
+        if (disposed) {
+            return false;
+        }
+
         if (logger.isDebugEnabled()) {
             logger.debug("{} - Opening", this.toString());
         }
@@ -132,7 +136,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         // set initial state for configured devices
         devices.setStateToAllConfiguredDevices(DeviceStates.UNKNOWN);
         // reset connected state
-        connected = false;
+        setConnected(false);
         setWaitingForAnswer(false);
 
         portId = null;
@@ -226,7 +230,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         }
 
         portState.setState(PortStates.LISTENING);
-        connected = true;
+        setConnected(true);
         return true;
     }
 
@@ -253,13 +257,15 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     @Override
     public void close() {
-        serialPort.removeEventListener();
-        IOUtils.closeQuietly(inputStream);
-        IOUtils.closeQuietly(outputStream);
-        serialPort.close();
+        if (serialPort != null) {
+            serialPort.removeEventListener();
+            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(outputStream);
+            serialPort.close();
+        }
 
         portState.setState(PortStates.CLOSED);
-        connected = false;
+        setConnected(false);
     }
 
     /**
@@ -296,7 +302,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     @Override
     protected boolean sendDataOut(SimpleBinaryItemData data) {
-        if (!this.connected) {
+        if (!isConnected()) {
             logger.debug("{} - Port is closed. Try to reopen.");
             if (!this.open()) {
                 logger.warn("{} - Port is closed. Unable to send data to device {}.", this.toString(),
@@ -522,12 +528,15 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     @Override
     public void checkNewData() {
-        if (!connected) {
-            logger.debug("{} - Port is closed. Try to reopen.");
-            if (!this.open()) {
-                return;
-            }
-        }
+        // FIXME: Is it useful now?
+        /*
+         * if (!isConnected()) {
+         * logger.debug("{} - Port is closed. Try to reopen.");
+         * if (!this.open()) {
+         * return;
+         * }
+         * }
+         */
 
         super.checkNewData();
     }

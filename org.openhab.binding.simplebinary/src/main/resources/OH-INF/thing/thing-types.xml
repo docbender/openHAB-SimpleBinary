@@ -24,30 +24,40 @@
 				<description>Communication speed [bits/s]</description>
 				<default>9600</default>
 			</parameter>
+            <parameter name="pollControl"  type="text" pattern="^(ONCHANGE)|(ONSCAN)$" required="true">
+                <label>Poll control</label>
+                <description>Communication type. In OnScan mode all data are reading cyclically. In OnChange mode only new data are sent to openHAB (default).</description>
+                <default>ONCHANGE</default>
+                <options>
+                   <option value="ONCHANGE">OnChange</option>
+                   <option value="ONSCAN">OnScan</option>
+                </options>
+                <advanced>true</advanced>
+            </parameter>			
 			<parameter name="pollRate" type="integer" min="0" required="true">
-             <label>Poll rate [ms]</label>
-             <description>Determine period of data read from device. </description>
-             <default>1000</default>
-             <advanced>true</advanced>
-         </parameter>
-			<parameter name="forceRTS" type="boolean">
-             <label>Force RTS</label>
-             <description>Communication port force RTS pin activation</description>
-             <default>false</default>
-             <advanced>true</advanced>
-         </parameter>
-         <parameter name="invertedRTS" type="boolean">
-             <label>Invert RTS</label>
-             <description>Invert RTS pin state</description>
-             <default>false</default>
-             <advanced>true</advanced>
-         </parameter>         
-         <parameter name="charset" type="text">
-             <label>Code page</label>
-             <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
-             <default></default>
-             <advanced>true</advanced>
-         </parameter>
+                 <label>Poll rate [ms]</label>
+                 <description>Determine period of data read from device. </description>
+                 <default>1000</default>
+                 <advanced>true</advanced>
+             </parameter>
+    			<parameter name="forceRTS" type="boolean">
+                 <label>Force RTS</label>
+                 <description>Communication port force RTS pin activation</description>
+                 <default>false</default>
+                 <advanced>true</advanced>
+             </parameter>
+             <parameter name="invertedRTS" type="boolean">
+                 <label>Invert RTS</label>
+                 <description>Invert RTS pin state</description>
+                 <default>false</default>
+                 <advanced>true</advanced>
+             </parameter>         
+             <parameter name="charset" type="text">
+                 <label>Code page</label>
+                 <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
+                 <default></default>
+                 <advanced>true</advanced>
+             </parameter>
 		</config-description>
 	</bridge-type>   
    <!-- SimpleBinary TCP bridge -->
@@ -61,11 +71,18 @@
             <channel id="ChannelBytes" typeId="chBytesTypeID" />            
         </channels>        
 		<config-description>
+            <parameter name="address" type="text" required="false">
+                <label>Bind address</label>
+                <description>IP address to listen. Empty or 0.0.0.0 means listen for client from everywhere.</description>
+                <default></default>
+                <context>network-address</context>
+                <advanced>true</advanced>
+            </parameter>		
 			<parameter name="port" type="integer" min="1" max="65535" required="true">
 				<label>Port number</label>
 				<description>TCP port number</description>
 				<default>43243</default>
-            <advanced>true</advanced>
+                <advanced>true</advanced>
 			</parameter>
          <parameter name="charset" type="text">
              <label>Code page</label>

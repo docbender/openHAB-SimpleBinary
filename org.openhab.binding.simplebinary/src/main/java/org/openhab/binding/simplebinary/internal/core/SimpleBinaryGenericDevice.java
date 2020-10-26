@@ -51,7 +51,29 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     protected ArrayList<@NonNull SimpleBinaryChannel> stateItems;
 
     /** flag that device is connected */
-    protected boolean connected = false;
+    private volatile boolean connected = false;
+
+    protected synchronized void setConnected(boolean connected) {
+        this.connected = connected;
+
+        if (onChange != null) {
+            try {
+                onChange.onConnectionChanged(connected);
+            } catch (Exception ex) {
+                logger.error("{} - ", this.toString(), ex);
+            }
+        }
+    }
+
+    /**
+     * Check if port is opened
+     *
+     * @return
+     */
+    public synchronized boolean isConnected() {
+        return connected;
+    }
+
     /** queue for commands */
     protected final ConcurrentLinkedDeque<SimpleBinaryItemData> commandQueue = new ConcurrentLinkedDeque<SimpleBinaryItemData>();
     /** Used pool control ex.: OnChange, OnScan */
@@ -87,6 +109,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             Charset charset) {
         this.deviceID = deviceID;
         this.poolControl = simpleBinaryPoolControl;
+        this.devices = new SimpleBinaryDeviceStateCollection();
 
         this.charset = charset;
         if (pollRate > 0) {
@@ -161,15 +184,6 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      */
 
     /**
-     * Check if port is opened
-     *
-     * @return
-     */
-    public boolean isConnected() {
-        return connected;
-    }
-
-    /**
      * Open
      *
      * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#open()
@@ -190,7 +204,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     public void close() {
         logger.warn("{} - Closing... cannot close generic device", toString());
 
-        connected = false;
+        setConnected(false);
     }
 
     /**
@@ -418,6 +432,9 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      *
      */
     protected void processCommandQueue(int thisDeviceOnly) {
+        if (!isConnected() || disposed) {
+            return;
+        }
         if (logger.isDebugEnabled()) {
             logger.debug("{} - Processing commandQueue - length {}. Only device {}. Thread={}", toString(),
                     commandQueue.size(), thisDeviceOnly, Thread.currentThread().getId());
@@ -470,6 +487,9 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      *
      */
     protected void processCommandQueue() {
+        if (!isConnected() || disposed) {
+            return;
+        }
         if (logger.isDebugEnabled()) {
             // if (logger.isDebugEnabled() || this instanceof SimpleBinaryIP) {
             logger.debug("{} - Processing commandQueue - length {}. Thread={}", toString(), commandQueue.size(),
@@ -1212,7 +1232,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     @Override
     public void setDataAreas(@NonNull ArrayList<Integer> devices,
             @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems) {
-        this.devices = new SimpleBinaryDeviceStateCollection(devices);
+        this.devices.clear();
+        this.devices.put(devices);
         this.stateItems = stateItems;
     }
 }

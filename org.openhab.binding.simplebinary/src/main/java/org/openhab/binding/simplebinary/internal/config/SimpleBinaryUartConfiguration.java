@@ -32,7 +32,7 @@ public class SimpleBinaryUartConfiguration {
     /**
      * Communication poll control
      */
-    public int pollControl = 0;
+    public String pollControl = "ONCHANGE";
 
     /**
      * Communication port force RTS pin activation

@@ -93,16 +93,6 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
      */
 
     /**
-     * Check if port is opened
-     *
-     * @return
-     */
-    @Override
-    public boolean isConnected() {
-        return connected;
-    }
-
-    /**
      * Open socket
      *
      * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#open()
@@ -117,7 +107,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         // set initial state for configured devices
         devices.setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
         // reset connected state
-        connected = false;
+        setConnected(false);
         // setWaitingForAnswer(false);
 
         try {
@@ -383,7 +373,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         }
 
         portState.setState(PortStates.LISTENING);
-        connected = true;
+        setConnected(true);
 
         return true;
     }
@@ -406,7 +396,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
         portState.setState(PortStates.CLOSED);
         devices.setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
-        connected = false;
+        setConnected(false);
     }
 
     /*

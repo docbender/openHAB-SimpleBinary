@@ -98,9 +98,9 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         // background initialization
         scheduler.execute(() -> {
             while (!disposed && connection != null && !connection.open()) {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, connection.getErrorMsg());
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(10000);
                 } catch (InterruptedException e) {
                     logger.error("{}.", getThing().getLabel(), e);
                 }

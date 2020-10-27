@@ -104,6 +104,16 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     AtomicLong readedBytes = new AtomicLong(0);
     long metricsStart = 0;
 
+    private String errorMsg;
+
+    protected void setErrorMsg(String message) {
+        errorMsg = message;
+    }
+
+    public String getErrorMsg() {
+        return errorMsg;
+    }
+
     /**
      * Constructor
      *

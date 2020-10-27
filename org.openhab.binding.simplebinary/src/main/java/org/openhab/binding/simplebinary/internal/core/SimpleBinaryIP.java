@@ -350,20 +350,17 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         } catch (UnknownHostException ex) {
             portState.setState(PortStates.NOT_AVAILABLE);
 
-            logger.error("{} - address error", this.toString());
+            var msg = String.format("%s - address error", this.toString());
+            logger.error(msg);
+            setErrorMsg(msg);
 
             return false;
-        } catch (IOException ex) {
-            portState.setState(PortStates.NOT_AVAILABLE);
-
-            logger.error("{} - socket error: {}", this.toString(), ex.getMessage());
-
-            return false;
-
         } catch (Exception ex) {
             portState.setState(PortStates.NOT_AVAILABLE);
 
-            logger.error("{} - socket error: {}", this.toString(), ex.getMessage());
+            var msg = String.format("%s - socket error: %s", this.toString(), ex.getMessage());
+            logger.error(msg);
+            setErrorMsg(msg);
 
             return false;
         }

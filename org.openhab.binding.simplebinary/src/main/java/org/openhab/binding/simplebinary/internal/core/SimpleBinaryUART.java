@@ -125,6 +125,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     @Override
     public Boolean open() {
         if (disposed) {
+            setErrorMsg("Disposing");
             return false;
         }
 
@@ -151,12 +152,14 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                 portState.setState(PortStates.NOT_EXIST);
 
                 if (!alreadyPortNotFound) {
-                    logger.warn("{} not found", this.toString());
-                    logger.info("Available ports: " + getCommPortListString());
+                    logger.warn("{} not found. Available ports: {}", this.toString(), getCommPortListString());
 
                     alreadyPortNotFound = true;
+                } else {
+                    logger.debug("{} still not found", this.toString());
                 }
-
+                setErrorMsg(
+                        String.format("%s not found. Available ports: %s", this.toString(), getCommPortListString()));
                 return false;
             }
         }
@@ -167,29 +170,23 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
             // initialize serial port
             try {
                 serialPort = portId.open("openHAB", 1000);
+                // get the input stream
+                inputStream = serialPort.getInputStream();
+                // get the output stream
+                outputStream = serialPort.getOutputStream();
             } catch (PortInUseException e) {
                 portState.setState(PortStates.NOT_AVAILABLE);
 
-                logger.error("{} is in use", this.toString());
+                var msg = String.format("%s is in use", this.toString());
+                logger.error(msg);
+                setErrorMsg(msg);
 
                 this.close();
                 return false;
-            }
-
-            try {
-                inputStream = serialPort.getInputStream();
-            } catch (IOException e) {
-                logger.error("{} exception: {}", this.toString(), e.getMessage());
-
-                this.close();
-                return false;
-            }
-
-            try {
-                // get the output stream
-                outputStream = serialPort.getOutputStream();
-            } catch (IOException e) {
-                logger.error("{} exception:{}", this.toString(), e.getMessage());
+            } catch (Exception e) {
+                var msg = String.format("%s: %s", this.toString(), e.getMessage());
+                logger.error(msg);
+                setErrorMsg(msg);
 
                 this.close();
                 return false;
@@ -198,7 +195,9 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
             try {
                 serialPort.addEventListener(this);
             } catch (TooManyListenersException e) {
-                logger.error("{} exception:{}", this.toString(), e.getMessage());
+                var msg = String.format("%s: %s", this.toString(), e.getMessage());
+                logger.error(msg);
+                setErrorMsg(msg);
 
                 this.close();
                 return false;
@@ -218,7 +217,9 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                         SerialPort.PARITY_NONE);
                 serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
             } catch (UnsupportedCommOperationException e) {
-                logger.error("{} exception: {}", this.toString(), e.getMessage());
+                var msg = String.format("%s: %s", this.toString(), e.getMessage());
+                logger.error(msg);
+                setErrorMsg(msg);
 
                 this.close();
                 return false;
@@ -244,7 +245,10 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         StringBuilder sb = new StringBuilder();
         Stream<SerialPortIdentifier> portList = serialPortManager.getIdentifiers();
         portList.filter(s -> s.getName().length() > 0).forEach((p) -> {
-            sb.append(p.getName() + "\n");
+            if (sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append(p.getName());
         });
 
         return sb.toString();

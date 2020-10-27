@@ -27,7 +27,7 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 
     /**
      * Device collection constructor
-     * 
+     *
      */
     public SimpleBinaryDeviceStateCollection() {
         super();
@@ -105,11 +105,9 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
      *            Required state
      */
     public void setStateToAllConfiguredDevices(SimpleBinaryDeviceState.DeviceStates state) {
-        logger.debug("setStateToAllConfiguredDevices");
-
         // send data to event bus
         for (var item : entrySet()) {
-            logger.debug("{}={}", item.getKey(), state.toString());
+            logger.debug("DevId.{}={}", item.getKey(), state.toString());
             setDeviceState(item.getKey(), state);
         }
     }

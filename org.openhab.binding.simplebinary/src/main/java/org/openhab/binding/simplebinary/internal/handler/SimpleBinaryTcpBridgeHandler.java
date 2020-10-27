@@ -51,12 +51,6 @@ public class SimpleBinaryTcpBridgeHandler extends SimpleBinaryBridgeHandler {
         // configuration validation
         boolean valid = true;
 
-        if (config.address == null || config.address.isBlank()) {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "No Host/IP address");
-            valid = false;
-            return;
-        }
-
         if (config.port < 0 || config.port > 65535) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, "Invalid port number");
             valid = false;

@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link simaticHandler} is responsible for handling commands, which are
+ * The {@link simplebinaryHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
  * @author VitaTucek - Initial contribution
@@ -46,7 +46,6 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryGenericHandler.class);
 
     private @Nullable SimpleBinaryGenericDevice connection = null;
-    private long errorSetTime = 0;
 
     public final Map<ChannelUID, SimpleBinaryChannel> channels = new LinkedHashMap<ChannelUID, SimpleBinaryChannel>();
 
@@ -135,7 +134,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
 
         SimpleBinaryBridgeHandler b = (SimpleBinaryBridgeHandler) (getBridge().getHandler());
         if (b == null) {
-            logger.error("simaticBridgeHandler is null");
+            logger.error("BridgeHandler is null");
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_UNINITIALIZED);
             return;
         }
@@ -193,7 +192,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
     }
 
     public void setError(String message) {
-        errorSetTime = System.currentTimeMillis();
+        // errorSetTime = System.currentTimeMillis();
         var st = getThing().getStatusInfo();
         if (st.getStatus() == ThingStatus.OFFLINE && st.getStatusDetail() == ThingStatusDetail.COMMUNICATION_ERROR
                 && st.getDescription() != null && st.getDescription().equals(message)) {
@@ -210,8 +209,8 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         }
 
         // minimum error time left
-        if (System.currentTimeMillis() - errorSetTime > 10000) {
-            updateStatus(ThingStatus.ONLINE);
-        }
+        // if (System.currentTimeMillis() - errorSetTime > 10000) {
+        updateStatus(ThingStatus.ONLINE);
+        // }
     }
 }

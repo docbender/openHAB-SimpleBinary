@@ -135,7 +135,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
         portState.setState(PortStates.CLOSED);
         // set initial state for configured devices
-        devices.setStateToAllConfiguredDevices(DeviceStates.UNKNOWN);
+        setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
         // reset connected state
         setConnected(false);
         setWaitingForAnswer(false);
@@ -150,16 +150,17 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         } finally {
             if (portId == null) {
                 portState.setState(PortStates.NOT_EXIST);
-
+                var ports = getCommPortListString();
+                var errMsg = ports.length() == 0 ? String.format("%s not found. No port available.", this.toString())
+                        : String.format("%s not found. Available ports: %s", this.toString(), ports);
                 if (!alreadyPortNotFound) {
-                    logger.warn("{} not found. Available ports: {}", this.toString(), getCommPortListString());
+                    logger.warn(errMsg);
 
                     alreadyPortNotFound = true;
                 } else {
                     logger.debug("{} still not found", this.toString());
                 }
-                setErrorMsg(
-                        String.format("%s not found. Available ports: %s", this.toString(), getCommPortListString()));
+                setErrorMsg(errMsg);
                 return false;
             }
         }
@@ -449,7 +450,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                             logger.warn("{} - Address not valid: input buffer cleared", this.toString());
 
                             // set state
-                            devices.setDeviceState(getLastSentData().getDeviceId(), DeviceStates.DATA_ERROR);
+                            setDeviceState(getLastSentData().getDeviceId(), DeviceStates.DATA_ERROR);
 
                             return;
                         }
@@ -635,7 +636,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
          * logger.warn("{}-{}...", t.getKey(), s);
          * }
          */
-        devices.setDeviceState(address, DeviceStates.NOT_RESPONDING);
+        setDeviceState(address, DeviceStates.NOT_RESPONDING);
 
         if (logger.isDebugEnabled()) {
             logger.debug("{} - Input buffer cleared", this.toString());

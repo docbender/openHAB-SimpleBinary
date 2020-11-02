@@ -24,14 +24,12 @@ import org.slf4j.LoggerFactory;
  */
 public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinaryIPChannelInfo> {
     private static final long serialVersionUID = 8037598025330106665L;
-    private final SimpleBinaryDeviceStateCollection deviceStates;
-    private final String deviceName;
+    private final SimpleBinaryIP device;
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryIPChannelInfoCollection.class);
 
-    public SimpleBinaryIPChannelInfoCollection(SimpleBinaryDeviceStateCollection deviceStates, String deviceName) {
-        this.deviceStates = deviceStates;
-        this.deviceName = deviceName;
+    public SimpleBinaryIPChannelInfoCollection(SimpleBinaryIP device) {
+        this.device = device;
     }
 
     public SimpleBinaryIPChannelInfo addChannel(AsynchronousSocketChannel channel, ByteBuffer buffer,
@@ -49,7 +47,7 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
                 if (channelIp.equals(i.getIpConfigured())) {
                     i.assignChannel(channel, buffer, timeoutEvent);
 
-                    deviceStates.setDeviceState(i.getDeviceId(), DeviceStates.CONNECTED);
+                    device.setDeviceState(i.getDeviceId(), DeviceStates.CONNECTED);
 
                     if (logger.isDebugEnabled()) {
                         if (i.isIpLocked()) {
@@ -76,7 +74,7 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
     }
 
     public boolean remove(SimpleBinaryIPChannelInfo o) {
-        deviceStates.setDeviceState(o.getDeviceId(), DeviceStates.NOT_RESPONDING);
+        device.setDeviceState(o.getDeviceId(), DeviceStates.NOT_RESPONDING);
 
         return super.remove(o);
     }

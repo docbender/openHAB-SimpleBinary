@@ -49,6 +49,8 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
 
     public final Map<ChannelUID, SimpleBinaryChannel> channels = new LinkedHashMap<ChannelUID, SimpleBinaryChannel>();
 
+    private long errorSetTime;
+
     public SimpleBinaryGenericHandler(Thing thing) {
         super(thing);
     }
@@ -192,7 +194,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
     }
 
     public void setError(String message) {
-        // errorSetTime = System.currentTimeMillis();
+        errorSetTime = System.currentTimeMillis();
         var st = getThing().getStatusInfo();
         if (st.getStatus() == ThingStatus.OFFLINE && st.getStatusDetail() == ThingStatusDetail.COMMUNICATION_ERROR
                 && st.getDescription() != null && st.getDescription().equals(message)) {
@@ -209,8 +211,8 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         }
 
         // minimum error time left
-        // if (System.currentTimeMillis() - errorSetTime > 10000) {
-        updateStatus(ThingStatus.ONLINE);
-        // }
+        if (System.currentTimeMillis() - errorSetTime > 10000) {
+            updateStatus(ThingStatus.ONLINE);
+        }
     }
 }

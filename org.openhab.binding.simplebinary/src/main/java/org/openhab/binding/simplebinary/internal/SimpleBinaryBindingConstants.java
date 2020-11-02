@@ -24,7 +24,7 @@ import org.openhab.core.thing.type.ChannelTypeUID;
  */
 @NonNullByDefault
 public class SimpleBinaryBindingConstants {
-    public static final String VERSION = "3.0.0-beta.1";
+    public static final String VERSION = "3.0.0-beta.2";
 
     private static final String BINDING_ID = "simplebinary";
 
@@ -38,6 +38,11 @@ public class SimpleBinaryBindingConstants {
     public static final String CHANNEL_TAG_COUNT = "chTagCountTypeID";
     public static final String CHANNEL_REQUESTS = "chRequestsTypeID";
     public static final String CHANNEL_BYTES = "chBytesTypeID";
+    public static final String CHANNEL_STATE_CURRENT = "devState";
+    public static final String CHANNEL_STATE_PREVIOUS = "devPreviousState";
+    public static final String CHANNEL_STATE_CHANGED = "devStateChanged";
+    public static final String CHANNEL_PACKET_LOST = "devPacketLost";
+    public static final String CHANNEL_LAST_COMMUNICATION = "devLastCommunication";
 
     // List of all Channel Type UIDs
     public static final ChannelTypeUID CHANNEL_TYPE_VERSION = new ChannelTypeUID(BINDING_ID, CHANNEL_VERSION);

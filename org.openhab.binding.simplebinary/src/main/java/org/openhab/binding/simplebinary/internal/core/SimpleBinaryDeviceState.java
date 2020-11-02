@@ -8,7 +8,7 @@
  */
 package org.openhab.binding.simplebinary.internal.core;
 
-import java.util.Calendar;
+import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -21,9 +21,9 @@ import java.util.Queue;
 public class SimpleBinaryDeviceState {
 
     double packetLost = 0.0;
-    Calendar lastCommunication = null;
-    Queue<Calendar> communicationOK = new LinkedList<Calendar>();
-    Queue<Calendar> communicationError = new LinkedList<Calendar>();
+    ZonedDateTime lastCommunication = ZonedDateTime.now();
+    Queue<ZonedDateTime> communicationOK = new LinkedList<ZonedDateTime>();
+    Queue<ZonedDateTime> communicationError = new LinkedList<ZonedDateTime>();
 
     public enum DeviceStates {
 
@@ -52,7 +52,7 @@ public class SimpleBinaryDeviceState {
 
     private DeviceStates state = DeviceStates.UNKNOWN;
     private DeviceStates prevState = DeviceStates.UNKNOWN;
-    private Calendar changedSince = Calendar.getInstance();
+    private ZonedDateTime changedSince = ZonedDateTime.now();
 
     /**
      * Return last device state
@@ -77,7 +77,7 @@ public class SimpleBinaryDeviceState {
      *
      * @return
      */
-    public Calendar getChangeDate() {
+    public ZonedDateTime getChangeDate() {
         return changedSince;
     }
 
@@ -89,7 +89,7 @@ public class SimpleBinaryDeviceState {
      */
     public boolean setState(DeviceStates state) {
         boolean changed = false;
-        Calendar now = Calendar.getInstance();
+        ZonedDateTime now = ZonedDateTime.now();
         // set state only if previous is different
         if (this.state != state) {
             this.prevState = this.state;
@@ -108,7 +108,9 @@ public class SimpleBinaryDeviceState {
 
         calcPacketLost();
 
-        lastCommunication = now;
+        if (this.state != DeviceStates.NOT_RESPONDING && this.state != DeviceStates.UNKNOWN) {
+            lastCommunication = now;
+        }
 
         return changed || oldPlValue != packetLost;
     }
@@ -128,13 +130,12 @@ public class SimpleBinaryDeviceState {
      * Calculate packet lost for specific time in past
      */
     private void calcPacketLost() {
-        Calendar limitTime = Calendar.getInstance();
-        limitTime.add(Calendar.MINUTE, -5);
+        ZonedDateTime limitTime = ZonedDateTime.now().plusMinutes(-5);
 
-        while (communicationOK.size() > 0 && communicationOK.element().before(limitTime)) {
+        while (communicationOK.size() > 0 && communicationOK.element().isBefore(limitTime)) {
             communicationOK.remove();
         }
-        while (communicationError.size() > 0 && communicationError.element().before(limitTime)) {
+        while (communicationError.size() > 0 && communicationError.element().isBefore(limitTime)) {
             communicationError.remove();
         }
 
@@ -150,7 +151,7 @@ public class SimpleBinaryDeviceState {
      *
      * @return calendar
      */
-    public Calendar getLastCommunication() {
+    public ZonedDateTime getLastCommunication() {
         return lastCommunication;
     }
 }

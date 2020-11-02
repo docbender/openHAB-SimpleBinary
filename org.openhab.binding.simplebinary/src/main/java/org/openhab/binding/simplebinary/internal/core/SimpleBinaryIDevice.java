@@ -29,6 +29,10 @@ public interface SimpleBinaryIDevice {
         public void onMetricsUpdated(long requests, long bytes);
     }
 
+    public interface DeviceStateUpdated {
+        public void onDeviceStateUpdated(int deviceId, SimpleBinaryDeviceState state);
+    }
+
     /**
      * Open device connection
      *
@@ -86,4 +90,9 @@ public interface SimpleBinaryIDevice {
      * Set method provided on update metrics
      */
     public void onMetricsUpdated(MetricsUpdated onUpdateMethod);
+
+    /**
+     * Set method provided on update single device state
+     */
+    public void onDeviceStateUpdated(DeviceStateUpdated onUpdateMethod);
 }

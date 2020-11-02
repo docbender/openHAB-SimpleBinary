@@ -48,7 +48,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     public final int MAX_RESEND_COUNT = 2;
 
     /** item config */
-    protected SimpleBinaryDeviceStateCollection devices;
+    protected volatile SimpleBinaryDeviceStateCollection devices;
     protected ArrayList<@NonNull SimpleBinaryChannel> stateItems;
 
     /** flag that device is connected */
@@ -64,6 +64,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 logger.error("{} - ", this.toString(), ex);
             }
         }
+
+        setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
     }
 
     /**
@@ -163,40 +165,6 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             periodicJob = null;
         }
     }
-
-    /**
-     * Method to set binding configuration
-     *
-     * @param eventPublisher
-     * @param itemsConfig
-     * @param itemsInfoConfig
-     */
-    /*
-     * @Override
-     * public void setBindingData(EventPublisher eventPublisher, Map<String, SimpleBinaryBindingConfig> itemsConfig,
-     * Map<String, SimpleBinaryInfoBindingConfig> itemsInfoConfig,
-     * Map<String, SimpleBinaryGenericDevice> configuredDevices) {
-     * this.eventPublisher = eventPublisher;
-     * this.itemsConfig = itemsConfig;
-     *
-     * this.portState.setBindingData(eventPublisher, itemsInfoConfig, this.deviceName);
-     * this.devicesStates = new SimpleBinaryDeviceStateCollection(deviceName, itemsInfoConfig, eventPublisher);
-     *
-     * this.configuredDevices = configuredDevices;
-     * }
-     */
-
-    /**
-     * Method to clear inner binding configuration
-     */
-    /*
-     * @Override
-     * public void unsetBindingData() {
-     * this.eventPublisher = null;
-     * this.itemsConfig = null;
-     * this.devicesStates = null;
-     * }
-     */
 
     /**
      * Open
@@ -710,7 +678,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             } else {
                 logger.warn("{} - Device {} - Max resend attempts reached.", this.toString(), lastData.getDeviceId());
                 // set state
-                devices.setDeviceState(lastData.getDeviceId(), DeviceStates.RESPONSE_ERROR);
+                setDeviceState(lastData.getDeviceId(), DeviceStates.RESPONSE_ERROR);
             }
         }
     }
@@ -987,7 +955,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             }
 
             // set state
-            devices.setDeviceState(receivedID, DeviceStates.DATA_ERROR);
+            setDeviceState(receivedID, DeviceStates.DATA_ERROR);
 
             return ProcessDataResult.BAD_CONFIG;
 
@@ -1004,7 +972,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 logger.warn("{} - Income unknown message: input buffer cleared", this.toString());
 
                 // set state
-                devices.setDeviceState(receivedID, DeviceStates.DATA_ERROR);
+                setDeviceState(receivedID, DeviceStates.DATA_ERROR);
 
                 return ProcessDataResult.UNKNOWN_MESSAGE;
             } else {
@@ -1029,7 +997,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             inBuffer.initialize();
 
             // set state
-            devices.setDeviceState(receivedID, DeviceStates.DATA_ERROR);
+            setDeviceState(receivedID, DeviceStates.DATA_ERROR);
 
             return ProcessDataResult.PROCESSING_ERROR;
 
@@ -1040,7 +1008,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             inBuffer.clear();
 
             // set state
-            devices.setDeviceState(receivedID, DeviceStates.DATA_ERROR);
+            setDeviceState(receivedID, DeviceStates.DATA_ERROR);
 
             return ProcessDataResult.PROCESSING_ERROR;
         }
@@ -1070,7 +1038,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 sendAllItemsStates();
             }
             // set state
-            devices.setDeviceState(deviceId, DeviceStates.CONNECTED);
+            setDeviceState(deviceId, DeviceStates.CONNECTED);
 
             State state = ((SimpleBinaryItem) itemData).getState();
 
@@ -1135,7 +1103,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             }
 
             // set state
-            devices.setDeviceState(itemData.getDeviceId(), DeviceStates.CONNECTED);
+            setDeviceState(itemData.getDeviceId(), DeviceStates.CONNECTED);
 
             if (itemData.getMessageType() == SimpleBinaryMessageType.OK) {
                 if (logger.isDebugEnabled()) {
@@ -1166,7 +1134,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                             SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
                 }
                 // set state
-                devices.setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
             } else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_ADDRESS) {
                 logger.warn("{} - Device {} for item {} report unknown address", toString(), itemData.getDeviceId(),
                         (lastSentData != null && lastSentData.getItemAddress() >= 0) ? lastSentData.getItemAddress()
@@ -1177,7 +1145,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                             SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
                 }
                 // set state
-                devices.setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
             } else if (itemData.getMessageType() == SimpleBinaryMessageType.SAVING_ERROR) {
                 logger.warn("{} - Device {} for item {} report saving data error", toString(), itemData.getDeviceId(),
                         (lastSentData != null && lastSentData.getItemAddress() >= 0) ? lastSentData.getItemAddress()
@@ -1188,7 +1156,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                             SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
                 }
                 // set state
-                devices.setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
             } else if (itemData.getMessageType() == SimpleBinaryMessageType.HI) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} - Device {} says Hi", toString(), itemData.getDeviceId());
@@ -1198,7 +1166,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                         itemData.getDeviceId(), itemData.getMessageType().toString());
 
                 // set state
-                devices.setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
             }
 
             // get device state
@@ -1260,6 +1228,32 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     @Override
     public void onMetricsUpdated(MetricsUpdated onUpdateMethod) {
         onUpdate = onUpdateMethod;
+    }
+
+    private DeviceStateUpdated onDeviceState = null;
+
+    @Override
+    public void onDeviceStateUpdated(DeviceStateUpdated onUpdateMethod) {
+        onDeviceState = onUpdateMethod;
+    }
+
+    protected void setDeviceState(int deviceId, SimpleBinaryDeviceState.DeviceStates state) {
+        if (!devices.setDeviceState(deviceId, state)) {
+            return;
+        }
+        if (onDeviceState != null) {
+            onDeviceState.onDeviceStateUpdated(deviceId, devices.get(deviceId));
+        }
+    }
+
+    protected void setStateToAllConfiguredDevices(SimpleBinaryDeviceState.DeviceStates state) {
+        devices.setStateToAllConfiguredDevices(state);
+
+        if (onDeviceState != null) {
+            for (var d : devices.entrySet()) {
+                onDeviceState.onDeviceStateUpdated(d.getKey(), d.getValue());
+            }
+        }
     }
 
     @Override

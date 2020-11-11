@@ -570,6 +570,7 @@ public class SimpleBinaryProtocol {
      * @throws UnknownMessageException
      * @throws ModeChangeException
      */
+    @SuppressWarnings({ "null", "unused" })
     public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<SimpleBinaryChannel> items,
             Byte forcedDeviceId, boolean letDataInBuffer)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {

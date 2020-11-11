@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<thing:thing-descriptions bindingId="simplebinary"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
-	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+<thing:thing-descriptions bindingId="simplebinary" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0" xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 	<!-- SimpleBinary UART bridge -->
 	<bridge-type id="uart_bridge" extensible="devState,devPreviousState,devStateChanged,devPacketLost,devLastCommunication">
 		<label>SimpleBinary UART Bridge</label>
 		<description>Represent gateway for devices connected through UART interface.</description>
 		<channels>
-		    <channel id="ChannelVersion" typeId="chVersionTypeID" />
-            <channel id="ChannelTagCount" typeId="chTagCountTypeID" />            
-            <channel id="ChannelRequests" typeId="chRequestsTypeID" />
-            <channel id="ChannelBytes" typeId="chBytesTypeID" />            
-        </channels>        
+		    <channel id="ChannelVersion" typeId="chVersionTypeID"/>
+            <channel id="ChannelTagCount" typeId="chTagCountTypeID"/>
+            <channel id="ChannelRequests" typeId="chRequestsTypeID"/>
+            <channel id="ChannelBytes" typeId="chBytesTypeID"/>
+        </channels>
 		<config-description>
 			<parameter name="port" type="text" required="true">
 				<label>Port</label>
@@ -33,7 +30,7 @@
                    <option value="ONSCAN">OnScan</option>
                 </options>
                 <advanced>true</advanced>
-            </parameter>			
+            </parameter>
 			<parameter name="pollRate" type="integer" min="0" required="true">
                  <label>Poll rate [ms]</label>
                  <description>Determine period of data read from device. </description>
@@ -51,7 +48,7 @@
                  <description>Invert RTS pin state</description>
                  <default>false</default>
                  <advanced>true</advanced>
-             </parameter>         
+             </parameter>
              <parameter name="charset" type="text">
                  <label>Code page</label>
                  <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
@@ -59,17 +56,17 @@
                  <advanced>true</advanced>
              </parameter>
 		</config-description>
-	</bridge-type>   
+	</bridge-type>
    <!-- SimpleBinary TCP bridge -->
 	<bridge-type id="tcp_bridge">
 		<label>SimpleBinary TCP Bridge</label>
 		<description>Represent gateway for devices connected via Ethernet</description>
 		<channels>
-		    <channel id="ChannelVersion" typeId="chVersionTypeID" />
-            <channel id="ChannelTagCount" typeId="chTagCountTypeID" />            
-            <channel id="ChannelRequests" typeId="chRequestsTypeID" />
-            <channel id="ChannelBytes" typeId="chBytesTypeID" />            
-        </channels>        
+		    <channel id="ChannelVersion" typeId="chVersionTypeID"/>
+            <channel id="ChannelTagCount" typeId="chTagCountTypeID"/>
+            <channel id="ChannelRequests" typeId="chRequestsTypeID"/>
+            <channel id="ChannelBytes" typeId="chBytesTypeID"/>
+        </channels>
 		<config-description>
             <parameter name="address" type="text" required="false">
                 <label>Bind address</label>
@@ -77,7 +74,7 @@
                 <default></default>
                 <context>network-address</context>
                 <advanced>true</advanced>
-            </parameter>		
+            </parameter>
 			<parameter name="port" type="integer" min="1" max="65535" required="true">
 				<label>Port number</label>
 				<description>TCP port number</description>
@@ -108,86 +105,86 @@
         <item-type>String</item-type>
         <label>Version</label>
         <description>Binding version</description>
-        <state readOnly="true" />        
-    </channel-type>    
+        <state readOnly="true"/>
+    </channel-type>
     <channel-type id="chTagCountTypeID">
         <item-type>Number</item-type>
         <label>Channels count</label>
         <description>Channels count</description>
-        <state readOnly="true" />        
-    </channel-type> 
+        <state readOnly="true"/>
+    </channel-type>
     <channel-type id="chRequestsTypeID">
         <item-type>Number</item-type>
         <label>Request/s</label>
         <description>Requests per second to all devices</description>
-        <state pattern="%d 1/s" readOnly="true" />        
-    </channel-type> 
+        <state pattern="%d 1/s" readOnly="true"/>
+    </channel-type>
     <channel-type id="chBytesTypeID">
         <item-type>Number</item-type>
         <label>Bytes/s</label>
         <description>Bytes per second grabbed from devices</description>
-        <state pattern="%d B/s" readOnly="true" />        
-    </channel-type>   
+        <state pattern="%d B/s" readOnly="true"/>
+    </channel-type>
     <channel-type id="devState">
         <item-type>String</item-type>
         <label>Device state</label>
         <description>Connected device current state</description>
-        <state readOnly="true" />
+        <state readOnly="true"/>
         <config-description>
             <parameter name="deviceId" type="integer" min="0" max="255">
                 <label>Device ID</label>
                 <description>Monitored device address</description>
             </parameter>
-        </config-description>                 
-    </channel-type>   
+        </config-description>
+    </channel-type>
     <channel-type id="devPreviousState">
         <item-type>String</item-type>
         <label>Previous state</label>
         <description>Connected device previous state</description>
-        <state readOnly="true" />       
+        <state readOnly="true"/>
         <config-description>
             <parameter name="deviceId" type="integer" min="0" max="255">
                 <label>Device ID</label>
                 <description>Monitored device address</description>
             </parameter>
-        </config-description>          
-    </channel-type>    
+        </config-description>
+    </channel-type>
     <channel-type id="devStateChanged">
         <item-type>DateTime</item-type>
         <label>State change time</label>
         <description>Time when state was changed</description>
-        <state readOnly="true" />  
+        <state readOnly="true"/>
         <config-description>
             <parameter name="deviceId" type="integer" min="0" max="255">
                 <label>Device ID</label>
                 <description>Monitored device address</description>
             </parameter>
-        </config-description>               
-    </channel-type> 
+        </config-description>
+    </channel-type>
     <channel-type id="devPacketLost">
         <item-type>Number</item-type>
         <label>Packet lost ratio</label>
         <description>Give overview about packet lost in last 5 minutes</description>
-        <state readOnly="true" /> 
+        <state readOnly="true"/>
         <config-description>
             <parameter name="deviceId" type="integer" min="0" max="255">
                 <label>Device ID</label>
                 <description>Monitored device address</description>
             </parameter>
-        </config-description>                
+        </config-description>
     </channel-type>
     <channel-type id="devLastCommunication">
         <item-type>DateTime</item-type>
         <label>Last communication time</label>
         <description>Time when last packet arrived from device</description>
-        <state readOnly="true" />   
+        <state readOnly="true"/>
         <config-description>
             <parameter name="deviceId" type="integer" min="0" max="255">
                 <label>Device ID</label>
                 <description>Monitored device address</description>
             </parameter>
-        </config-description>     
-    </channel-type>        
+        </config-description>
+    </channel-type>
     <!-- Thing Channels -->
 	<channel-type id="chNumber">
 		<item-type>Number</item-type>
@@ -294,6 +291,6 @@
 				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
-	</channel-type>	
+	</channel-type>
 </thing:thing-descriptions>
 

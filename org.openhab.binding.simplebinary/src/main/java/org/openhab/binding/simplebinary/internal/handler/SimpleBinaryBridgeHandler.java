@@ -171,7 +171,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
     @Override
     public void updateState(@Nullable ChannelUID channel, State state) {
         if (channel == null) {
-            logger.error("{} - updateState(...) channelID is null for state={}", getThing().getLabel(), state);
+            logger.debug("{} - updateState(...) channelID is null for state={}", getThing().getLabel(), state);
             return;
         }
         // logger.debug("{} - update channelID={}, state={}", getThing().getLabel(), channel, state);
@@ -189,7 +189,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         logger.debug("{} - bridge has been stopped", getThing().getLabel());
     }
 
-    @SuppressWarnings("null")
+    @SuppressWarnings({ "null", "unused" })
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("{} - Command {} for channel {}", thing.getLabel(), command, channelUID);
@@ -219,6 +219,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
     /**
      * Update bridge configuration by all things channels
      */
+    @SuppressWarnings("null")
     public void updateConfig() {
         int channelCount = 0;
         int stateChannelCount = 0;

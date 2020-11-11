@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPortState.PortStates;
 import org.openhab.core.io.transport.serial.PortInUseException;
@@ -51,7 +50,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     /** port baud rate */
     private int baud = 9600;
     /** serial manager */
-    private @NonNullByDefault({}) SerialPortManager serialPortManager;
+    private SerialPortManager serialPortManager;
     /** port id */
     private SerialPortIdentifier portId;
     /** port instance */

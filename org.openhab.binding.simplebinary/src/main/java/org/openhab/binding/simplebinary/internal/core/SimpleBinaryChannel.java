@@ -41,6 +41,7 @@ public class SimpleBinaryChannel {
     private SimpleBinaryAddress commandAddressEx;
     private SimpleBinaryGenericHandler thing;
     private long valueUpdateTime = 0;
+    private boolean missingCommandReported = false;
 
     final private static Pattern numberAddressPattern = Pattern.compile("^((\\d+):(\\d+):(byte|word|dword|float))$");
     final private static Pattern stringAddressPattern = Pattern.compile("^((\\d+):(\\d+):(\\d+))$");
@@ -56,6 +57,7 @@ public class SimpleBinaryChannel {
     }
 
     public boolean init(SimpleBinaryGenericHandler handler) {
+        missingCommandReported = false;
         if (handler == null) {
             error = "ThingHandler is null";
             return false;
@@ -209,5 +211,13 @@ public class SimpleBinaryChannel {
         }
 
         thing.clearError();
+    }
+
+    public boolean isMissingCommandReported() {
+        if (!missingCommandReported) {
+            missingCommandReported = true;
+            return false;
+        }
+        return true;
     }
 }

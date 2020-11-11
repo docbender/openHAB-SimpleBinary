@@ -147,6 +147,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         updateStatus(ThingStatus.ONLINE);
     }
 
+    @SuppressWarnings({ "unused", "null" })
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("{} - Command {}({}) for channel {}", thing.getLabel(), command, command.getClass(), channelUID);
@@ -174,6 +175,15 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             return;
         }
         SimpleBinaryChannel channel = channels.get(channelUID);
+
+        if (channel.getCommandAddress() == null) {
+            if (!channel.isMissingCommandReported()) {
+                logger.warn(
+                        "{} - command not completed. Channel does not have a command address specified. ChannelUID={}",
+                        thing.getLabel(), channelUID);
+            }
+            return;
+        }
 
         connection.sendData(channel, command);
     }

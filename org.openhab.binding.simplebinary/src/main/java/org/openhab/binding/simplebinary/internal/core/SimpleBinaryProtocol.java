@@ -437,6 +437,9 @@ public class SimpleBinaryProtocol {
                 data[4] = (byte) (((StopMoveType) command).equals(StopMoveType.MOVE) ? 0x1 : 0x2);
             } else if (command instanceof UpDownType) {
                 data[4] = (byte) (((UpDownType) command).equals(UpDownType.UP) ? 0x4 : 0x8);
+            } else if (command instanceof PercentType) {
+                data[4] = 0x1;
+                data[5] = ((PercentType) command).byteValue();
             } else {
                 throw new Exception(
                         String.format("Cannot create WriteDataFrame. Command %s for ChannelType=%s not implemented",

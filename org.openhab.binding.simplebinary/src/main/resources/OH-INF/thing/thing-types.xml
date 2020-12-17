@@ -279,8 +279,11 @@
 	<channel-type id="chRollershutter">
 		<item-type>Rollershutter</item-type>
 		<label>Rollershutter</label>
-		<description>SimpleBinary data type is Byte. Status byte for position (0-100%), command byte for Stop/Up/Down -
-			2-Stop,4-Up,8-Down</description>
+        <description><![CDATA[
+              Status data type is Byte for position (0-100%). Command data types are Byte or Word.<br/>
+              Byte for Stop/Up/Down (2-Stop,4-Up,8-Down)<br/>
+              Word first Byte for Move/Stop/Up/Down (1-Move,2-Stop,4-Up,8-Down) and second Byte for target position (0-100%)]]>
+        </description>
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>

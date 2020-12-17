@@ -353,7 +353,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
             var msg = String.format("%s - address error", this.toString());
             logger.error(msg);
-            setErrorMsg(msg);
+            setConnected(false, msg);
 
             return false;
         } catch (Exception ex) {
@@ -361,7 +361,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
             var msg = String.format("%s - socket error: %s", this.toString(), ex.getMessage());
             logger.error(msg);
-            setErrorMsg(msg);
+            setConnected(false, msg);
 
             return false;
         }

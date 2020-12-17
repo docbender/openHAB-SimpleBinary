@@ -55,11 +55,15 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     private volatile boolean connected = false;
 
     protected synchronized void setConnected(boolean connected) {
+        setConnected(connected, null);
+    }
+
+    protected synchronized void setConnected(boolean connected, String reason) {
         this.connected = connected;
 
         if (onChange != null) {
             try {
-                onChange.onConnectionChanged(connected);
+                onChange.onConnectionChanged(connected, reason);
             } catch (Exception ex) {
                 logger.error("{} - ", this.toString(), ex);
             }
@@ -105,16 +109,6 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     AtomicLong readed = new AtomicLong(0);
     AtomicLong readedBytes = new AtomicLong(0);
     long metricsStart = 0;
-
-    private String errorMsg;
-
-    protected void setErrorMsg(String message) {
-        errorMsg = message;
-    }
-
-    public String getErrorMsg() {
-        return errorMsg;
-    }
 
     /**
      * Constructor
@@ -187,7 +181,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     public void close() {
         logger.warn("{} - Closing... cannot close generic device", toString());
 
-        setConnected(false);
+        setConnected(false, null);
     }
 
     /**

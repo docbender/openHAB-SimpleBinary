@@ -115,11 +115,28 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         }
 
         // react on connection changes
-        connection.onConnectionChanged((connected) -> {
+        connection.onConnectionChanged((connected, reason) -> {
             if (connected) {
                 updateStatus(ThingStatus.ONLINE);
             } else {
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
+                if (reason == null) {
+                    updateStatus(ThingStatus.OFFLINE);
+                } else {
+                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, reason);
+
+                    // unexpected offline state -> background reconnect
+                    scheduler.execute(() -> {
+                        try {
+                            logger.info("{} - reconnecting...", getThing().getLabel());
+                            Thread.sleep(10000);
+                            if (!disposed && connection != null) {
+                                connection.open();
+                            }
+                        } catch (InterruptedException e) {
+                            logger.error("{}.", getThing().getLabel(), e);
+                        }
+                    });
+                }
             }
         });
 
@@ -158,9 +175,8 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         scheduler.execute(() -> {
             try {
                 Thread.sleep(1000);
-                while (!disposed && connection != null && !connection.open()) {
-                    updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, connection.getErrorMsg());
-                    Thread.sleep(10000);
+                if (!disposed && connection != null) {
+                    connection.open();
                 }
             } catch (InterruptedException e) {
                 logger.error("{}.", getThing().getLabel(), e);

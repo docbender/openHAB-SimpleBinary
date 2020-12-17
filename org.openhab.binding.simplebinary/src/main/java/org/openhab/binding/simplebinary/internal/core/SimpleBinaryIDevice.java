@@ -22,7 +22,7 @@ import org.openhab.core.types.Command;
 public interface SimpleBinaryIDevice {
 
     public interface ConnectionChanged {
-        public void onConnectionChanged(boolean connected);
+        public void onConnectionChanged(boolean connected, String reason);
     }
 
     public interface MetricsUpdated {

@@ -33,7 +33,10 @@ Known limitations: max.256 clients(protocol limitation).
 Communication can operate it 2 modes reading data from connected devices - OnScan and OnChange. In OnScan mode all data are reading cyclically. In OnChange mode only new data are sent to openHAB. Each device is polled whether has new data and then sends new data to openHAB. One of his modes must be choose in serial port connection. TCP server connection not use any of these modes as default. Because TCP connection is full-duplex, spontaneous states send is preferred and expected.
 
 ## Installation
-Copy binding [release](https://github.com/docbender/openHAB-SimpleBinary/releases) in ${OPENHAB_HOME}/addons folder.
+Copy binding [release](https://github.com/docbender/openHAB-SimpleBinary/releases) in ${OPENHAB_HOME}/addons folder. 
+Binding depends on openhab-transport-serial. It must be installed on target openHAB system. Installation can be done in console by running command:
+
+    feature:install openhab-transport-serial
 
 ## Bridge
 A SimpleBinary Bridge is needed to connect to device. It provides communication channel to all device connected to concreate UART port or TCP server. 

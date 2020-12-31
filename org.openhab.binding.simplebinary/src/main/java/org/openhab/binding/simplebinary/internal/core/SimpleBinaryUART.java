@@ -349,8 +349,8 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
                 setLastSentData(data);
             } catch (Exception e) {
-                var msg = String.format("%s - Error while writing. %s", this.toString(), e.toString());
-                logger.error(msg);
+                var msg = String.format("%s - Error while writing. %s.", this.toString(), e.toString());
+                logger.error(msg, e);
                 close(msg);
 
                 return false;

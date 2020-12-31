@@ -14,7 +14,6 @@ public class SimpleBinaryChannelStatus {
     public ChannelUID channelId;
     public ChannelTypeUID channelType;
     public int deviceId;
-    public String commandAddress;
     private State value;
     private String error;
     private SimpleBinaryBridgeHandler bridge;

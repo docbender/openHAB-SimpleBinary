@@ -109,7 +109,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
                 continue;
             }
 
-            logger.info("{} - channel added {}", thing.getLabel(), chConfig);
+            logger.debug("{} - channel added {}", thing.getLabel(), chConfig);
 
             statusChannels.put(channelUID, chConfig);
         }
@@ -238,7 +238,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
     @SuppressWarnings("null")
     public void updateConfig() {
         int channelCount = 0;
-        int stateChannelCount = 0;
+        int stateChannelCount = 0, commandChannelCount = 0;
 
         for (Thing th : getThing().getThings()) {
             var h = ((SimpleBinaryGenericHandler) th.getHandler());
@@ -250,10 +250,14 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
                 if (ch.getStateAddress() != null) {
                     stateChannelCount++;
                 }
+                if (ch.getCommandAddress() != null) {
+                    commandChannelCount++;
+                }
             }
         }
 
         var stateItems = new ArrayList<@NonNull SimpleBinaryChannel>(stateChannelCount);
+        var commandItems = new ArrayList<@NonNull SimpleBinaryChannel>(commandChannelCount);
         var devices = new ArrayList<Integer>();
 
         for (Thing th : getThing().getThings()) {
@@ -269,6 +273,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
                     }
                 }
                 if (ch.getCommandAddress() != null) {
+                    commandItems.add(ch);
                     if (!devices.contains(ch.getCommandAddress().getDeviceId())) {
                         devices.add(ch.getCommandAddress().getDeviceId());
                     }
@@ -284,7 +289,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
 
         if (connection != null) {
             var c = connection;
-            c.setDataAreas(devices, stateItems);
+            c.setDataAreas(devices, stateItems, commandItems);
         }
 
         updateState(chTagCount, new DecimalType(channelCount));

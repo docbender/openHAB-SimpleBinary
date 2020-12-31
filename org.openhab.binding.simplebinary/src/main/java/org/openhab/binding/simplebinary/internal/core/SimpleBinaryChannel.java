@@ -20,6 +20,7 @@ import org.openhab.binding.simplebinary.internal.SimpleBinaryBindingConstants;
 import org.openhab.binding.simplebinary.internal.handler.SimpleBinaryGenericHandler;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.type.ChannelTypeUID;
+import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,7 @@ public class SimpleBinaryChannel {
     public String stateAddress;
     public String commandAddress;
     private State value;
+    private Command lastCommand;
     private String error;
     private SimpleBinaryAddress stateAddressEx;
     private SimpleBinaryAddress commandAddressEx;
@@ -92,6 +94,7 @@ public class SimpleBinaryChannel {
     public void clear() {
         thing = null;
         value = null;
+        lastCommand = null;
     }
 
     public @Nullable SimpleBinaryAddress checkAddress(String address) {
@@ -192,6 +195,14 @@ public class SimpleBinaryChannel {
 
     public @Nullable State getState() {
         return value;
+    }
+
+    public void setCommand(Command command) {
+        lastCommand = command;
+    }
+
+    public @Nullable Command getCommand() {
+        return lastCommand;
     }
 
     public @Nullable SimpleBinaryGenericHandler getThing() {

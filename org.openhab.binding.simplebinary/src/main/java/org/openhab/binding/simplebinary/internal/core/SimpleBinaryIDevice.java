@@ -73,7 +73,8 @@ public interface SimpleBinaryIDevice {
      *
      */
     public void setDataAreas(@NonNull ArrayList<Integer> devices,
-            @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems);
+            @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems,
+            @NonNull ArrayList<@NonNull SimpleBinaryChannel> commandItems);
 
     /**
      * Function return device string representation

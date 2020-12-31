@@ -50,6 +50,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     /** item config */
     protected volatile SimpleBinaryDeviceStateCollection devices;
     protected ArrayList<@NonNull SimpleBinaryChannel> stateItems;
+    protected ArrayList<@NonNull SimpleBinaryChannel> commandItems;
 
     /** flag that device is connected */
     private volatile boolean connected = false;
@@ -196,6 +197,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
     @Override
     public void sendData(SimpleBinaryChannel channel, Command command) {
+        channel.setCommand(command);
         try {
             SimpleBinaryItem data = SimpleBinaryProtocol.compileDataFrame(channel, command, charset);
 
@@ -996,7 +998,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             return ProcessDataResult.PROCESSING_ERROR;
 
         } catch (Exception ex) {
-            logger.error("{} - Reading incoming data error: {}", this.toString(), ex.getMessage());
+            logger.error(String.format("%s - Reading incoming data error: ", this.toString()), ex);
             // print details
             printCommunicationInfo(inBuffer, lastSentData);
             inBuffer.clear();
@@ -1029,7 +1031,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             DeviceStates devstate = devices.getDeviceState(deviceId);
             if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
                     || devstate == DeviceStates.RESPONSE_ERROR) {
-                sendAllItemsStates();
+                sendAllItemsCommands();
             }
             // set state
             setDeviceState(deviceId, DeviceStates.CONNECTED);
@@ -1169,31 +1171,31 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                     || devstate == DeviceStates.RESPONSE_ERROR
                     || itemData.getMessageType() == SimpleBinaryMessageType.HI
                     || itemData.getMessageType() == SimpleBinaryMessageType.WANT_EVERYTHING) {
-                sendAllItemsStates();
+                sendAllItemsCommands();
             }
         }
     }
 
     /**
-     * For device items provide send state to device
+     * For device items provide send command to device
      */
-    void sendAllItemsStates() {
-        if (stateItems == null) {
+    void sendAllItemsCommands() {
+        if (commandItems == null) {
             return;
         }
 
-        for (var item : stateItems) {
-            if (item.getState() == null) {
+        for (var item : commandItems) {
+            if (item.getCommand() == null || item.getCommandAddress() == null) {
                 continue;
             }
 
-            logger.debug("{} - sendAllItemsStates() {}/{}", toString(), item.getCommandAddress().getDeviceId(),
+            logger.debug("{} - sendAllItemsCommands() {}/{}", toString(), item.getCommandAddress().getDeviceId(),
                     item.getCommandAddress().getAddress());
 
             try {
-                offerData(SimpleBinaryProtocol.compileDataFrame(item, item.getState(), charset));
+                offerData(SimpleBinaryProtocol.compileDataFrame(item, item.getCommand(), charset));
             } catch (Exception ex) {
-                logger.error("{} - sendAllItemsStates(): line:{}|method:{}", toString(),
+                logger.error("{} - sendAllItemsCommands(): line:{}|method:{}", toString(),
                         ex.getStackTrace()[0].getLineNumber(), ex.getStackTrace()[0].getMethodName());
             }
         }
@@ -1232,7 +1234,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     }
 
     protected void setDeviceState(int deviceId, SimpleBinaryDeviceState.DeviceStates state) {
-        if (!devices.setDeviceState(deviceId, state)) {
+        if (!devices.setDeviceState(deviceId, state) && state != SimpleBinaryDeviceState.DeviceStates.CONNECTED) {
             return;
         }
         if (onDeviceState != null) {
@@ -1252,9 +1254,11 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
     @Override
     public void setDataAreas(@NonNull ArrayList<Integer> devices,
-            @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems) {
+            @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems,
+            @NonNull ArrayList<@NonNull SimpleBinaryChannel> commandItems) {
         this.devices.clear();
         this.devices.put(devices);
         this.stateItems = stateItems;
+        this.commandItems = commandItems;
     }
 }

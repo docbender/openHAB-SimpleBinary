@@ -97,7 +97,11 @@
             <bridge-type-ref id="tcp_bridge"/>
 		</supported-bridge-type-refs>
 		<label>SimpleBinary Thing</label>
-		<description>Generic thing for SimpleBinary Binding. This thing requires bridge to be defined.</description>
+		<description><![CDATA[
+         Generic SimpleBinary thing.<br/>Thing requires bridge to be defined. Each thing is created from user defined channels. 
+         Many things can be assigned to one device (specified by address). Similarly, one thing can be formed by channels from different devices.
+         ]]>
+      </description>
 	</thing-type>
 	<!-- Channels -->
     <!-- Bridge Channels -->

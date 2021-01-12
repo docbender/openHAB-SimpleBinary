@@ -32,122 +32,124 @@ Known limitations: max.256 clients(protocol limitation).
 ## Operating modes
 Communication can operate it 2 modes reading data from connected devices - OnScan and OnChange. In OnScan mode all data are reading cyclically. In OnChange mode only new data are sent to openHAB. Each device is polled whether has new data and then sends new data to openHAB. One of his modes must be choose in serial port connection. TCP server connection not use any of these modes as default. Because TCP connection is full-duplex, spontaneous states send is preferred and expected.
 
-## Supported data types
-Binding support openHAB data types listed in the table. Individual item types are converted to simple data types such as byte, word, double word, float, array, rgb. For same types may be converted type defined, others has it strictly defined. Supported data types
- 
-<table>
-  <tr><td><b>Item type</b></td><td><b>Supported data type</b></td><td><b>Notes</b></td></tr>
-  <tr><td>Number</td><td>byte, word, dword, float</td><td>Numbers are represented in signed form. Their maximum value depends on the used type.<br>Floating point number is represented by float type. Float is stored in 4 bytes formatted according to IEEE 754.</td></tr>
-  <tr><td>Color</td><td>hsb, rgb, rgbw</td><td>All color parts are transferred in one double word. Each color component corresponds to one byte. Assignment of bytes depending on the chosen data type is following:<br><br>HSB - byte 0 - Hue, 1 - Saturation , 2 - Brightness, 3 - Not used<br>RGB - byte 0 - Red, 1 - Green, 2 - Blue, 3 - Not used<br>RGBW - byte 0 - Red, 1 - Green, 2 - Blue, 3 - White</td></tr>
-  <tr><td>String</td><td>array</td><td>Array of bytes. Length of array is specified in square brackets behind type definition (e.g. array[32] defines byte array with length 32 bytes)</td></tr>
-  <tr><td>Contact</td><td>byte</td><td>0 - off, 1 - on</td></tr>
-  <tr><td>Switch</td><td>byte</td><td>0 - off, 1 - on</td></tr>
-  <tr><td>Dimmer</td><td>byte</td><td></td></tr>
-  <tr><td>Rollershutter</td><td>word</td><td>Lower byte for position, upper byte for StopMove/UpDown command - 1-Move,2-Stop,4-Up,8-Down</td></tr>
-</table>
+## Installation
+Copy binding [release](https://github.com/docbender/openHAB-SimpleBinary/releases) in ${OPENHAB_HOME}/addons folder. 
+Binding depends on openhab-transport-serial. It must be installed on target openHAB system. Installation can be done in console by running command:
 
+    feature:install openhab-transport-serial
 
-## Binding configuration
-In openhab.cfg is binding configured this way:
+## Bridge
+A SimpleBinary Bridge is needed to connect to device. It provides communication channel to all device connected to concreate UART port or TCP server. 
 
-    ################################### SimpleBinary Binding ######################################
-    #
-    # Select port (ex.: COM1:115200;onscan;forceRTSInv or /dev/ttyUSB1:9600). It is possible defined 
-    # more ports ex. port1, port2,port145,... Behind semicolon you can specify data pool control (optional).    
-    # Options for reach slave data are onchange(ask configured devices for new data - default) 
-    # or onscan(read all data every scan). Option forceRTS or forceRTSInv are for trigger RTS signal
-    # during data send (useful for RS485 converter). 
-    # TCP server is defined by tcpserver key. As value server port must be defined.
-    # 
-    # serial port configuration
-    simplebinary:port=COM4:9600;onchange
-    # TCP server configuration
-    simplebinary:tcpserver=43243
-    #refresh - check for new data interval - default 10000ms 
-    simplebinary:refresh=2000
+### UART Bridge
+Basic bridge configuration requires to know serial port name and communication speed. Additional parameters can be defined.
 
 <table>
-  <tr><td><b>Configuration parameter</b></td><td><b>Description</b></td></tr>
-  <tr><td>port</td><td>Serial port definition. Configuration value consist from port name and bitrate (COM1:9600, /dev/ttyS2:57600). Behind semicolon optional parameters can be specified. <br>  Pool control (<b>onchange</b>, <b>onscan</b>) <br>  Enable RTS signal handling (<b>forceRTS</b> or <b>forceRTSInv</b> for signal inversion)<br>Multiple port can be specified. Must be deviate by number behind key (ex.: port, port1, port123,...) </td></tr>
-  <tr><td>tcpserver</td><td>TCP server definition. As value listening port must be specified.</td></tr>
-  <tr><td>refresh</td><td>Execution period [ms] between reading cycles. Default 10000ms.</td></tr>
+  <tr><td><b>Parameter</b></td><td><b>Required</b></td><td><b>Notes</b></td></tr>
+  <tr><td>port</td><td>Yes</td><td>UART port name (COM1 or &#47;dev&#47;ttyUSB1)</td></tr>
+  <tr><td>baudRate</td><td>Yes</td><td>Communication speed [bits/s].</td></tr>
+  <tr><td>pollControl</td><td>No</td><td>Communication mode. OnChange(default) or OnScan.</td></tr>
+  <tr><td>pollRate</td><td>No</td><td>Read period [ms]. Default is 1000ms.</td></tr>
+  <tr><td>forceRTS</td><td>No</td><td>Communication port force RTS pin activation. <b>Does not work with OH3 now.</b></td></tr>
+  <tr><td>invertedRTS</td><td>No</td><td>Invert RTS pin state. <b>Does not work with OH3 now.</b></td></tr>
+  <tr><td>charset</td><td>No</td><td>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used. Used code page is printed into log file as INFO.</td></tr>
 </table>
 
-## Item configuration
+Bridge definition together with things can be defined in text files. See [generic bridge configuration](https://www.openhab.org/docs/configuration/things.html#defining-bridges-using-files) for details. In short text files .things are located in ${OPENHAB_CONF}/things folder. Basic bridge configuration with required parameters looks like this:
 
-Binding specify item configuration is located as usual in the brackets at the end of the configuration line. It consists of three compulsory and two optional parameters. 
+    Bridge simplebinary:uart_bridge:<device_id> "Label" @ "Location" [ port="<port ID>", baudRate="<baud rate>" ]
 
-Configuration format:
+Example with optional parameter:
 
-    simplebinary="port name:device address:item address:[used data type]:[direction]"
+    Bridge simplebinary:uart_bridge:device1 "My Device"  [ port="/dev/ttyUSB1", baudRate="9600", charset="ISO-8859-1" ]
+
+### TCP Bridge
+Basic bridge is very simple. No parameters are required.
 
 <table>
-  <tr><td><b>Configuration parameter</b></td><td><b>Description</b></td></tr>
-  <tr><td>port name</td><td>Port name that is specified in binding configuration in openhab.cfg. For <i>simplebinary:port=</i> port name is <b>port</b>. For <i>simplebinary:port1=</i> port name is <b>port1</b>. For <i>simplebinary:tcpserver=</i> port name is <b>tcpserver</b>.</td></tr>
-  <tr><td>device address</td><td>The device address is number that device is indicated on the bus (for RS485 and ethernet)</td></tr>
-  <tr><td>item address</td><td>It is the address under which the data is stored in the target device.</td></tr>
-  <tr><td>used data type</td><td>Optional. Allow define data type. See table <i>Supported data types</i></td></tr>
-  <tr><td>direction</td><td>Optional. Can be <b>I</b> - input, <b>O</b> - output or <b>IO</b> - both (default). It is used only for request data from connected devices. So if all device items are outputs only, there would be no requesting for data from device. It is also good to define data direction for inter-device communication items.</td></tr>
+  <tr><td><b>Parameter</b></td><td><b>Required</b></td><td><b>Notes</b></td></tr>
+  <tr><td>address</td><td>No</td><td>IP address to listen. Empty or 0.0.0.0 means listen for client from everywhere.</td></tr>
+  <tr><td>port</td><td>No</td><td>TCP port number. Default 43243.</td></tr>
+  <tr><td>charset</td><td>No</td><td>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used. Used code page is printed into log file as INFO.</td></tr>
 </table>
 
-Example of binding configuration:
+Bridge definition together with things can be defined in text files. See [generic bridge configuration](https://www.openhab.org/docs/configuration/things.html#defining-bridges-using-files) for details. In short text files .things are located in ${OPENHAB_CONF}/things folder. Basic bridge configuration with required parameters looks like this:
 
-    Dimmer    Item01    "Value[%d]"    { simplebinary="port:1:1" }
-    Number    Item02    "Value[%d]"    { simplebinary="port:1:3:dword:IO" }
-    Number    Item03    "Value[%f]"    { simplebinary="port:1:4:float:O" }
-    Number    Item04    "Value[%f]"    { simplebinary="port:1:14:float:I" }
-    String    Item05    "Value[%s]"    { simplebinary="port:2:1:array[32]:O" }
-    Color     TestColor01              { simplebinary="tcpserver:2:2:rgb:O" }
+    Bridge simplebinary:tcp_bridge:<device_id> "Label" @ "Location" 
+
+Example with optional parameter:
+
+    Bridge simplebinary:tcp_bridge:device1 "My Device"  [ charset="ISO-8859-1" ]
     
-### Inter-device communication
-Binding support inter-device communication. To configure this another device/binding can be specified separated by comma in item configuration. In examples values from first device are written into openHAB (input-I direction) and same value is immediately written into second device (output-O direction):
+## Things
+To any individual bridge things could be added. Things are user defined so only _generic_device_ thing is available. 
 
-    Number    Temperature    "Value[%f]"    { simplebinary="port:1:1:float:I", simplebinary="tcpserver:1:1:float:O" }
-    Number    TemperatureCPU "Value[%f]"    { exec="<[/bin/cat /sys/class/thermal/thermal_zone0/temp:30000:JS(divideTemp.js)]", simplebinary="tcpserver:1:2:float:O" }    
+Things definition can be defined in text files. Easiest way is to put it inside bridge definition:
 
-### Diagnostic item configuration
-Binding itself offers some diagnostic states. There are available statuses for communication port itself and also statuses for connected devices. These statuses can be provided into openHAB if they are properly configured (by use configuration parameter _info_ behind port name or device address). 
+    Bridge simplebinary:<bridge>:<device_id> "Label" @ "Location" [ port="<port ID>", baudRate="<baud rate>" ]
+        Thing generic_device <thing_id> "Thing label" {            
+        }
+    }
 
-Port diagnostic info configuration format:
+## Channels
+For _generic_device_ thing binding supports channels types listed in the table below. Individual channel type are converted to simple data types such as bit, byte, word, double word, float, array.
 
-    simplebinary="port name:info:port status"
-
-Port statuses:
 <table>
-  <tr><td><b>Status</b></td><td><b>Description</b></td><td><b>Returned values</b></td></tr>
-  <tr><td>state</td><td>Return current port status.</td><td>0 - Unknown<br>1 - Listening (opened and ready)<br>2 - Closed<br>3 - Not exist<br>4 - Not available (probably used)</td></tr>
-  <tr><td>previous_state</td><td>Return previous port status</td><td>Same as state</td></tr>
-  <tr><td>state_change_time</td><td>Return time when status was changed</td><td>DateTime value</td></tr>
+  <tr><td><b>Channel type</b></td><td><b>Data type</b></td><td><b>Address example</b></td><td><b>Notes</b></td></tr>
+  <tr><td>chNumber</td><td>byte, word, dword, float</td><td>1:1:byte, 1:1:word, 1:1:dword, 1:1:float</td><td>Numbers are represent in signed form. Their maximum value depends on the used type.<br>Floating point number is stored in 4 bytes formatted according to IEEE 754.</td></tr>
+  <tr><td>chColor</td><td>hsb, rgb, rgbw</td><td>1:1:rgb</td><td>All color parts are transferred in one double word. Each color component corresponds to one byte. Bytes assignment:<br>RGB - byte 0 - Red, 1 - Green, 2 - Blue, 3 - Not used</td></tr>
+  <tr><td>chString</td><td>byte array</td><td>1:1:32</td><td>Array of bytes represent null terminated string. Length of array is specified behind address definition.</td></tr>
+  <tr><td>chContact</td><td>byte</td><td>1:1</td><td>0 - off, 1 - on</td></tr>
+  <tr><td>chSwitch</td><td>byte</td><td>1:1</td><td>0 - off, 1 - on</td></tr>
+  <tr><td>chDimmer</td><td>byte</td><td>1:1</td><td>Value range is 0-100</td></tr>
+  <tr><td>chRollershutter</td><td>byte</td><td>1:1</td><td>State specifies position (0-100%). Command sends Stop/Up/Down (2-Stop, 4-Up, 8-Down).</td></tr>
 </table>
 
-Device diagnostic info configuration format:
+Every channel has two parameters _stateAddress_ and _commandAddress_. At least one must have a defined value.
 
-    simplebinary="port name:device address:info:device status"
+Channel text file definition as part of thing:
 
-Device statuses:
-<table>
-  <tr><td><b>Status</b></td><td><b>Description</b></td><td><b>Returned values</b></td></tr>
-  <tr><td>state</td><td>Return current device status.</td><td>0 - Unknown<br>1 - Connected and answering<br>2 - Not responding / disconnected<br>3 - Response error (device still wants repeat query - received message had bad CRC)<br>4 - Data error (device report unknown item address, unknown data, unsupported message or error while saving delivered data)</td></tr>
-  <tr><td>previous_state</td><td>Return previous device status</td><td>Same as state</td></tr>
-  <tr><td>state_change_time</td><td>Return time when status was changed</td><td>DateTime value</td></tr>
-  <tr><td>packet_lost</td><td>Return percentage of packet lost (not delivered, bad CRC, ...) within last 5 minutes</td><td>0-100%</td></tr>
-</table>
+    Bridge simplebinary:<bridge>:<device_id> "Label" @ "Location" [ port="<port ID>", baudRate="<baud rate>" ] {
+        Thing generic_device <thing_id> "Thing label" {
+            Channels:
+                Type <channel_type> : <channel_id> [ stateAddress="<address>", commandAddress="<address>" ]
+        }
+    }
 
-Example of diagnostic item configuration:
-
-    Number    PortState            "Port state [%s]"                 { simplebinary="port:info:state" }
-    Number    PortPreviouState     "Port previous state [%s]"        { simplebinary="port:info:previous_state" }
-    DateTime  PortStateChangeTime  "Port changed [%1$tA, %1$td.%1$tm.%1$tY %1$tT]"    { simplebinary="port:info:state_change_time" }
-
-    Number    Dev01State           "Device 1 state [%s]"             { simplebinary="port:1:info:state" }
-    Number    Dev01PreviouState    "Device 1 previous state [%s]"    { simplebinary="port:1:info:previous_state" }
-    DateTime  Dev01StateChangeTime "Device 1 changed [%1$tA, %1$td.%1$tm.%1$tY %1$tT]" { simplebinary="port:1:info:state_change_time" }
-    Number    Dev01PacketLost      "Device 1 packet lost rate [%s]"  { simplebinary="port:1:info:packet_lost" }
-
-    Number    Dev02State           "Device 2 state [%s]"             { simplebinary="port:2:info:state" }
-    Number    Dev02PreviouState    "Device 2 previous state [%s]"    { simplebinary="port:2:info:previous_state" }
-    DateTime  Dev02StateChangeTime "Device 2 changed [%1$tA, %1$td.%1$tm.%1$tY %1$tT]" { simplebinary="port:2:info:state_change_time" }
-    Number    Dev02PacketLost      "Device 2 packet lost rate [%s]"  { simplebinary="port:2:info:packet_lost" }
+### Configuration example
+    Bridge simplebinary:uart_bridge:Device1 "My Device"  [ port="/dev/ttyUSB1", baudRate="9600", charset="ISO-8859-1" ] {
+        Thing generic_device devState "Device state" {
+            Channels:
+                Type chNumber: watchdog1 [ stateAddress="1:0:byte" ]
+                Type chNumber: watchdog2 [ stateAddress="2:0:byte" ]
+                Type chNumber: watchdog3 [ stateAddress="3:0:byte" ]
+        }
+        Thing generic_device weather "Weather station" {
+            Channels:
+                Type chNumber: temperature [ stateAddress="1:1:float" ]                
+                Type chNumber: pressure [ stateAddress="1:2:word" ]
+                Type chNumber: humidity [ stateAddress="1:3:word" ]
+        }
+        Thing generic_device hall "Hall" {
+            Channels:
+                Type chContact: door_contact [ stateAddress="2:4" ]                
+                Type chSwitch: light_switch [ stateAddress="2:5", commandAddress="2:5" ]
+                Type chNumber: humidity [ stateAddress="2:6:word" ]
+        }
+        Thing generic_device device "Special device" {
+            Channels:
+                Type chSwitch: run  [ stateAddress="3:1", commandAddress="3:2" ]            
+                Type chDimmer: rate [ stateAddress="3:3", commandAddress="3:4" ]
+                Type chString: text [ stateAddress="3:5:20", commandAddress="3:5:20" ]
+        }
+    }
+    Bridge simplebinary:tcp_bridge:Device2 "My second Device" {
+        Thing generic_device rollers "Rollershutters" {
+            Channels:
+                Type chRollershutter: rs1 [ stateAddress="1:0", commandAddress="1:1" ]            
+                Type chRollershutter: rs2 [ stateAddress="1:2", commandAddress="1:3" ]
+        }
+    }
 
 ## Protocol
 Binding implements master/slave communication model for serial communication. OpenHAB binding is master and connected devices are slaves. Master sends command and waits for response from slave. Answer should arrived in order tens of milliseconds. However bindings has 2000ms timeout to receive answer. Communication protocol itself depends on requested operating mode of the device (OnScan / OnChange). Of course device can support both operating modes.
@@ -156,7 +158,7 @@ Network TCP connection use same protocol as serial communication but in producer
 
 Every packet start with device address and is followed by message type. Minimum packet length is 4 bytes. Packets are secured with CRC8 which should be enough for short packets.
 
-###Master query for new data - OnChange mode
+### Master query for new data - OnChange mode
 On this packet master expecting as answer "data" packet or "no data" packet (message type 0xE2).
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -169,7 +171,7 @@ Control byte of this packet can says type of new data retrieve:
 * _Standard_ (value 0) - only really new data are requested. 
 * _Force all data_ (value 1) - that device should mark all his data as new and send it to master. This message master send when there was connection lost between devices. That because meantime data could be changed, openHAB or device restarted, ....
 
-###Master query for data with specified address - OnScan mode
+### Master query for data with specified address - OnScan mode
 On this packet master expecting as answer "data" packet or "invalid address" packet (message type 0xE4).
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -180,7 +182,7 @@ On this packet master expecting as answer "data" packet or "invalid address" pac
   <tr><td>4</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Data packet for data type byte
+### Data packet for data type byte
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
 Answer from slave should "done" when everything was right. 
 <table>
@@ -193,7 +195,7 @@ Answer from slave should "done" when everything was right.
   <tr><td>5</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Data packet for data type word
+### Data packet for data type word
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
 Answer from slave should "done" when everything was right.
 <table>
@@ -207,7 +209,7 @@ Answer from slave should "done" when everything was right.
   <tr><td>6</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Data packet for data type dword
+### Data packet for data type dword
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
 Answer from slave should "done" when everything was right.
 <table>
@@ -223,7 +225,7 @@ Answer from slave should "done" when everything was right.
   <tr><td>8</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Data packet for type HSB, RGB, RGBW
+### Data packet for type HSB, RGB, RGBW
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
 Answer from slave should "done" when everything was right.
 <table>
@@ -239,7 +241,7 @@ Answer from slave should "done" when everything was right.
   <tr><td>8</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Data packet for type array
+### Data packet for type array
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
 Answer from slave should "done" when everything was right.
 <table>
@@ -255,7 +257,7 @@ Answer from slave should "done" when everything was right.
   <tr><td>n-1</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Acknowledge packet - Done
+### Acknowledge packet - Done
 Answer from slave that data write from master was accepted.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -265,7 +267,7 @@ Answer from slave that data write from master was accepted.
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Error packet - Repeat
+### Error packet - Repeat
 Answer that received packet had wrong CRC. On this packet master react by sending last packet again (max. 3 time).
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -275,7 +277,7 @@ Answer that received packet had wrong CRC. On this packet master react by sendin
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Acknowledge packet - No new data
+### Acknowledge packet - No new data
 Slave react with this packet on <b>query for new data in OnChange mode</b> in case that there's no data to send.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -285,7 +287,7 @@ Slave react with this packet on <b>query for new data in OnChange mode</b> in ca
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Error packet - Unknown data
+### Error packet - Unknown data
 Slave react with this packet if received message had unknown/unsupported type.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -295,7 +297,7 @@ Slave react with this packet if received message had unknown/unsupported type.
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Error packet - Unknown address
+### Error packet - Unknown address
 Slave react with this packet if received message had unknown data item address.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -305,7 +307,7 @@ Slave react with this packet if received message had unknown data item address.
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Error packet - Error while saving data
+### Error packet - Error while saving data
 Slave send this packet when he could not save received data from master.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -315,7 +317,7 @@ Slave send this packet when he could not save received data from master.
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Hi packet
+### Hi packet
 This packet is for connection model producer/consumer (TCP client/server connection). Client sends this packet after he is connected to server.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -325,7 +327,7 @@ This packet is for connection model producer/consumer (TCP client/server connect
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Welcome packet
+### Welcome packet
 This packet is for connection model producer/consumer (TCP client/server connection). Server sends this packet as Hi packet response.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -335,7 +337,7 @@ This packet is for connection model producer/consumer (TCP client/server connect
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Deny packet
+### Deny packet
 This packet is for connection model producer/consumer (TCP client/server connection). Server sends this packet as Hi packet response.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
@@ -345,7 +347,7 @@ This packet is for connection model producer/consumer (TCP client/server connect
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-###Want all data
+### Want all data
 This packet is sent by device to tell that he want's all his data. In master/slave configuration it could be send as response for new data request (0xD0). 
 Note: all data are normally sent when device is connected.
 <table>
@@ -356,12 +358,12 @@ Note: all data are normally sent when device is connected.
   <tr><td>3</td><td>CRC8</td><td></td></tr>
 </table>
 
-##Implementation
+## Implementation
 The extent of implementation depends on the required features and data types (see chapter Protocol).
 
 At first device should check if message is correctly received (CRC check). Secondly device should check if message is for him by compare message address and his own assigned address. **If the address is different device must not respond!** Otherwise device must response in corresponding way (see chapter Protocol).
 
-##Implementation example
+## Implementation example
 Implementation example for Arduino can be found in [Arduino library repo folder](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino).
 
 It consists of two main classes. Class _simpleBinary_ which contains protocol implementation itself and class _itemData_ which provides item data storage and handling with item.
@@ -407,7 +409,7 @@ It consists of two main classes. Class _simpleBinary_ which contains protocol im
   <tr><td>void</td><td><b>executeAction</b>()<br>Execute action connected at item initialization.</td></tr>
 </table>
 
-###CRC8 calculation implementation
+### CRC8 calculation implementation
 
     char CRC8::evalCRC(char *data, int length)
     {

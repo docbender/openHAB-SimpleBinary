@@ -79,14 +79,13 @@ public class SimpleBinaryByteBuffer {
      * Provide flip buffer (set into read mode)
      *
      * @return
-     * @throws ModeChangeException
      */
-    public ByteBuffer flip() throws ModeChangeException {
+    public ByteBuffer flip() {
         if (_mode != BufferMode.READ) {
             _mode = BufferMode.READ;
             _buffer.flip();
-        } else {
-            throw new ModeChangeException("flip()", _mode);
+//        } else {
+//            throw new ModeChangeException("flip()", _mode);
         }
 
         return _buffer;
@@ -101,10 +100,10 @@ public class SimpleBinaryByteBuffer {
     public ByteBuffer compact() throws ModeChangeException {
         if (_mode == BufferMode.READ) {
             _mode = BufferMode.WRITE;
-            _buffer.compact();
-        } else {
-            throw new ModeChangeException("compact()", _mode);
+        // } else {
+        // throw new ModeChangeException("compact()", _mode);
         }
+        _buffer.compact();
 
         return _buffer;
     }
@@ -190,9 +189,11 @@ public class SimpleBinaryByteBuffer {
     public Buffer rewind() throws ModeChangeException {
         if (_mode == BufferMode.READ) {
             return _buffer.rewind();
-        } else {
-            throw new ModeChangeException("rewind()", _mode);
+        //} else {
+        //    throw new ModeChangeException("rewind()", _mode);
         }
+        
+        return _buffer;
     }
 
     /**

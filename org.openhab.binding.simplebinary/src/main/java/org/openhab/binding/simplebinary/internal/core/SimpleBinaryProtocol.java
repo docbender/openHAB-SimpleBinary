@@ -12,7 +12,6 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 
 import org.openhab.binding.simplebinary.internal.SimpleBinaryBindingConstants;
-import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.IncreaseDecreaseType;
 import org.openhab.core.library.types.OnOffType;
@@ -194,12 +193,12 @@ public class SimpleBinaryProtocol {
         data[3] = (byte) ((address.getAddress() >> 8) & 0xFF);
 
         if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_NUMBER)) {
-            if (!(command instanceof DecimalType)) {
+            if (!(command instanceof Number)) {
                 throw new Exception(
                         String.format("Cannot create WriteDataFrame. Command for ChannelType=%s must be DecimalType",
                                 channel.channelType.getId()));
             }
-            DecimalType cmd = (DecimalType) command;
+            Number cmd = (Number) command;
             if (address.getType() == SimpleBinaryTypes.BYTE) {
                 data[4] = cmd.byteValue();
             } else if (address.getType() == SimpleBinaryTypes.WORD) {
@@ -437,6 +436,9 @@ public class SimpleBinaryProtocol {
                 data[4] = (byte) (((StopMoveType) command).equals(StopMoveType.MOVE) ? 0x1 : 0x2);
             } else if (command instanceof UpDownType) {
                 data[4] = (byte) (((UpDownType) command).equals(UpDownType.UP) ? 0x4 : 0x8);
+            } else if (command instanceof PercentType) {
+                data[4] = 0x1;
+                data[5] = ((PercentType) command).byteValue();
             } else {
                 throw new Exception(
                         String.format("Cannot create WriteDataFrame. Command %s for ChannelType=%s not implemented",
@@ -570,6 +572,7 @@ public class SimpleBinaryProtocol {
      * @throws UnknownMessageException
      * @throws ModeChangeException
      */
+    @SuppressWarnings({ "null", "unused" })
     public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<SimpleBinaryChannel> items,
             Byte forcedDeviceId, boolean letDataInBuffer)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {

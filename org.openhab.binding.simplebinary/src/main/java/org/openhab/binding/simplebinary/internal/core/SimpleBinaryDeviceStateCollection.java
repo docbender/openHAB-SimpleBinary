@@ -27,7 +27,7 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
 
     /**
      * Device collection constructor
-     * 
+     *
      */
     public SimpleBinaryDeviceStateCollection() {
         super();
@@ -53,12 +53,7 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
      * @param state
      *            Device state
      */
-    public void setDeviceState(Integer deviceAddress, SimpleBinaryDeviceState.DeviceStates state) {
-
-        if (deviceAddress < 0) {
-            return;
-        }
-
+    public boolean setDeviceState(Integer deviceAddress, SimpleBinaryDeviceState.DeviceStates state) {
         if (!this.containsKey(deviceAddress)) {
             this.put(deviceAddress, new SimpleBinaryDeviceState());
         }
@@ -66,36 +61,7 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
         // retrieve device
         SimpleBinaryDeviceState deviceState = this.get(deviceAddress);
         // set internal state
-        if (deviceState.setState(state)) {
-            // TODO: device state set ???
-            /*
-             * // send data to event bus
-             * for (Map.Entry<String, SimpleBinaryInfoBindingConfig> item : deviceItemsConfigs.entrySet()) {
-             *
-             * // check correct device and target address
-             * if (item.getValue().device.equals(deviceName) && item.getValue().busAddress == deviceAddress) {
-             * // find right info type
-             * if (item.getValue().infoType == InfoType.STATE) {
-             * // update event bus
-             * eventPublisher.postUpdate(item.getValue().item.getName(),
-             * new DecimalType(deviceState.getState().ordinal()));
-             * } else if (item.getValue().infoType == InfoType.PREVIOUS_STATE) {
-             * // update event bus
-             * eventPublisher.postUpdate(item.getValue().item.getName(),
-             * new DecimalType(deviceState.getPreviousState().ordinal()));
-             * } else if (item.getValue().infoType == InfoType.STATE_CHANGE_TIME) {
-             * // update event bus
-             * eventPublisher.postUpdate(item.getValue().item.getName(),
-             * new DateTimeType(deviceState.getChangeDate()));
-             * } else if (item.getValue().infoType == InfoType.PACKET_LOST) {
-             * // update event bus
-             * eventPublisher.postUpdate(item.getValue().item.getName(),
-             * new DecimalType(deviceState.getPacketLost()));
-             * }
-             * }
-             * }
-             */
-        }
+        return deviceState.setState(state);
     }
 
     /**
@@ -105,11 +71,8 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
      *            Required state
      */
     public void setStateToAllConfiguredDevices(SimpleBinaryDeviceState.DeviceStates state) {
-        logger.debug("setStateToAllConfiguredDevices");
-
         // send data to event bus
         for (var item : entrySet()) {
-            logger.debug("{}={}", item.getKey(), state.toString());
             setDeviceState(item.getKey(), state);
         }
     }

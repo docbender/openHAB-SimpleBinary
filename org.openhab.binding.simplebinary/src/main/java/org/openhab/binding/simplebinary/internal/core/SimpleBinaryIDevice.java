@@ -22,11 +22,15 @@ import org.openhab.core.types.Command;
 public interface SimpleBinaryIDevice {
 
     public interface ConnectionChanged {
-        public void onConnectionChanged(boolean connected);
+        public void onConnectionChanged(boolean connected, String reason);
     }
 
     public interface MetricsUpdated {
         public void onMetricsUpdated(long requests, long bytes);
+    }
+
+    public interface DeviceStateUpdated {
+        public void onDeviceStateUpdated(int deviceId, SimpleBinaryDeviceState state);
     }
 
     /**
@@ -69,7 +73,8 @@ public interface SimpleBinaryIDevice {
      *
      */
     public void setDataAreas(@NonNull ArrayList<Integer> devices,
-            @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems);
+            @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems,
+            @NonNull ArrayList<@NonNull SimpleBinaryChannel> commandItems);
 
     /**
      * Function return device string representation
@@ -86,4 +91,9 @@ public interface SimpleBinaryIDevice {
      * Set method provided on update metrics
      */
     public void onMetricsUpdated(MetricsUpdated onUpdateMethod);
+
+    /**
+     * Set method provided on update single device state
+     */
+    public void onDeviceStateUpdated(DeviceStateUpdated onUpdateMethod);
 }

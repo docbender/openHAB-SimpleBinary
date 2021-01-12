@@ -21,7 +21,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.nio.charset.Charset;
-import java.util.Calendar;
+import java.time.ZonedDateTime;
 import java.util.Map;
 
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
@@ -61,6 +61,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
         this.bindAddress = ip;
         this.port = port;
+        this.channels = new SimpleBinaryIPChannelInfoCollection(this);
     }
 
     /**
@@ -105,7 +106,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
         portState.setState(PortStates.CLOSED);
         // set initial state for configured devices
-        devices.setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
+        setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
         // reset connected state
         setConnected(false);
         // setWaitingForAnswer(false);
@@ -350,20 +351,17 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         } catch (UnknownHostException ex) {
             portState.setState(PortStates.NOT_AVAILABLE);
 
-            logger.error("{} - address error", this.toString());
+            var msg = String.format("%s - address error", this.toString());
+            logger.error(msg);
+            setConnected(false, msg);
 
             return false;
-        } catch (IOException ex) {
-            portState.setState(PortStates.NOT_AVAILABLE);
-
-            logger.error("{} - socket error: {}", this.toString(), ex.getMessage());
-
-            return false;
-
         } catch (Exception ex) {
             portState.setState(PortStates.NOT_AVAILABLE);
 
-            logger.error("{} - socket error: {}", this.toString(), ex.getMessage());
+            var msg = String.format("%s - socket error: %s", this.toString(), ex.getMessage());
+            logger.error(msg);
+            setConnected(false, msg);
 
             return false;
         }
@@ -395,7 +393,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
         }
 
         portState.setState(PortStates.CLOSED);
-        devices.setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
+        setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
         setConnected(false);
     }
 
@@ -529,7 +527,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
             logger.info("{} - Device {}/{} was disconnected", toString(), chInfo.getDeviceId(), chInfo.getIp());
         }
 
-        devices.setDeviceState(chInfo.getDeviceId(), DeviceStates.NOT_RESPONDING);
+        setDeviceState(chInfo.getDeviceId(), DeviceStates.NOT_RESPONDING);
     }
 
     public void addDevice(String deviceID, String ipAddress, boolean isIpLocked) {
@@ -562,12 +560,11 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
             return;
         }
 
-        Calendar limitTime = Calendar.getInstance();
-        limitTime.add(Calendar.SECOND, -60);
+        ZonedDateTime limitTime = ZonedDateTime.now().plusSeconds(-60);
 
         for (Map.Entry<Integer, SimpleBinaryDeviceState> device : devices.entrySet()) {
-            Calendar c = device.getValue().getLastCommunication();
-            if (c == null || c.after(limitTime)) {
+            ZonedDateTime time = device.getValue().getLastCommunication();
+            if (time == null || time.isAfter(limitTime)) {
                 continue;
             }
 

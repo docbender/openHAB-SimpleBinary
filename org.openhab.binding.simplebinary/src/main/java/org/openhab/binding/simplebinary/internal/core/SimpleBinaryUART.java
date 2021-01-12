@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPortState.PortStates;
 import org.openhab.core.io.transport.serial.PortInUseException;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * @since 1.9.0
  */
 public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements SerialPortEventListener {
-
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryUART.class);
     /** Timeout for receiving data [ms] **/
     private static final int TIMEOUT = 2000;
@@ -51,7 +49,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     /** port baud rate */
     private int baud = 9600;
     /** serial manager */
-    private @NonNullByDefault({}) SerialPortManager serialPortManager;
+    private SerialPortManager serialPortManager;
     /** port id */
     private SerialPortIdentifier portId;
     /** port instance */
@@ -69,9 +67,9 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     protected long receiveTime = 0;
 
     /** Flag indicating RTS signal will be handled */
-    private boolean forceRTS;
+    private boolean forceRTS = false;
     /** Flag indicating RTS signal will be handled on inverted logic */
-    private boolean invertedRTS;
+    private boolean invertedRTS = false;
     /** Variable for count minimal time before reset RTS signal */
     private long sentTimeTicks = 0;
 
@@ -103,8 +101,10 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         super(port, simpleBinaryPoolControl, pollRate, charset);
 
         this.baud = baud;
+        // IFDEF_OH3.0 //
         this.forceRTS = forceRTS;
         this.invertedRTS = invertedRTS;
+        // IFDEF_OH3.0
         this.serialPortManager = serialPortManager;
     }
 
@@ -134,102 +134,107 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
         portState.setState(PortStates.CLOSED);
         // set initial state for configured devices
-        devices.setStateToAllConfiguredDevices(DeviceStates.UNKNOWN);
+        setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
         // reset connected state
-        setConnected(false);
-        setWaitingForAnswer(false);
+        // setConnected(false, null);
+        resetWaitingForAnswer();
 
         portId = null;
 
         try {
             // get port ID
             portId = serialPortManager.getIdentifier(this.deviceID);
+            alreadyPortNotFound = false;
         } catch (Exception ex) {
-            logger.error("{}.", this.toString(), ex);
+            logger.error("{}: ", this.toString(), ex);
         } finally {
             if (portId == null) {
                 portState.setState(PortStates.NOT_EXIST);
 
                 if (!alreadyPortNotFound) {
-                    logger.warn("{} not found", this.toString());
-                    logger.info("Available ports: " + getCommPortListString());
+                    var ports = getCommPortListString();
+                    var errMsg = ports.length() == 0
+                            ? String.format("%s not found. No port available.", this.toString())
+                            : String.format("%s not found. Available ports: %s.", this.toString(), ports);
+                    logger.warn(errMsg);
 
                     alreadyPortNotFound = true;
+                } else {
+                    logger.debug("{} still not found", this.toString());
                 }
 
+                setConnected(false, String.format("%s not found", this.toString()));
                 return false;
             }
         }
 
-        alreadyPortNotFound = false;
+        // initialize serial port
+        try {
+            serialPort = portId.open("openHAB", 1000);
+            // get the input stream
+            inputStream = serialPort.getInputStream();
+            // get the output stream
+            outputStream = serialPort.getOutputStream();
+        } catch (PortInUseException e) {
+            this.close();
+            portState.setState(PortStates.NOT_AVAILABLE);
 
-        if (portId != null) {
-            // initialize serial port
-            try {
-                serialPort = portId.open("openHAB", 1000);
-            } catch (PortInUseException e) {
-                portState.setState(PortStates.NOT_AVAILABLE);
+            var msg = String.format("%s is in use. Owner is {}", this.toString(), portId.getCurrentOwner());
+            logger.error(msg);
+            setConnected(false, msg);
 
-                logger.error("{} is in use", this.toString());
+            return false;
+        } catch (Exception e) {
+            this.close();
+            var msg = String.format("%s: %s", this.toString(), e.getMessage());
+            logger.error(msg);
+            setConnected(false, msg);
 
-                this.close();
-                return false;
-            }
+            return false;
+        }
 
-            try {
-                inputStream = serialPort.getInputStream();
-            } catch (IOException e) {
-                logger.error("{} exception: {}", this.toString(), e.getMessage());
+        try {
+            serialPort.addEventListener(this);
+        } catch (TooManyListenersException e) {
+            this.close();
 
-                this.close();
-                return false;
-            }
+            var msg = String.format("%s: %s", this.toString(), e.getMessage());
+            logger.error(msg);
+            setConnected(false, msg);
 
-            try {
-                // get the output stream
-                outputStream = serialPort.getOutputStream();
-            } catch (IOException e) {
-                logger.error("{} exception:{}", this.toString(), e.getMessage());
+            return false;
+        }
 
-                this.close();
-                return false;
-            }
+        // activate the DATA_AVAILABLE notifier
+        serialPort.notifyOnDataAvailable(true);
+        if (this.forceRTS) {
+            // IFDEF_OH3.0 //
+            // OUTPUT_BUFFER_EMPTY
+            serialPort.notifyOnOutputEmpty(true);
+            // IFDEF_OH3.0
+        }
 
-            try {
-                serialPort.addEventListener(this);
-            } catch (TooManyListenersException e) {
-                logger.error("{} exception:{}", this.toString(), e.getMessage());
+        try
 
-                this.close();
-                return false;
-            }
+        {
+            // set port parameters
+            serialPort.setSerialPortParams(baud, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+            serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
+        } catch (UnsupportedCommOperationException e) {
+            var msg = String.format("%s: %s", this.toString(), e.getMessage());
+            logger.error(msg);
+            setConnected(false, msg);
 
-            // activate the DATA_AVAILABLE notifier
-            serialPort.notifyOnDataAvailable(true);
-            if (this.forceRTS) {
-                // OUTPUT_BUFFER_EMPTY
-                // serialPort.notifyOnOutputEmpty(true);
-                // FIXME: org.openhab.core.io.transport.serial.* not implemented notifyOnOutputEmpty - need to test
-            }
-
-            try {
-                // set port parameters
-                serialPort.setSerialPortParams(baud, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
-                        SerialPort.PARITY_NONE);
-                serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
-            } catch (UnsupportedCommOperationException e) {
-                logger.error("{} exception: {}", this.toString(), e.getMessage());
-
-                this.close();
-                return false;
-            }
+            this.close();
+            return false;
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("{} - opened", this.toString());
+            logger.debug("Port {} is opened. Used class is {}", this.toString(), serialPort.getClass().getSimpleName());
         }
 
         portState.setState(PortStates.LISTENING);
+
         setConnected(true);
         return true;
     }
@@ -239,12 +244,15 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      *
      * @return
      */
-    @SuppressWarnings("rawtypes")
     private String getCommPortListString() {
         StringBuilder sb = new StringBuilder();
+        @SuppressWarnings("null")
         Stream<SerialPortIdentifier> portList = serialPortManager.getIdentifiers();
         portList.filter(s -> s.getName().length() > 0).forEach((p) -> {
-            sb.append(p.getName() + "\n");
+            if (sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append(p.getName());
         });
 
         return sb.toString();
@@ -257,6 +265,13 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     @Override
     public void close() {
+        close(null);
+    }
+
+    /**
+     * Close serial port with close reason specified. If reason is not null close is unexpected.
+     */
+    public void close(String reason) {
         if (serialPort != null) {
             serialPort.removeEventListener();
             IOUtils.closeQuietly(inputStream);
@@ -265,17 +280,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         }
 
         portState.setState(PortStates.CLOSED);
-        setConnected(false);
-    }
-
-    /**
-     * Reconnect device
-     */
-    private void reconnect() {
-        logger.info("{}: Trying to reconnect", this.toString());
-
-        close();
-        open();
+        setConnected(false, reason);
     }
 
     /*
@@ -349,9 +354,9 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
                 setLastSentData(data);
             } catch (Exception e) {
-                logger.error("{} - Error while writing", this.toString());
-
-                reconnect();
+                var msg = String.format("%s - Error while writing. %s.", this.toString(), e.toString());
+                logger.error(msg, e);
+                close(msg);
 
                 return false;
             }
@@ -404,21 +409,21 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                 if (!this.forceRTS) {
                     break;
                 }
-                // FIXME: isRTS not part of serialPort. Need to implement workaround
-                /*
-                 * if (serialPort.isRTS() && !invertedRTS || !serialPort.isRTS() && invertedRTS) {
-                 *
-                 * // comply minimum sending time. Added because on ubuntu14.04 event OUTPUT_BUFFER_EMPTY is called
-                 * // periodically even before some data are send.
-                 * if (System.currentTimeMillis() > sentTimeTicks) {
-                 * serialPort.setRTS(invertedRTS);
-                 *
-                 * if (logger.isDebugEnabled()) {
-                 * logger.debug("{} - RTS reset", this.toString());
-                 * }
-                 * }
-                 * }
-                 */
+
+                // IFDEF_OH3.0 //
+                if (serialPort.isRTS() && !invertedRTS || !serialPort.isRTS() && invertedRTS) {
+                    // comply minimum sending time. Added because on ubuntu14.04 event OUTPUT_BUFFER_EMPTY is called
+                    // periodically even before some data are send.
+                    if (System.currentTimeMillis() > sentTimeTicks) {
+                        serialPort.setRTS(invertedRTS);
+
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("{} - RTS reset", this.toString());
+                        }
+                    }
+                }
+                // IFDEF_OH3.0
+
                 break;
             case SerialPortEvent.DATA_AVAILABLE:
                 readingData.set(true);
@@ -445,7 +450,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                             logger.warn("{} - Address not valid: input buffer cleared", this.toString());
 
                             // set state
-                            devices.setDeviceState(getLastSentData().getDeviceId(), DeviceStates.DATA_ERROR);
+                            setDeviceState(getLastSentData().getDeviceId(), DeviceStates.DATA_ERROR);
 
                             return;
                         }
@@ -457,11 +462,14 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                             // waiting for answer?
                             if (waitingForAnswer.get()) {
                                 // stop block sent
-                                setWaitingForAnswer(false);
+                                resetWaitingForAnswer();
                             }
                         } else if (r == ProcessDataResult.DATA_NOT_COMPLETED
                                 || r == ProcessDataResult.PROCESSING_ERROR) {
                             break;
+                        } else {
+                            logger.warn("{} - Unexpected return code from processData(). Code=0x{}.", this.toString(),
+                                    Integer.toHexString(r));
                         }
 
                         // check for new data
@@ -548,28 +556,11 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
     /**
      * Set waiting task for answer for slave device if waitingForAnswer not set.
-     * Return true if flag is set
      *
+     * Return true if flag is set
      */
     protected boolean compareAndSetWaitingForAnswer() {
         if (waitingForAnswer.compareAndSet(false, true)) {
-            setWaitingForAnswer(true);
-
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Set / reset waiting task for answer for slave device
-     *
-     * @param state
-     */
-    protected void setWaitingForAnswer(boolean state) {
-        waitingForAnswer.set(state);
-
-        if (state) {
             if (timeoutTask != null) {
                 timeoutTask.cancel();
             }
@@ -583,17 +574,27 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
             };
 
             timer.schedule(timeoutTask, TIMEOUT);
+
+            return true;
         } else {
-            if (timeoutTask != null) {
-                timeoutTask.cancel();
-                timeoutTask = null;
-            }
+            return false;
+        }
+    }
+
+    /**
+     * Set / reset waiting task for answer for slave device
+     */
+    protected void resetWaitingForAnswer() {
+        waitingForAnswer.set(false);
+
+        if (timeoutTask != null) {
+            timeoutTask.cancel();
+            timeoutTask = null;
         }
     }
 
     /**
      * Method processed after waiting for answer is timeouted
-     * @throws
      */
     protected void dataTimeouted() {
         int address = this.getLastSentData().getDeviceId();
@@ -617,29 +618,20 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         logger.warn("{} - Device{} - Receiving data timeouted. Thread={}", this.toString(), address,
                 Thread.currentThread().getId());
 
-        /*
-         * for (Map.Entry<Thread, StackTraceElement[]> t : Thread.getAllStackTraces().entrySet()) {
-         * String s = "";
-         *
-         * for (int i = 0; i < t.getValue().length; i++) {
-         * s += "\n" + t.getValue()[i].getFileName() + "|" + t.getValue()[i].getMethodName() + "["
-         * + t.getValue()[i].getLineNumber() + "]...";
-         * if (i > 10) {
-         * break;
-         * }
-         * }
-         * logger.warn("{}-{}...", t.getKey(), s);
-         * }
-         */
-        devices.setDeviceState(address, DeviceStates.NOT_RESPONDING);
+        setDeviceState(address, DeviceStates.NOT_RESPONDING);
 
+        inBuffer.flip();
+        if (inBuffer.remaining() > 0) {
+            // print details
+            printCommunicationInfo(inBuffer, lastSentData);
+        }
         if (logger.isDebugEnabled()) {
             logger.debug("{} - Input buffer cleared", this.toString());
         }
 
         inBuffer.clear();
 
-        setWaitingForAnswer(false);
+        resetWaitingForAnswer();
         // new command will be sent if there is any
         processCommandQueue();
     }

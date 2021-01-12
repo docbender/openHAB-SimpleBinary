@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link simaticHandler} is responsible for handling commands, which are
+ * The {@link simplebinaryHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
  * @author VitaTucek - Initial contribution
@@ -46,9 +46,10 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryGenericHandler.class);
 
     private @Nullable SimpleBinaryGenericDevice connection = null;
-    private long errorSetTime = 0;
 
     public final Map<ChannelUID, SimpleBinaryChannel> channels = new LinkedHashMap<ChannelUID, SimpleBinaryChannel>();
+
+    private long errorSetTime;
 
     public SimpleBinaryGenericHandler(Thing thing) {
         super(thing);
@@ -135,7 +136,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
 
         SimpleBinaryBridgeHandler b = (SimpleBinaryBridgeHandler) (getBridge().getHandler());
         if (b == null) {
-            logger.error("simaticBridgeHandler is null");
+            logger.error("BridgeHandler is null");
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_UNINITIALIZED);
             return;
         }
@@ -146,6 +147,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         updateStatus(ThingStatus.ONLINE);
     }
 
+    @SuppressWarnings({ "unused", "null" })
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("{} - Command {}({}) for channel {}", thing.getLabel(), command, command.getClass(), channelUID);
@@ -173,6 +175,15 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             return;
         }
         SimpleBinaryChannel channel = channels.get(channelUID);
+
+        if (channel.getCommandAddress() == null) {
+            if (!channel.isMissingCommandReported()) {
+                logger.warn(
+                        "{} - command not completed. Channel does not have a command address specified. ChannelUID={}",
+                        thing.getLabel(), channelUID);
+            }
+            return;
+        }
 
         connection.sendData(channel, command);
     }

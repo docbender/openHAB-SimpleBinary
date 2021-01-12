@@ -11,4 +11,34 @@
 	<name>openHAB Add-ons :: Bundles :: SimpleBinary Binding</name>   
    <dependencies>  
    </dependencies> 
+   <build> 
+   <plugins>
+	<plugin>
+	    <groupId>com.google.code.maven-replacer-plugin</groupId>
+	    <artifactId>replacer</artifactId>
+	    <version>1.5.3</version>
+		<executions>
+		        <execution>
+		            <phase>generate-sources</phase>
+		            <goals>
+		                <goal>replace</goal>
+		            </goals>
+		        </execution>
+		</executions>	    
+	    <configuration>
+	        <file>${basedir}/src/main/java/org/openhab/binding/simplebinary/internal/core/SimpleBinaryUART.java</file>
+	        <replacements>
+		        <replacement>
+		           <token>// IFDEF_OH3.0 //</token>
+		           <value>/* OH3.0 unsupported</value>
+		        </replacement>
+		        <replacement>
+	               <token>// IFDEF_OH3.0</token>
+	               <value>*/</value>
+	            </replacement>
+            </replacements>
+	    </configuration>
+	</plugin>   
+   </plugins>
+	</build>
 </project>

@@ -197,12 +197,16 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address]:[data type] (e.g. 1:1:byte).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address]:[data type] (e.g. 1:1:byte).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address]:[data type] (e.g. 1:1:byte).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address]:[data type] (e.g. 1:1:byte).</description>
 			</parameter>
+			<parameter name="unit" type="text">
+                <label>Unit</label>
+                <description>Received number unit. If specified, unit is send into openHAB together with new value. No validation against data type is provided.</description>
+            </parameter>
 		</config-description>
 	</channel-type>
 	<channel-type id="chColor">
@@ -212,11 +216,11 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -227,11 +231,11 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address]:[lenght] (e.g. 1:1:32).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address]:[lenght] (e.g. 1:1:32).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address]:[lenght] (e.g. 1:1:32).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address]:[lenght] (e.g. 1:1:32).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -242,11 +246,11 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -257,11 +261,11 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -272,11 +276,11 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -284,18 +288,18 @@
 		<item-type>Rollershutter</item-type>
 		<label>Rollershutter</label>
         <description><![CDATA[
-              Status data type is Byte for position (0-100%). Command data types are Byte or Word.<br/>
-              Byte for Stop/Up/Down (2-Stop,4-Up,8-Down)<br/>
+              Status data type is Byte for position (0-100%). Command data types are Byte or Word.
+              Byte for Stop/Up/Down (2-Stop,4-Up,8-Down)
               Word first Byte for Move/Stop/Up/Down (1-Move,2-Stop,4-Up,8-Down) and second Byte for target position (0-100%)]]>
         </description>
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
 	</channel-type>

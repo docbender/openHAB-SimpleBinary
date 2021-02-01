@@ -17,6 +17,7 @@ import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.OpenClosedType;
 import org.openhab.core.library.types.PercentType;
+import org.openhab.core.library.types.QuantityType;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.State;
 import org.slf4j.Logger;
@@ -78,16 +79,22 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
 
                     logger.trace("FLOAT value converted: {}", value);
 
-                    return new DecimalType(value);
+                    return item.hasUnit() ? new QuantityType<>(value, item.getUnit()) : new DecimalType(value);
                 }
             } else {
                 if (itemData.length == 1) {
-                    return new DecimalType(itemData[0]);
+                    return item.hasUnit() ? new QuantityType<>(itemData[0], item.getUnit())
+                            : new DecimalType(itemData[0]);
                 } else if (itemData.length == 2) {
-                    return new DecimalType(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8))));
+                    return item.hasUnit()
+                            ? new QuantityType<>(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8))), item.getUnit())
+                            : new DecimalType(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8))));
                 } else if (itemData.length == 4) {
-                    return new DecimalType(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8)
-                            | ((itemData[2] & 0xFF) << 16) | ((itemData[3] & 0xFF) << 24))));
+                    return item.hasUnit()
+                            ? new QuantityType<>(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8)
+                                    | ((itemData[2] & 0xFF) << 16) | ((itemData[3] & 0xFF) << 24))), item.getUnit())
+                            : new DecimalType(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8)
+                                    | ((itemData[2] & 0xFF) << 16) | ((itemData[3] & 0xFF) << 24))));
                 } else {
                     throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
                             + item.getStateAddress().getType() + ". Wrong data length.");

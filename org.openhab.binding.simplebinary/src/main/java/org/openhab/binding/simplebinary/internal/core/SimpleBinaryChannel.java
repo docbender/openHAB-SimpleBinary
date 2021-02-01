@@ -15,6 +15,8 @@ package org.openhab.binding.simplebinary.internal.core;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.measure.Unit;
+
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryBindingConstants;
 import org.openhab.binding.simplebinary.internal.handler.SimpleBinaryGenericHandler;
@@ -22,6 +24,7 @@ import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.type.ChannelTypeUID;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
+import org.openhab.core.types.util.UnitUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,19 +34,35 @@ import org.slf4j.LoggerFactory;
  */
 public class SimpleBinaryChannel {
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryChannel.class);
-
+    /** Channel ID */
     public ChannelUID channelId;
+    /** ChannelType ID */
     public ChannelTypeUID channelType;
+    /** State string address */
     public String stateAddress;
+    /** Command string address */
     public String commandAddress;
+    /** Number value unit */
+    public String unit;
+    /** Stored state value */
     private State value;
+    /** Last command */
     private Command lastCommand;
+    /** Channel configuration error */
     private String error;
+    /** State address */
     private SimpleBinaryAddress stateAddressEx;
+    /** Command address */
     private SimpleBinaryAddress commandAddressEx;
+    /** Associated thing */
     private SimpleBinaryGenericHandler thing;
+    /** Last value update */
     private long valueUpdateTime = 0;
     private boolean missingCommandReported = false;
+    /** Defined unit */
+    private Unit<?> unitInstance = null;
+    /** Unit exists flag */
+    private boolean unitExists = false;
 
     final private static Pattern numberAddressPattern = Pattern.compile("^((\\d+):(\\d+):(byte|word|dword|float))$");
     final private static Pattern stringAddressPattern = Pattern.compile("^((\\d+):(\\d+):(\\d+))$");
@@ -58,6 +77,12 @@ public class SimpleBinaryChannel {
         return String.format("ChID=%s,StateAddress=%s,CmdAddress=%s", channelId.getId(), stateAddress, commandAddress);
     }
 
+    /**
+     * Initialize channel from thing configuration
+     *
+     * @param handler Thing handler
+     * @return True if initialization is OK. When initialization not succeed, reason can be obtain by getError()
+     */
     public boolean init(SimpleBinaryGenericHandler handler) {
         missingCommandReported = false;
         if (handler == null) {
@@ -88,15 +113,32 @@ public class SimpleBinaryChannel {
             return false;
         }
 
+        if (unit != null) {
+            unitInstance = UnitUtils.parseUnit(unit);
+            if (unitInstance != null) {
+                unitExists = true;
+            } else {
+                logger.warn("Channel {} - cannot parse defined unit({})", this.toString(), unit);
+            }
+        }
         return true;
     }
 
+    /**
+     * Clear instance
+     */
     public void clear() {
         thing = null;
         value = null;
         lastCommand = null;
     }
 
+    /**
+     * Check string address obtained from configuration
+     *
+     * @param address Item address
+     * @return
+     */
     public @Nullable SimpleBinaryAddress checkAddress(String address) {
         final Matcher matcher;
         switch (channelType.getId()) {
@@ -171,16 +213,49 @@ public class SimpleBinaryChannel {
         }
     }
 
+    /**
+     * Get error if init() failed
+     *
+     * @return
+     */
     public @Nullable String getError() {
         return error;
     }
 
+    /**
+     * Get address for channel state
+     *
+     * @return
+     */
     public @Nullable SimpleBinaryAddress getStateAddress() {
         return stateAddressEx;
     }
 
+    /**
+     * Get address for command
+     *
+     * @return
+     */
     public @Nullable SimpleBinaryAddress getCommandAddress() {
         return commandAddressEx;
+    }
+
+    /**
+     * Get number value unit
+     *
+     * @return Unit
+     */
+    public Unit<?> getUnit() {
+        return unitInstance;
+    }
+
+    /**
+     * Check if unit presented
+     *
+     * @return Unit exists flag
+     */
+    public boolean hasUnit() {
+        return unitExists;
     }
 
     public void setState(State state) {

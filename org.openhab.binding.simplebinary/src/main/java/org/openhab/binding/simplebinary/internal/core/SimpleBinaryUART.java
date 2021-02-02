@@ -288,7 +288,11 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     @Override
     protected boolean canSend() {
-        return !waitingForAnswer.get();
+        if (waitingForAnswer.get()) {
+            return false;
+        }
+
+        return super.canSend();
     }
 
     /*

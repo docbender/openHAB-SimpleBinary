@@ -20,7 +20,6 @@ import java.util.TooManyListenersException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.IOUtils;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPortState.PortStates;
 import org.openhab.core.io.transport.serial.PortInUseException;
@@ -274,8 +273,13 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     public void close(String reason) {
         if (serialPort != null) {
             serialPort.removeEventListener();
-            IOUtils.closeQuietly(inputStream);
-            IOUtils.closeQuietly(outputStream);
+            try {
+                inputStream.close();
+                outputStream.close();
+
+            } catch (Exception ex) {
+                logger.error(ex.toString());
+            }
             serialPort.close();
         }
 

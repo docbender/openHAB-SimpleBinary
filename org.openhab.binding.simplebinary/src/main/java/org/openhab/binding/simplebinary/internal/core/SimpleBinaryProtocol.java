@@ -181,7 +181,9 @@ public class SimpleBinaryProtocol {
                 data[5] = (byte) ((arraylen >> 8) & 0xFF);
                 break;
             default:
-                return null;
+                throw new Exception(String.format(
+                        "Cannot create WriteDataFrame. Command for ChannelType=%s must have defined datatype.",
+                        channel.channelType.getId()));
         }
 
         int datalen = data.length;

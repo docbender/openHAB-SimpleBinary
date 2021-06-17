@@ -170,7 +170,8 @@ public class SimpleBinaryChannel {
                             address, channelType.getId());
                     return null;
                 }
-                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
+                        SimpleBinaryTypes.BYTE);
             case SimpleBinaryBindingConstants.CHANNEL_CONTACT:
                 matcher = contactAddressPattern.matcher(address);
                 if (!matcher.matches()) {
@@ -179,7 +180,8 @@ public class SimpleBinaryChannel {
                             address, channelType.getId());
                     return null;
                 }
-                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
+                        SimpleBinaryTypes.BYTE);
             case SimpleBinaryBindingConstants.CHANNEL_DIMMER:
                 matcher = dimmerAddressPattern.matcher(address);
                 if (!matcher.matches()) {
@@ -188,7 +190,8 @@ public class SimpleBinaryChannel {
                             address, channelType.getId());
                     return null;
                 }
-                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
+                        SimpleBinaryTypes.BYTE);
             case SimpleBinaryBindingConstants.CHANNEL_COLOR:
                 matcher = colorAddressPattern.matcher(address);
                 if (!matcher.matches()) {
@@ -207,7 +210,8 @@ public class SimpleBinaryChannel {
                             address, channelType.getId());
                     return null;
                 }
-                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)));
+                return new SimpleBinaryAddress(Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),
+                        SimpleBinaryTypes.WORD);
             default:
                 return null;
         }

@@ -102,7 +102,7 @@ For _generic_device_ thing binding supports channels types listed in the table b
   <tr><td>chContact</td><td>byte</td><td>1:1</td><td>0 - off, 1 - on</td></tr>
   <tr><td>chSwitch</td><td>byte</td><td>1:1</td><td>0 - off, 1 - on</td></tr>
   <tr><td>chDimmer</td><td>byte</td><td>1:1</td><td>Value range is 0-100</td></tr>
-  <tr><td>chRollershutter</td><td>word</td><td>1:1</td><td>State specifies position (0-100%). Command sends Stop/Up/Down (2-Stop, 4-Up, 8-Down).</td></tr>
+  <tr><td>chRollershutter</td><td>word</td><td>1:1</td><td>State specifies position (0-100%). Command sends Move/Stop/Up/Down (1-Move, 2-Stop, 4-Up, 8-Down) in second byte or eventually target position (0-100%) in first byte.</td></tr>
 </table>
 
 Every channel has two parameters _stateAddress_ and _commandAddress_. At least one must have a defined value.

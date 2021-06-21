@@ -288,9 +288,8 @@
 		<item-type>Rollershutter</item-type>
 		<label>Rollershutter</label>
         <description><![CDATA[
-              Status data type is Byte for position (0-100%). Command data types are Byte or Word.
-              Byte for Stop/Up/Down (2-Stop,4-Up,8-Down)
-              Word first Byte for Move/Stop/Up/Down (1-Move,2-Stop,4-Up,8-Down) and second Byte for target position (0-100%)]]>
+              Status data type is Byte or Word for position (0-100%). Command data type is Word.
+              Second Byte for Move/Stop/Up/Down (1-Move,2-Stop,4-Up,8-Down) and first Byte for target position (0-100%)]]>
         </description>
 		<config-description>
 			<parameter name="stateAddress" type="text">

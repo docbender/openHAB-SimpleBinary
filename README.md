@@ -6,8 +6,6 @@ This binding for openHAB has ability to connect directly DIY devices (based on A
 [![Version](https://img.shields.io/github/v/release/docbender/openHAB-SimpleBinary?include_prereleases)](https://github.com/docbender/openHAB-SimpleBinary/releases)
 [![Download](https://img.shields.io/github/downloads/docbender/openHAB-SimpleBinary/total.svg)](https://github.com/docbender/openHAB-SimpleBinary/releases)
 [![Issues](https://img.shields.io/github/issues/docbender/openHAB-SimpleBinary)](https://github.com/docbender/openHAB-SimpleBinary/issues)
-[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/docbender/openHAB-SimpleBinary.svg)](http://isitmaintained.com/project/docbender/openHAB-SimpleBinary "Average time to resolve an issue")
-[![Percentage of issues still open](http://isitmaintained.com/badge/open/docbender/openHAB-SimpleBinary.svg)](http://isitmaintained.com/project/docbender/openHAB-SimpleBinary "Percentage of issues still open")
 
 Used protocol is easy to implement. Implementation examples for [Arduino](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_Serial) over serial, [STM8](https://github.com/docbender/openHAB-SimpleBinary/tree/master/STM8/ExampleLED), [ESP8266](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino/SimpleBinary/examples/ControlLED_TCP) over TCP is part of repository. [Arduino IDE library](https://github.com/docbender/openHAB-SimpleBinary/tree/master/arduino) is also available.
 

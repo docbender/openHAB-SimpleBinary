@@ -29,9 +29,9 @@ public class SimpleBinaryPortState {
     private PortStates state = PortStates.UNKNOWN;
     private PortStates prevState = PortStates.UNKNOWN;
     private Calendar changedSince;
-    private String itemState = null;
-    private String itemPreviousState = null;
-    private String itemStateChangeTime = null;
+    // private String itemState = null;
+    // private String itemPreviousState = null;
+    // private String itemStateChangeTime = null;
 
     /**
      * Return port status

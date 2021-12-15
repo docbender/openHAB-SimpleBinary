@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -107,8 +106,6 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
     private @Nullable ScheduledFuture<?> periodicJob = null;
 
-    private final AtomicBoolean reconnecting = new AtomicBoolean(false);
-
     protected final Lock processLock = new ReentrantLock();
 
     AtomicLong readed = new AtomicLong(0);
@@ -130,22 +127,12 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         this.charset = charset;
         if (pollRate > 0) {
             periodicJob = scheduler.scheduleAtFixedRate(() -> {
-                if (!reconnecting.get()) {
-                    execute();
-                }
+                execute();
             }, 500, pollRate, TimeUnit.MILLISECONDS);
         } else {
             scheduler.execute(() -> {
                 while (!disposed) {
-                    if (!reconnecting.get()) {
-                        execute();
-                    } else {
-                        try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException e) {
-
-                        }
-                    }
+                    execute();
                 }
             });
         }

@@ -5,12 +5,8 @@ import org.openhab.binding.simplebinary.internal.handler.SimpleBinaryBridgeHandl
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.type.ChannelTypeUID;
 import org.openhab.core.types.State;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SimpleBinaryChannelStatus {
-    private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryChannelStatus.class);
-
     public ChannelUID channelId;
     public ChannelTypeUID channelType;
     public int deviceId;

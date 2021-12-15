@@ -284,7 +284,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                         // look what is in income raw data
                                         int r = chInfo.isIpLocked()
                                                 ? processData(inBuffer, chInfo.getLastSentData(),
-                                                        new Byte((byte) chInfo.getDeviceId()))
+                                                        Byte.valueOf((byte) chInfo.getDeviceId()))
                                                 : processData(inBuffer, chInfo.getLastSentData());
 
                                         if (r >= 0 || r == ProcessDataResult.INVALID_CRC
@@ -524,7 +524,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                     chInfo.getIp(), e.getMessage());
         } finally {
             logger.info("{} - Device {}/{} was disconnected", toString(), chInfo.getDeviceId(), chInfo.getIp());
-            chInfo.closed();            
+            chInfo.closed();
         }
 
         setDeviceState(chInfo.getDeviceId(), DeviceStates.NOT_RESPONDING);

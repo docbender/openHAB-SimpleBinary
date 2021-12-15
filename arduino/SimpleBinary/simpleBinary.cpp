@@ -3,7 +3,7 @@
 // Name:        simpleBinary.cpp
 // Author:      Vita Tucek
 // Created:     20.8.2015
-// Modified:    10.1.2017
+// Modified:    11.12.2021
 // License:     MIT
 // Description: Implementation of SimpleBinary protocol for OpenHAB
 //
@@ -137,6 +137,14 @@ bool simpleBinary::saveArray(int address, const char *pData, int len)
    }
 
    return false;
+}
+
+/// Handle binding inside loop
+/// 
+void simpleBinary::handle()
+{
+   if (Serial.available()>0)   
+      processSerial();          
 }
 
 /// Process data received by UART 

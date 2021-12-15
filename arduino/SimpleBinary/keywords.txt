@@ -10,6 +10,7 @@ saveWord	KEYWORD2
 saveDword	KEYWORD2
 saveArray	KEYWORD2
 size	KEYWORD2
+handle	KEYWORD2
 processSerial	KEYWORD2
 enableRTS	KEYWORD2
 setSendDelay	KEYWORD2

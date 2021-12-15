@@ -3,7 +3,7 @@
 // Name:        simpleBinary.h
 // Author:      Vita Tucek
 // Created:     20.8.2015
-// Modified:    10.1.2017
+// Modified:    11.12.2021
 // License:     MIT
 // Description: Implementation of SimpleBinary protocol for use with OpenHAB
 //
@@ -45,6 +45,8 @@ class simpleBinary
     bool saveArray(int address, const char *pData, int len);
     // Return item count
     int size() const { return _size; };
+    // Handle binding inside loop 
+    void handle();    
     // Process data received by UART 
     void processSerial();
     // Set pin number to use as RTS signal

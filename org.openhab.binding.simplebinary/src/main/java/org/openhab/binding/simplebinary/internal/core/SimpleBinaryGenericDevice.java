@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryGenericDevice.class);
-    private static final String THING_HANDLER_THREADPOOL_NAME = "thingHandler";
+    private static final String THING_HANDLER_THREADPOOL_NAME = "SimpleBinary";
     protected final ScheduledExecutorService scheduler = ThreadPoolManager
             .getScheduledPool(THING_HANDLER_THREADPOOL_NAME);
 
@@ -1048,46 +1048,50 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             // set state
             setDeviceState(deviceId, DeviceStates.CONNECTED);
 
-            State state = ((SimpleBinaryItem) itemData).getState();
+            try {
+                State state = ((SimpleBinaryItem) itemData).getState();
 
-            if (state == null) {
-                logger.warn("{} - Device {} Incoming data - Unknown item state", toString(), deviceId);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("{} - Device {} Incoming data - channel:{}/state:{}", toString(), deviceId,
-                            ((SimpleBinaryItem) itemData).getConfig().channelId, state);
+                if (state == null) {
+                    logger.warn("{} - Device {} Incoming data - Unknown item state", toString(), deviceId);
+                } else {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("{} - Device {} Incoming data - channel:{}/state:{}", toString(), deviceId,
+                                ((SimpleBinaryItem) itemData).getConfig().channelId, state);
+                    }
+
+                    ((SimpleBinaryItem) itemData).getConfig().setState(state);
+
+                    /*
+                     * // send data to other binded devices
+                     * if (((SimpleBinaryItem) itemData).getConfig().devices.size() > 1) {
+                     * logger.debug("{} - Resend received data to other devices(count={})", toString(),
+                     * ((SimpleBinaryItem) itemData).getConfig().devices.size());
+                     * SimpleBinaryBindingConfig cfg = ((SimpleBinaryItem) itemData).getConfig();
+                     * for (DeviceConfig d : cfg.devices) {
+                     * if (d.dataDirection != DataDirectionFlow.INPUT
+                     * && (d.getDeviceAddress() != deviceId || !d.getPortName().equals(this.deviceName))) {
+                     * logger.debug("{} - Resend to device {}", toString(), d);
+                     * SimpleBinaryGenericDevice device = this.configuredDevices.get(d.deviceName);
+                     * try {
+                     * device.sendData(cfg.item.getName(), state, cfg, d);
+                     * } catch (Exception ex) {
+                     * logger.error(
+                     * "{} - Resend received data to other devices failed: line:{}|method:{}|message:{}",
+                     * toString(), ex.getStackTrace()[0].getLineNumber(),
+                     * ex.getStackTrace()[0].getMethodName(), ex.toString());
+                     *
+                     * StringWriter sw = new StringWriter();
+                     * PrintWriter pw = new PrintWriter(sw);
+                     * ex.printStackTrace(pw);
+                     * logger.error(sw.toString());
+                     * }
+                     * }
+                     * }
+                     * }
+                     */
                 }
-
-                ((SimpleBinaryItem) itemData).getConfig().setState(state);
-
-                /*
-                 * // send data to other binded devices
-                 * if (((SimpleBinaryItem) itemData).getConfig().devices.size() > 1) {
-                 * logger.debug("{} - Resend received data to other devices(count={})", toString(),
-                 * ((SimpleBinaryItem) itemData).getConfig().devices.size());
-                 * SimpleBinaryBindingConfig cfg = ((SimpleBinaryItem) itemData).getConfig();
-                 * for (DeviceConfig d : cfg.devices) {
-                 * if (d.dataDirection != DataDirectionFlow.INPUT
-                 * && (d.getDeviceAddress() != deviceId || !d.getPortName().equals(this.deviceName))) {
-                 * logger.debug("{} - Resend to device {}", toString(), d);
-                 * SimpleBinaryGenericDevice device = this.configuredDevices.get(d.deviceName);
-                 * try {
-                 * device.sendData(cfg.item.getName(), state, cfg, d);
-                 * } catch (Exception ex) {
-                 * logger.error(
-                 * "{} - Resend received data to other devices failed: line:{}|method:{}|message:{}",
-                 * toString(), ex.getStackTrace()[0].getLineNumber(),
-                 * ex.getStackTrace()[0].getMethodName(), ex.toString());
-                 *
-                 * StringWriter sw = new StringWriter();
-                 * PrintWriter pw = new PrintWriter(sw);
-                 * ex.printStackTrace(pw);
-                 * logger.error(sw.toString());
-                 * }
-                 * }
-                 * }
-                 * }
-                 */
+            } catch (Exception ex) {
+                logger.error("{} - {}", this.toString(), ex.getStackTrace()[0].getLineNumber(), ex);
             }
 
             if (lastSentData != null) {

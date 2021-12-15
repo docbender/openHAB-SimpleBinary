@@ -1,0 +1,47 @@
+Bridge simplebinary:uart_bridge:sbrs485 "SB 485"  [ port="/dev/ttyUSB100", baudRate="9600", charset="ISO-8859-1" ] {
+   Thing generic_device counters "Counters" {
+      Channels:
+	Type chNumber: Value [ stateAddress="2:0:dword" ]
+	Type chNumber: UpTime  [ stateAddress="2:1:dword" ]
+   }
+   Thing generic_device testByte "TestByte" {
+      Channels:
+	Type chNumber: byteCmd [ stateAddress="2:2:byte", commandAddress="2:2:byte" ]
+	Type chNumber: byteSta [ stateAddress="2:3:byte" ]
+   }
+   Thing generic_device testWord "TestWord" {
+      Channels:
+	Type chNumber: wordCmd [ stateAddress="2:4:word", commandAddress="2:4:word" ]
+	Type chNumber: wordSta [ stateAddress="2:5:word" ]
+   }
+   Thing generic_device testDword "TestDoubleword" {
+      Channels:
+	Type chNumber: dwordCmd [ stateAddress="2:6:dword", commandAddress="2:6:dword" ]
+	Type chNumber: dwordSta [ stateAddress="2:7:dword" ]
+   }
+   Thing generic_device testFloat "TestFloat" {
+      Channels:
+	Type chNumber: floatCmd [ stateAddress="2:8:float", commandAddress="2:8:float" ]
+	Type chNumber: floatSta [ stateAddress="2:9:float" ]
+   }
+   Thing generic_device testRgb "Test RGB" {
+      Channels:
+	Type chColor: rgbCmd [ stateAddress="2:10:rgb", commandAddress="2:10:rgb" ]
+	Type chColor: rgbSta [ stateAddress="2:11:rgb" ]
+   }
+   Thing generic_device testRgbw "Test RGBW" {
+      Channels:
+	Type chColor: rgbwCmd [ stateAddress="2:12:rgbw", commandAddress="2:12:rgbw" ]
+	Type chColor: rgbwSta [ stateAddress="2:13:rgbw" ]
+   }
+   Thing generic_device testHsb "Test HSB" {
+      Channels:
+	Type chColor: hsbCmd [ stateAddress="2:14:hsb", commandAddress="2:14:hsb" ]
+	Type chColor: hsbSta [ stateAddress="2:15:hsb" ]
+   }
+   Thing generic_device testrr "Test Rollershutter" {
+      Channels:
+	Type chRollershutter: rrCmd [ stateAddress="2:16", commandAddress="2:16" ]
+	Type chRollershutter: rrSta [ stateAddress="2:17" ]
+   }
+}

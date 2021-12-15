@@ -523,8 +523,8 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
             logger.error("{} - Device {}/{} channel close exception: {}", toString(), chInfo.getDeviceId(),
                     chInfo.getIp(), e.getMessage());
         } finally {
-            chInfo.closed();
             logger.info("{} - Device {}/{} was disconnected", toString(), chInfo.getDeviceId(), chInfo.getIp());
+            chInfo.closed();            
         }
 
         setDeviceState(chInfo.getDeviceId(), DeviceStates.NOT_RESPONDING);

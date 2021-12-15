@@ -335,26 +335,21 @@ public class SimpleBinaryProtocol {
             }
 
             if (hsbVal != null) {
-                if (logger.isTraceEnabled()) {
-                    logger.trace("Channel {}: Red={} Green={} Blue={}", channel.channelId, hsbVal.getRed(),
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Channel {}: Red={} Green={} Blue={}", channel.channelId, hsbVal.getRed(),
                             hsbVal.getGreen(), hsbVal.getBlue());
-                    logger.trace("         Hue={} Sat={} Bri={}", hsbVal.getHue(), hsbVal.getSaturation(),
+                    logger.debug("         Hue={} Sat={} Bri={}", hsbVal.getHue(), hsbVal.getSaturation(),
                             hsbVal.getBrightness());
+                    logger.debug("         AddressType={}", address.getType());
                 }
-
-                /*
-                 * if (item instanceof ColorItem && hsbVal.getBrightness().intValue() > 0) {
-                 * ((ColorItem) item).setState(hsbVal);
-                 * }
-                 */
 
                 HSBType cmd = hsbVal;
 
                 if (address.getType() == SimpleBinaryTypes.HSB) {
-                    data[4] = cmd.getHue().byteValue();
-                    data[5] = cmd.getSaturation().byteValue();
-                    data[6] = cmd.getBrightness().byteValue();
-                    data[7] = 0x0;
+                    data[4] = (byte) (cmd.getHue().shortValue() & 0xFF);
+                    data[5] = (byte) ((cmd.getHue().shortValue() >> 8) & 0xFF);
+                    data[6] = cmd.getSaturation().byteValue();
+                    data[7] = cmd.getBrightness().byteValue();
                 } else if (address.getType() == SimpleBinaryTypes.RGB) {
                     long red = Math.round((cmd.getRed().doubleValue() * 2.55));
                     long green = Math.round((cmd.getGreen().doubleValue() * 2.55));

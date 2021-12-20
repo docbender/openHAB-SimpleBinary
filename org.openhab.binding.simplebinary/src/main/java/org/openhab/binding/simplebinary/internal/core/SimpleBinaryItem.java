@@ -108,17 +108,18 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             }
         } else if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_DIMMER)) {
             if (itemData.length < 3) {
-                return new PercentType(itemData[0]);
+                return new PercentType(Math.max(itemData[0] & 0xFF, 100));
             } else {
                 throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
                         + item.getStateAddress().getType() + ". Data length > 2");
             }
         } else if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_COLOR)) {
-            // logger.info("Color data = {},{},{},{}", itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF,
-            // itemData[3] & 0xFF);
+            //logger.debug("Color data = {},{},{},{}", itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF,
+            //        itemData[3] & 0xFF);
             if (item.getStateAddress().getType() == SimpleBinaryTypes.HSB) {
                 return new HSBType(new DecimalType((itemData[0] & 0xFF) + ((itemData[1] & 0xFF) << 8)),
-                        new PercentType(itemData[2] & 0xFF), new PercentType(itemData[3] & 0xFF));
+                        new PercentType(Math.max((itemData[2] & 0xFF), 100)),
+                        new PercentType(Math.max((itemData[3] & 0xFF), 100)));
             } else if (item.getStateAddress().getType() == SimpleBinaryTypes.RGB) {
                 return HSBType.fromRGB(itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF);
             } else if (item.getStateAddress().getType() == SimpleBinaryTypes.RGBW) {
@@ -138,7 +139,7 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             }
         } else if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_ROLLERSHUTTER)) {
             if (itemData.length < 3) {
-                return new PercentType(itemData[0]);
+                return new PercentType(Math.max(itemData[0] & 0xFF, 100));
             } else {
                 throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
                         + item.getStateAddress().getType() + ". Data length > 2");

@@ -738,7 +738,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} - checkNewData() device={} force={}", toString(), device.getKey(), forceAllValues);
                 }
-
+                
                 try {
                     if (forceAllValues) {
                         this.offerNewDataCheckPriority(device.getKey(), forceAllValues);
@@ -885,7 +885,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
                 return receivedID;
             } else {
-                logger.warn("{} - Cannot decompile incoming data", toString());
+                logger.debug("{} - Not whole packet. Waiting...", toString());
                 // rewind at start position (wait for next bytes)
                 inBuffer.rewind();
                 // compact buffer
@@ -936,10 +936,13 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 logger.error(e.getMessage());
             }
 
+            // set state
+            setDeviceState(receivedID, DeviceStates.RESPONSE_ERROR);
+
             return ProcessDataResult.INVALID_CRC;
 
         } catch (NoValidItemInConfig ex) {
-            logger.error("{} - {}", this.toString(), ex.getMessage());
+            logger.info("{} - {}", this.toString(), ex.getMessage());
             // print details
             printCommunicationInfo(inBuffer, lastSentData);
             // compact buffer
@@ -950,7 +953,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             }
 
             // set state
-            setDeviceState(receivedID, DeviceStates.DATA_ERROR);
+            // setDeviceState(receivedID, DeviceStates.DATA_ERROR);
 
             return ProcessDataResult.BAD_CONFIG;
 
@@ -1078,7 +1081,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                      */
                 }
             } catch (Exception ex) {
-                logger.error("{} - {}", this.toString(), ex.getStackTrace()[0].getLineNumber(), ex);
+                logger.error("{} - {}", this.toString(), ex);
             }
 
             if (lastSentData != null) {

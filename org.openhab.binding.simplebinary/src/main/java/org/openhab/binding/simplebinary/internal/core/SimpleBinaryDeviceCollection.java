@@ -20,16 +20,16 @@ import org.slf4j.LoggerFactory;
  * @author Vita Tucek
  * @since 1.9.0
  */
-public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBinaryDeviceState> {
+public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryDevice> {
     private static final long serialVersionUID = -6637691081696263746L;
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryDeviceStateCollection.class);
+    private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryDeviceCollection.class);
 
     /**
      * Device collection constructor
      *
      */
-    public SimpleBinaryDeviceStateCollection() {
+    public SimpleBinaryDeviceCollection() {
         super();
     }
 
@@ -41,7 +41,7 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
      */
     public void put(ArrayList<Integer> devices) {
         for (var i : devices) {
-            put(i, new SimpleBinaryDeviceState());
+            put(i, new SimpleBinaryDevice());
         }
     }
 
@@ -55,13 +55,10 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
      */
     public boolean setDeviceState(Integer deviceAddress, SimpleBinaryDeviceState.DeviceStates state) {
         if (!this.containsKey(deviceAddress)) {
-            this.put(deviceAddress, new SimpleBinaryDeviceState());
+            this.put(deviceAddress, new SimpleBinaryDevice());
         }
-
-        // retrieve device
-        SimpleBinaryDeviceState deviceState = this.get(deviceAddress);
         // set internal state
-        return deviceState.setState(state);
+        return this.get(deviceAddress).getState().setState(state);
     }
 
     /**
@@ -86,7 +83,7 @@ public class SimpleBinaryDeviceStateCollection extends HashMap<Integer, SimpleBi
      */
     public SimpleBinaryDeviceState.DeviceStates getDeviceState(Integer deviceAddress) {
         // retrieve device
-        SimpleBinaryDeviceState deviceState = this.get(deviceAddress);
+        SimpleBinaryDeviceState deviceState = this.get(deviceAddress).getState();
 
         if (deviceState == null) {
             return null;

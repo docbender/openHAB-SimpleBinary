@@ -14,26 +14,26 @@ package org.openhab.binding.simplebinary.internal.core;
  * @author Vita Tucek
  * @since 1.9.0
  */
-public enum SimpleBinaryPoolControl {
+public enum SimpleBinaryPollControl {
     ONCHANGE(1),
     ONSCAN(2),
     NONE(0);
 
     private final int value;
 
-    private SimpleBinaryPoolControl(int value) {
+    private SimpleBinaryPollControl(int value) {
         this.value = value;
     }
 
-    public static SimpleBinaryPoolControl valueOf(int value) {
+    public static SimpleBinaryPollControl valueOf(int value) {
         if (value == 1) {
-            return SimpleBinaryPoolControl.ONCHANGE;
+            return SimpleBinaryPollControl.ONCHANGE;
         }
         if (value == 2) {
-            return SimpleBinaryPoolControl.ONSCAN;
+            return SimpleBinaryPollControl.ONSCAN;
         }
 
-        return SimpleBinaryPoolControl.NONE;
+        return SimpleBinaryPollControl.NONE;
     }
 
     public int getValue() {

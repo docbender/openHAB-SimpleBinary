@@ -41,23 +41,29 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
     /** port */
     public static final int DEFAULT_PORT = 43243;
-    private String bindAddress = "";
-    private int port = 43243;
+    private final String bindAddress;
+    private final int port;
 
     /** server socket instance */
     private AsynchronousServerSocketChannel listener;
     /** connected clients collection */
-    private SimpleBinaryIPChannelInfoCollection channels;
+    private final SimpleBinaryIPChannelInfoCollection channels;
 
     /**
      * Constructor
      *
      * @param ip
      * @param port
-     * @param simpleBinaryPoolControl
+     * @param charset
+     * @param timeout
+     * @param retryCount
+     * @param degradeTime
+     * @param discardCommand
      */
-    public SimpleBinaryIP(String ip, int port, Charset charset) {
-        super("TCPserver", SimpleBinaryPoolControl.NONE, 1000, charset);
+    public SimpleBinaryIP(String ip, int port, Charset charset, int timeout, int retryCount, int degradeTime,
+            boolean discardCommand) {
+        super("TCPserver", SimpleBinaryPollControl.NONE, 1000, charset, timeout, retryCount, degradeTime,
+                discardCommand);
 
         this.bindAddress = ip;
         this.port = port;
@@ -143,12 +149,12 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                     new SimpleBinaryIRequestTimeouted() {
 
                                         @Override
-                                        public void timeoutEvent(SimpleBinaryIPChannelInfo chInfo) {
-
+                                        public void timeoutEvent(SimpleBinaryDevice chInfo) {
                                             logger.warn("TCP server - Device{} - Receiving data timeouted. Thread={}",
-                                                    chInfo.getDeviceId(), Thread.currentThread().getId());
+                                                    ((SimpleBinaryIPChannelInfo) chInfo).getDeviceId(),
+                                                    Thread.currentThread().getId());
 
-                                            closeChannel(chInfo);
+                                            closeChannel((SimpleBinaryIPChannelInfo) chInfo);
                                         }
                                     });
                             // channel is ready to write
@@ -311,7 +317,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                     chInfo.getChannel().read(buffer, chInfo, this);
 
                                     if (chInfo.isDeviceIdAlreadyReceived() || chInfo.isIpLocked()) {
-                                        processCommandQueue(chInfo.getDeviceId());
+                                        sendDeviceCommands(chInfo);
                                     }
                                 }
 
@@ -562,8 +568,8 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
 
         ZonedDateTime limitTime = ZonedDateTime.now().plusSeconds(-60);
 
-        for (Map.Entry<Integer, SimpleBinaryDeviceState> device : devices.entrySet()) {
-            ZonedDateTime time = device.getValue().getLastCommunication();
+        for (Map.Entry<Integer, SimpleBinaryDevice> device : devices.entrySet()) {
+            ZonedDateTime time = device.getValue().getState().getLastCommunication();
             if (time == null || time.isAfter(limitTime)) {
                 continue;
             }

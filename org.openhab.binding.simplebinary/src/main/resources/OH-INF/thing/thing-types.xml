@@ -55,6 +55,30 @@
                  <default></default>
                  <advanced>true</advanced>
              </parameter>
+             <parameter name="timeout" type="integer" min="10" required="true">
+                 <label>Response timeout [ms]</label>
+                 <description>How many miliseconds should wait for answer.</description>
+                 <default>1000</default>
+                 <advanced>true</advanced>
+             </parameter>             
+             <parameter name="retryCount" type="integer" min="0" required="true">
+                 <label>Timeout to degrade device</label>
+                 <description>How many attempts to establish connection before device is put off-scan. Zero means no off-scan.</description>
+                 <default>0</default>
+                 <advanced>true</advanced>
+             </parameter>
+             <parameter name="degradeTime" type="integer" min="0" required="true">
+                 <label>Degrade time [ms]</label>
+                 <description>Determine time in off-scan before next connection attempt.</description>
+                 <default>5000</default>
+                 <advanced>true</advanced>
+             </parameter>
+             <parameter name="discardCommands" type="boolean">
+                 <label>Discard command of offline device</label>
+                 <description>If is set to true, commands for offline device will be discarded</description>
+                 <default>false</default>
+                 <advanced>true</advanced>
+             </parameter>             
 		</config-description>
 	</bridge-type>
    <!-- SimpleBinary TCP bridge -->
@@ -81,12 +105,36 @@
 				<default>43243</default>
                 <advanced>true</advanced>
 			</parameter>
-         <parameter name="charset" type="text">
-             <label>Code page</label>
-             <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
-             <default></default>
-             <advanced>true</advanced>
-         </parameter>
+            <parameter name="charset" type="text">
+                <label>Code page</label>
+                <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
+                <default></default>
+                <advanced>true</advanced>
+            </parameter>
+            <parameter name="timeout" type="integer" min="10" required="true">
+                <label>Response timeout [ms]</label>
+                <description>How many miliseconds should wait for answer.</description>
+                <default>1000</default>
+                <advanced>true</advanced>
+            </parameter>             
+            <parameter name="retryCount" type="integer" min="0" required="true">
+                 <label>Timeout to degrade device</label>
+                 <description>How many attempts to establish connection before device is put off-scan. Zero means no off-scan.</description>
+                 <default>0</default>
+                 <advanced>true</advanced>
+             </parameter>
+             <parameter name="degradeTime" type="integer" min="0" required="true">
+                 <label>Degrade time [ms]</label>
+                 <description>Determine time in off-scan before next connection attempt.</description>
+                 <default>5000</default>
+                 <advanced>true</advanced>
+             </parameter>            
+            <parameter name="discardCommands" type="boolean">
+                <label>Discard command of offline device</label>
+                <description>If is set to true, commands for offline device will be discarded</description>
+                <default>false</default>
+                <advanced>true</advanced>
+            </parameter>          
 		</config-description>
 	</bridge-type>
 	<!-- Generic Thing Type -->

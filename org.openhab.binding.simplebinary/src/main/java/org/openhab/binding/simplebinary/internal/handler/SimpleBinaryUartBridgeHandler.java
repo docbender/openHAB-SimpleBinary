@@ -17,7 +17,7 @@ import java.nio.charset.Charset;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.config.SimpleBinaryUartConfiguration;
-import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPoolControl;
+import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPollControl;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryUART;
 import org.openhab.core.io.transport.serial.SerialPortManager;
 import org.openhab.core.thing.Bridge;
@@ -52,9 +52,10 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
         config = getConfigAs(SimpleBinaryUartConfiguration.class);
 
         logger.debug(
-                "{} - Bridge configuration: Port={},BaudRate={},PollControl={},ForceRTS={},InvertedRTS={},Charset={},PollRate={}",
+                "{} - Bridge configuration: Port={},BaudRate={},PollControl={},ForceRTS={},InvertedRTS={},Charset={},Timeout={},PollRate={},RetryCount={},DegradeTime={},DiscardCommand={}",
                 getThing().getLabel(), config.port, config.baudRate, config.pollControl, config.forceRTS,
-                config.invertedRTS, config.charset, config.pollRate);
+                config.invertedRTS, config.charset, config.timeout, config.pollRate, config.retryCount,
+                config.degradeTime, config.discardCommands);
 
         // configuration validation
         boolean valid = true;
@@ -97,6 +98,14 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
 
         logger.info("{} - Current charset {}", getThing().getLabel(), charset.name());
 
+        if (config.retryCount < 0) {
+            config.retryCount = 0;
+        }
+
+        if (config.degradeTime < 0) {
+            config.degradeTime = 0;
+        }
+
         if (!valid) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR);
             logger.error(
@@ -106,8 +115,9 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
         }
 
         connection = new SimpleBinaryUART(serialPortManager, config.port, config.baudRate,
-                SimpleBinaryPoolControl.valueOf(config.pollControl), config.forceRTS, config.invertedRTS,
-                config.pollRate, charset);
+                SimpleBinaryPollControl.valueOf(config.pollControl), config.forceRTS, config.invertedRTS,
+                config.pollRate, charset, config.timeout, config.retryCount, config.degradeTime,
+                config.discardCommands);
 
         super.initialize();
     }

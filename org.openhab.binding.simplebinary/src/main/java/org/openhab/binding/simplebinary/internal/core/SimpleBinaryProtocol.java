@@ -118,13 +118,11 @@ public class SimpleBinaryProtocol {
      * Compile command data for specific item
      *
      * @param channel
-     * @param command
      * @return
      * @throws Exception
      */
-    public static SimpleBinaryItem compileDataFrame(SimpleBinaryChannel channel, Type command, Charset charset)
-            throws Exception {
-        byte[] data = compileDataFrameEx(channel, command, charset);
+    public static SimpleBinaryItem compileDataFrame(SimpleBinaryChannel channel, Charset charset) throws Exception {
+        byte[] data = compileDataFrameEx(channel, channel.getCommand(), charset);
 
         if (data == null) {
             return null;

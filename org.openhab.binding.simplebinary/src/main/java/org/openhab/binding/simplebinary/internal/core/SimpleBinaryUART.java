@@ -40,8 +40,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements SerialPortEventListener {
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryUART.class);
-    /** Timeout for receiving data [ms] **/
-    private static final int TIMEOUT = 2000;
     /** Time for data line stabilization after data receive [ms] **/
     private static final long LINE_STABILIZATION_TIME = 0;
 
@@ -71,6 +69,8 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     private boolean invertedRTS = false;
     /** Variable for count minimal time before reset RTS signal */
     private long sentTimeTicks = 0;
+    /** Response timeout */
+    protected final int timeout;
 
     /** timer measuring answer timeout */
     protected Timer timer = new Timer();
@@ -90,20 +90,25 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      * @param deviceName
      * @param port
      * @param baud
-     * @param simpleBinaryPoolControl
+     * @param simpleBinaryPollControl
      * @param forceRTS
      * @param invertedRTS
+     * @param timeout
+     * @param retryCount
+     * @param degradeTime
+     * @param discardCommand
      */
     public SimpleBinaryUART(SerialPortManager serialPortManager, String port, int baud,
-            SimpleBinaryPoolControl simpleBinaryPoolControl, boolean forceRTS, boolean invertedRTS, int pollRate,
-            Charset charset) {
-        super(port, simpleBinaryPoolControl, pollRate, charset);
+            SimpleBinaryPollControl simpleBinaryPollControl, boolean forceRTS, boolean invertedRTS, int pollRate,
+            Charset charset, int timeout, int retryCount, int degradeTime, boolean discardCommand) {
+        super(port, simpleBinaryPollControl, pollRate, charset, timeout, retryCount, degradeTime, discardCommand);
 
         this.baud = baud;
         // IFDEF_OH3.0 //
         this.forceRTS = forceRTS;
         this.invertedRTS = invertedRTS;
         // IFDEF_OH3.0
+        this.timeout = timeout;
         this.serialPortManager = serialPortManager;
     }
 
@@ -450,6 +455,8 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                         if (lastSentData != null && !checkDeviceID(inBuffer, getLastSentData().getDeviceId())) {
                             logger.error("{} - Address not valid: received/sent={}/{}", this.toString(),
                                     getDeviceID(inBuffer), getLastSentData().getDeviceId());
+                            // flip buffer
+                            inBuffer.flip();
                             // print details
                             printCommunicationInfo(inBuffer, lastSentData);
                             // clear buffer
@@ -490,11 +497,6 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                                 break;
                             }
                         }
-                    }
-
-                    if (!waitingForAnswer.get()) {
-                        // look for data to send
-                        processCommandQueue();
                     }
                 } catch (IOException e) {
                     logger.error("{} - Error receiving data: {}", toString(), e.getMessage());
@@ -581,7 +583,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                 }
             };
 
-            timer.schedule(timeoutTask, TIMEOUT);
+            timer.schedule(timeoutTask, timeout);
 
             return true;
         } else {
@@ -640,7 +642,5 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         inBuffer.clear();
 
         resetWaitingForAnswer();
-        // new command will be sent if there is any
-        processCommandQueue();
     }
 }

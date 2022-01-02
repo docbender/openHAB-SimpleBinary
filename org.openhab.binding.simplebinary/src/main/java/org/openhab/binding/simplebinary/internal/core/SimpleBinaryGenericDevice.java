@@ -13,8 +13,6 @@ import java.io.StringWriter;
 import java.nio.BufferUnderflowException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +47,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     public final int MAX_RESEND_COUNT = 2;
 
     /** item config */
-    protected volatile SimpleBinaryDeviceStateCollection devices;
+    protected volatile SimpleBinaryDeviceCollection devices;
     protected ArrayList<@NonNull SimpleBinaryChannel> stateItems;
     protected ArrayList<@NonNull SimpleBinaryChannel> commandItems;
 
@@ -83,10 +81,20 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         return connected;
     }
 
-    /** queue for commands */
-    protected final ConcurrentLinkedDeque<SimpleBinaryItemData> commandQueue = new ConcurrentLinkedDeque<SimpleBinaryItemData>();
+    /** response timeout [ms] */
+    protected final int timeout;
+    /** poll rate */
+    protected final int pollRate;
+    /** no response count before device is mark as degraded */
+    protected final int retryCount;
+    /** time as degraded device */
+    protected final int degradeTime;
+    /** command discarded by offline device */
+    protected final boolean discardCommand;
+    /** execute() call time */
+    private long lastExecTime = 0;
     /** Used pool control ex.: OnChange, OnScan */
-    protected final SimpleBinaryPoolControl poolControl;
+    protected final SimpleBinaryPollControl pollControl;
     /** State of socket */
     public SimpleBinaryPortState portState = new SimpleBinaryPortState();
 
@@ -106,25 +114,55 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
     private @Nullable ScheduledFuture<?> periodicJob = null;
 
-    protected final Lock processLock = new ReentrantLock();
+    // protected final Lock processLock = new ReentrantLock();
+    protected final Lock execLock = new ReentrantLock();
 
     AtomicLong readed = new AtomicLong(0);
     AtomicLong readedBytes = new AtomicLong(0);
     long metricsStart = 0;
+    private final SimpleBinaryICommandAdded eventCommandAdded;
 
     /**
      * Constructor
      *
      * @param deviceName
      * @param simpleBinaryPoolControl
+     * @param pollRate
+     * @param charset
+     * @param timeout
+     * @param retryCount
+     * @param degradeTime
+     * @param discardCommand
      */
-    public SimpleBinaryGenericDevice(String deviceID, SimpleBinaryPoolControl simpleBinaryPoolControl, int pollRate,
-            Charset charset) {
+    public SimpleBinaryGenericDevice(String deviceID, SimpleBinaryPollControl simpleBinaryPoolControl, int pollRate,
+            Charset charset, int timeout, int retryCount, int degradeTime, boolean discardCommand) {
         this.deviceID = deviceID;
-        this.poolControl = simpleBinaryPoolControl;
-        this.devices = new SimpleBinaryDeviceStateCollection();
+        this.pollControl = simpleBinaryPoolControl;
+        this.devices = new SimpleBinaryDeviceCollection();
+        this.timeout = pollRate;
+        this.pollRate = pollRate;
+        this.retryCount = retryCount;
+        this.degradeTime = degradeTime;
+        this.discardCommand = discardCommand;
 
         this.charset = charset;
+
+        this.eventCommandAdded = new SimpleBinaryICommandAdded() {
+            @Override
+            public void event(SimpleBinaryDevice device) {
+                if (execLock.tryLock()) {
+                    try {
+                        // send commands
+                        sendDeviceCommands(device);
+                    } catch (Exception ex) {
+                        logger.error("{} - eventCommandAdded error.", toString(), ex);
+                    } finally {
+                        execLock.unlock();
+                    }
+                }
+            }
+        };
+
         if (pollRate > 0) {
             periodicJob = scheduler.scheduleAtFixedRate(() -> {
                 execute();
@@ -182,179 +220,62 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     /**
      * Called at specified period
      */
-    protected void execute() {
-        // check device for new data
-        checkNewData();
-        // check device for timeout connection (if implemented)
-        checkConnectionTimeout();
+    private void execute() {
+        logger.debug("{} - execute()", toString());
+        if (!execLock.tryLock()) {
+            logger.debug("{} - execute already locked...", toString());
+            return;
+        }
+
+        try {
+            long execTime = System.currentTimeMillis();
+            // prevent too fast calling
+            if (Math.abs(lastExecTime - execTime) < pollRate / 2) {
+                return;
+            }
+            lastExecTime = execTime;
+            // check device for new data
+            checkNewData();
+            // check device for timeout connection (if implemented)
+            checkConnectionTimeout();
+        } catch (Exception ex) {
+            logger.error("{} - execute failure.", toString(), ex);
+        } finally {
+            execLock.unlock();
+        }
     }
 
     @Override
     public void sendData(SimpleBinaryChannel channel, Command command) {
         channel.setCommand(command);
-        try {
-            SimpleBinaryItem data = SimpleBinaryProtocol.compileDataFrame(channel, command, charset);
-
-            sendData(data);
-        } catch (Exception ex) {
-            logger.error("{} - sendData failure.", toString(), ex);
-        }
-    }
-
-    /**
-     * Add compiled data item to sending queue
-     *
-     * @param data
-     */
-    public void sendData(SimpleBinaryItemData data) {
-        if (data == null) {
-            logger.warn("{}: Nothing to send. Empty data", toString());
-            return;
-        }
 
         if (logger.isDebugEnabled()) {
             logger.debug("{}: Adding command into queue", toString());
         }
 
-        // check if item already exist in queue
-        if (matchInQueueTarget(data, true)) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} - sendData() - allready in queue. Replaced by new one.", toString());
-            }
-        }
-        // add data
-        commandQueue.add(data);
-
-        processCommandQueue();
+        addCommand(channel);
     }
 
     /**
-     * Add compiled data item to sending queue at first place
+     * Add command into command queue
      *
      * @param data
-     * @throws InterruptedException
      */
-    public void sendDataPriority(SimpleBinaryItemData data) throws InterruptedException {
-        if (data != null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{}: Adding priority command into queue", toString());
-            }
-
-            // add data
-            commandQueue.addFirst(data);
-
-            processCommandQueue();
-        } else {
-            logger.warn("{}: Nothing to send. Empty data", toString());
+    private void addCommand(SimpleBinaryChannel data) {
+        SimpleBinaryAddress addr = data.getCommandAddress();
+        if (addr == null) {
+            logger.debug("{} - command address not specified for channel ID={}", toString(), data.channelId);
+            return;
         }
-    }
-
-    /**
-     * Prepare request to check if device with specific address has new data
-     *
-     * @param deviceAddress Device address
-     * @param forceAllDataAsNew Flag to force send all data from slave
-     * @throws InterruptedException
-     */
-    protected void offerNewDataCheck(int deviceAddress, boolean forceAllDataAsNew) throws InterruptedException {
-        SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, forceAllDataAsNew);
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("{} - offerNewDataCheck() device={} force={}", toString(), deviceAddress, forceAllDataAsNew);
+        if (!devices.containsKey(addr.getDeviceId())) {
+            logger.debug("{} - Device {} does not exist in device list (ChannelID={}). Command is not send.",
+                    toString(), addr.getDeviceId(), data.channelId);
+            return;
         }
-        // check if packet already exist
-        if (!matchInQueueDataPacket(data)) {
-            commandQueue.addLast(data);
-        } else {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} - offerNewDataCheck() - allready in queue", toString());
-            }
+        devices.get(addr.getDeviceId()).addCommand(data);
+        if (this.eventCommandAdded != null) {
+            this.eventCommandAdded.event(devices.get(devices.get(addr.getDeviceId())));
         }
-    }
-
-    /**
-     * Put "check new data" packet of specified device in front of command queue
-     *
-     * @param deviceAddress Device address
-     * @throws InterruptedException
-     */
-    protected void offerNewDataCheckPriority(int deviceAddress) throws InterruptedException {
-        offerNewDataCheckPriority(deviceAddress, false);
-    }
-
-    /**
-     * Put "check new data" packet of specified device in front of command queue
-     *
-     * @param deviceAddress Device address
-     * @param forceAllDataAsNew Flag to force send all data from slave
-     * @throws InterruptedException
-     */
-    protected void offerNewDataCheckPriority(int deviceAddress, boolean forceAllDataAsNew) throws InterruptedException {
-        SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(deviceAddress, forceAllDataAsNew);
-
-        // is already there?
-        if (!commandQueue.isEmpty()) {
-            var first = commandQueue.getFirst().getData();
-            if (first.length == 4) {
-                boolean match = true;
-                for (int i = 0; i < 4; i++) {
-                    if (first[i] != data.getData()[i]) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    return;
-                }
-            }
-            // is there "check" without force
-            for (SimpleBinaryItemData qitem : commandQueue) {
-                if (qitem.getData().length != 4) {
-                    continue;
-                }
-                // remove it if match
-                if (qitem.getData()[0] == data.getData()[0] && qitem.getData()[1] == (byte) 0xD0) {
-                    commandQueue.remove(qitem);
-                    break;
-                }
-            }
-        }
-        commandQueue.addFirst(data);
-    }
-
-    /**
-     * Put data into command queue
-     *
-     * @param deviceAddress Device address
-     * @param data Data
-     * @throws InterruptedException
-     */
-    protected void offerDataPriority(SimpleBinaryItemData data) throws InterruptedException {
-        if (logger.isDebugEnabled()) {
-            logger.debug("{} - offerData() device={}", toString(), data.deviceId);
-        }
-
-        commandQueue.addFirst(data);
-    }
-
-    /**
-     * Put data into command queue
-     *
-     * @param deviceAddress Device address
-     * @param data Data
-     * @throws InterruptedException
-     */
-    protected void offerData(SimpleBinaryItemData data) throws InterruptedException {
-        if (logger.isDebugEnabled()) {
-            logger.debug("{} - offerData() device={}", toString(), data.deviceId);
-        }
-        // check if item already exist in queue
-        if (matchInQueueTarget(data, true)) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} - offerData() - allready in queue. Replaced by new one.", toString());
-            }
-        }
-        commandQueue.addLast(data);
     }
 
     /**
@@ -363,278 +284,15 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      * @param itemConfig
      * @throws InterruptedException
      */
-    protected void sendReadData(SimpleBinaryChannel item) {
+    private boolean sendReadData(SimpleBinaryChannel item) {
+        if (!devices.containsKey(item.getCommandAddress().getDeviceId())) {
+            logger.error("{} - No device for command channelId={}", this.toString(), item.channelId);
+            return false;
+        }
+
         SimpleBinaryItemData data = SimpleBinaryProtocol.compileReadDataFrame(item.getStateAddress());
 
-        // check if packet already exist
-        if (!matchInQueueDataPacket(data)) {
-            commandQueue.addLast(data);
-        }
-    }
-
-    /**
-     * Check if data packet is not already in queue
-     *
-     * @param item
-     * @return same packet found
-     */
-    protected boolean matchInQueueDataPacket(SimpleBinaryItemData item) {
-        if (commandQueue.isEmpty()) {
-            return false;
-        }
-
-        for (SimpleBinaryItemData qitem : commandQueue) {
-            if (qitem.getData().length != item.getData().length) {
-                continue;
-            }
-
-            for (int i = 0; i < qitem.getData().length; i++) {
-                if (qitem.getData()[i] != item.getData()[i]) {
-                    break;
-                }
-
-                if (i == qitem.getData().length - 1) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if item for target device is not already in queue
-     *
-     * @param item
-     * @return true if item was found
-     */
-    protected boolean matchInQueueTarget(SimpleBinaryItemData item, Boolean remove) {
-        if (commandQueue.isEmpty()) {
-            return false;
-        }
-
-        for (SimpleBinaryItemData qitem : commandQueue) {
-            if (qitem.deviceId == item.deviceId && qitem.itemAddress == item.itemAddress) {
-                if (remove) {
-                    commandQueue.remove(qitem);
-                }
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if queue has data for specified device and send it
-     *
-     */
-    protected void processCommandQueue(int thisDeviceOnly) {
-        if (!isConnected() || disposed) {
-            return;
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug("{} - Processing commandQueue - length {}. Only device {}. Thread={}", toString(),
-                    commandQueue.size(), thisDeviceOnly, Thread.currentThread().getId());
-        }
-        // queue is empty -> exit
-        if (commandQueue.isEmpty()) {
-            return;
-        }
-        // no reply expected - no command processed
-        if (!canSend(thisDeviceOnly) || !processLock.tryLock()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} - Processing commandQueue - waiting", this.toString());
-            }
-            return;
-        }
-
-        try {
-            SimpleBinaryItemData dataToSend = null;
-
-            for (SimpleBinaryItemData i : commandQueue) {
-                if (i.deviceId == thisDeviceOnly) {
-                    commandQueue.removeFirstOccurrence(i);
-                    dataToSend = i;
-                    break;
-                }
-            }
-            if (dataToSend != null) {
-                sendDataOut(dataToSend);
-            }
-        } catch (Exception e) {
-            logger.error("{} - Processing commandQueue(int) - error: {}", this.toString(), e.getMessage());
-        } finally {
-            processLock.unlock();
-        }
-    }
-
-    /**
-     * Check if queue is not empty and send data to device
-     *
-     */
-    protected void processCommandQueue() {
-        if (!isConnected() || disposed) {
-            return;
-        }
-        if (logger.isDebugEnabled()) {
-            // if (logger.isDebugEnabled() || this instanceof SimpleBinaryIP) {
-            logger.debug("{} - Processing commandQueue - length {}. Thread={}", toString(), commandQueue.size(),
-                    Thread.currentThread().getId());
-        }
-        // queue is empty -> exit
-        if (commandQueue.isEmpty()) {
-            return;
-        }
-        // no reply expected or already in process
-        if (!canSend() || !processLock.tryLock()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} - Processing commandQueue - waiting", this.toString());
-            }
-            return;
-        }
-
-        try {
-            SimpleBinaryItemData dataToSend = null;
-
-            // check first command in queue
-            SimpleBinaryItemData firstdata = commandQueue.pollFirst();
-            if (firstdata == null) {
-                return;
-            }
-
-            // state of command device
-            DeviceStates state = devices.getDeviceState(firstdata.deviceId);
-
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} - Processing commandQueue - first command deviceID={}", this.toString(),
-                        firstdata.deviceId);
-            }
-
-            // check if device responds and there is lot of commands
-            if (state != DeviceStates.NOT_RESPONDING && canSend(firstdata.deviceId)) {
-                dataToSend = firstdata;
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            "{} - Processing commandQueue - deviceID={} - device responding. Command will be sent.",
-                            this.toString(), firstdata.deviceId);
-                }
-                // no other element
-            } else if (commandQueue.isEmpty()) {
-                if (canSend(firstdata.deviceId)) {
-                    dataToSend = firstdata;
-                } else {
-                    commandQueue.addFirst(firstdata);
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("{} - Processing commandQueue - deviceID={} - cannot send data to device.",
-                                this.toString(), firstdata.deviceId);
-                    }
-                }
-                // queue not empty
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            "{} - Processing commandQueue - deviceID={} - device NOT responding. Command queue will be reordered.",
-                            this.toString(), firstdata.deviceId);
-
-                    String commands = firstdata.deviceId + "/" + Integer.toHexString(firstdata.messageId & 0xFF);
-                    for (SimpleBinaryItemData i : commandQueue) {
-                        commands += ";" + i.deviceId + "/" + Integer.toHexString(i.messageId & 0xFF);
-                    }
-
-                    logger.debug("{} - Processing commandQueue - before reorder queue(deviceID/messageID)={}",
-                            this.toString(), commands);
-                }
-                // reorder queue - all commands from dead device put at the end of the queue
-                List<SimpleBinaryItemData> deadData = new ArrayList<SimpleBinaryItemData>();
-                List<SimpleBinaryItemData> otherData = new ArrayList<SimpleBinaryItemData>();
-
-                SimpleBinaryItemData data = firstdata;
-                deadData.add(data);
-
-                // over all items until item isn't same as first one
-                do {
-                    data = commandQueue.poll();
-
-                    if (data == null) {
-                        break;
-                    }
-
-                    if (data.deviceId == firstdata.deviceId || !canSend(data.deviceId)) {
-                        deadData.add(data);
-                    } else {
-                        otherData.add(data);
-                        // commandQueue.offer(data);
-                    }
-
-                } while (!commandQueue.isEmpty());
-
-                // TODO: at begin put "check new data"??? - but only if ONCHANGE. What if ONSCAN???
-
-                if (logger.isDebugEnabled()) {
-                    logger.debug("{} - Processing commandQueue - otherData.size()={},deadData.size()={}",
-                            this.toString(), otherData.size(), deadData.size());
-                }
-
-                // first add commands from non dead device
-                commandQueue.addAll(otherData);
-                // add dead device data
-                commandQueue.addAll(deadData);
-
-                /*
-                 * if (logger.isTraceEnabled()) {
-                 * String commands = "";
-                 * for (SimpleBinaryItemData i : commandQueue) {
-                 * if (!commands.isEmpty()) {
-                 * commands += ";";
-                 * }
-                 * commands += i.deviceId + "/" + Integer.toHexString(i.messageId & 0xFF);
-                 * }
-                 *
-                 * logger.trace("{} - Processing commandQueue - after reorder queue(deviceID/messageID)={}",
-                 * this.toString(), commands);
-                 * }
-                 */
-
-                // put first command (no matter if device not responding)
-                dataToSend = commandQueue.poll();
-
-                if (dataToSend == null) {
-                    return;
-                }
-
-                if (canSend(dataToSend.deviceId)) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(
-                                "{} - Processing commandQueue - after reorder first command will be sent. DeviceID={}",
-                                this.toString(), dataToSend.deviceId);
-                    }
-                } else {
-                    if (logger.isDebugEnabled()) {
-                        // if (logger.isDebugEnabled() || this instanceof SimpleBinaryIP) {
-                        logger.debug("{} - Processing commandQueue - cannot send data to deviceID={}", this.toString(),
-                                dataToSend.deviceId);
-                    }
-
-                    commandQueue.addFirst(dataToSend);
-
-                    return;
-                }
-            }
-
-            if (dataToSend != null) {
-                sendDataOut(dataToSend);
-            }
-        } catch (Exception e) {
-            logger.error("{} - Processing commandQueue - error: {}", this.toString(), e.toString());
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            logger.error("Stacktrace: {}", sw.toString());
-        } finally {
-            processLock.unlock();
-        }
+        return sendWait(devices.get(item.getCommandAddress().getDeviceId()), data);
     }
 
     protected boolean canSend() {
@@ -658,24 +316,6 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         logger.warn("{} - Generic device can't send data", this.toString());
 
         return false;
-    }
-
-    /**
-     * Resend last sent data
-     *
-     * @throws InterruptedException
-     */
-    protected void resendData(SimpleBinaryItemData lastData) throws InterruptedException {
-        if (lastData != null) {
-            if (lastData.getResendCounter() < MAX_RESEND_COUNT) {
-                lastData.incrementResendCounter();
-                sendDataPriority(lastData);
-            } else {
-                logger.warn("{} - Device {} - Max resend attempts reached.", this.toString(), lastData.getDeviceId());
-                // set state
-                setDeviceState(lastData.getDeviceId(), DeviceStates.RESPONSE_ERROR);
-            }
-        }
     }
 
     /**
@@ -704,6 +344,50 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         }
     }
 
+    protected boolean sendWait(SimpleBinaryDevice device, SimpleBinaryItemData data) {
+        device.receivedMessage = SimpleBinaryMessageType.UNKNOWN;
+        if (!sendDataOut(data)) {
+            if (device.unresponsive(retryCount)) {
+                logger.info("{} - device={} is set off-scan", toString(), data.getDeviceId());
+            }
+            return false;
+        }
+        // wait for answer
+        synchronized (device) {
+            try {
+                device.wait(timeout);
+            } catch (InterruptedException ex) {
+                logger.error("{} - checkNewData() device.wait() interrupted", toString());
+                return false;
+            } catch (Exception ex) {
+                logger.error("{} - checkNewData() device.wait() error", toString(), ex);
+                return false;
+            }
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} - Device {} notify message {}", toString(), data.getDeviceId(), device.receivedMessage);
+        }
+        if (device.receivedMessage == SimpleBinaryMessageType.UNKNOWN) {
+            if (device.unresponsive(retryCount)) {
+                logger.info("{} - device={} is set off-scan", toString(), data.getDeviceId());
+            }
+            return false;
+        } else if (device.receivedMessage == SimpleBinaryMessageType.RESEND) {
+            if (data.getResendCounter() < MAX_RESEND_COUNT) {
+                data.incrementResendCounter();
+                logger.debug("{} - Device {} - Resend data for {}. time", this.toString(), data.getDeviceId(),
+                        data.getResendCounter());
+                return sendWait(device, data);
+            } else {
+                logger.warn("{} - Device {} - Max resend attempts reached.", this.toString(), data.getDeviceId());
+                // set state
+                setDeviceState(data.getDeviceId(), DeviceStates.RESPONSE_ERROR);
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * @see org.openhab.binding.simplebinary.internal.SimpleBinaryIDevice#checkNewData()
      */
@@ -714,44 +398,85 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         }
 
         if (logger.isDebugEnabled()) {
-            logger.debug("{} - checkNewData() in mode {} is called", toString(), poolControl);
+            logger.debug("{} - checkNewData() in mode {} is called", toString(), pollControl);
         }
 
-        if (poolControl == SimpleBinaryPoolControl.ONSCAN) {
+        if (pollControl == SimpleBinaryPollControl.ONSCAN) {
             for (SimpleBinaryChannel item : stateItems) {
                 if (logger.isDebugEnabled()) {
-                    logger.debug("{} - checkNewData() channelId={}", toString(), item.channelId);
+                    logger.debug("{} - checkNewData() onscan channelId={}", toString(), item.channelId);
                 }
-                try {
-                    this.sendReadData(item);
-                } catch (Exception e) {
-                    logger.error("{} - checkNewData() error: {} ", toString(), e.getMessage());
+                if (devices.containsKey(item.getCommandAddress().getDeviceId())) {
+                    var device = devices.get(item.getCommandAddress().getDeviceId());
+                    if (device.isDegraded()) {
+                        if (device.stillDegraded(degradeTime)) {
+                            logger.debug("{} - device={} is off-scan. Skip...", toString(),
+                                    item.getCommandAddress().getDeviceId());
+                            continue;
+                        } else {
+                            logger.info("{} - device={} is back in-scan", toString(),
+                                    item.getCommandAddress().getDeviceId());
+                        }
+                    }
+                }
+                if (!sendReadData(item)) {
+                    logger.debug("{} - Item can not be read.", toString());
+                    continue;
                 }
             }
-        } else if (poolControl == SimpleBinaryPoolControl.ONCHANGE) {
+            // send commands
+            for (var device : devices.entrySet()) {
+                sendDeviceCommands(device.getValue());
+            }
+        } else if (pollControl == SimpleBinaryPollControl.ONCHANGE) {
             // take every device and create for him command depend on his state
             for (var device : devices.entrySet()) {
-                boolean forceAllValues = device.getValue().getState() == DeviceStates.UNKNOWN
-                        || device.getValue().getState() == DeviceStates.NOT_RESPONDING
-                        || device.getValue().getState() == DeviceStates.RESPONSE_ERROR;
+                // not responding for defined times -> degrade device for defined time
+                // still degrade (off-scan) -> get next
+                if (device.getValue().isDegraded()) {
+                    if (device.getValue().stillDegraded(degradeTime)) {
+                        logger.debug("{} - device={} is off-scan. Skip...", toString(), device.getKey());
+                        continue;
+                    } else {
+                        logger.info("{} - device={} is back in-scan", toString(), device.getKey());
+                    }
+                }
+                if (!canSend(device.getKey())) {
+                    logger.debug("{} - device={} can not send data", toString(), device.getKey());
+                    continue;
+                }
+                // not responding -> force
+                DeviceStates state = device.getValue().getState().getState();
+                boolean forceAllValues = state == DeviceStates.UNKNOWN || state == DeviceStates.NOT_RESPONDING
+                        || state == DeviceStates.RESPONSE_ERROR;
 
                 if (logger.isDebugEnabled()) {
-                    logger.debug("{} - checkNewData() device={} force={}", toString(), device.getKey(), forceAllValues);
+                    logger.debug("{} - device={} force={}", toString(), device.getKey(), forceAllValues);
                 }
-                
-                try {
-                    if (forceAllValues) {
-                        this.offerNewDataCheckPriority(device.getKey(), forceAllValues);
-                    } else {
-                        this.offerNewDataCheck(device.getKey(), forceAllValues);
+                // send "new data"
+                SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(device.getKey(), forceAllValues);
+                do {
+                    if (!sendWait(device.getValue(), data)) {
+                        break;
                     }
-                } catch (Exception e) {
-                    logger.error("{} - checkNewData() error: {} ", toString(), e.getMessage());
+
+                    if (device.getValue().receivedMessage == SimpleBinaryMessageType.DATA) {
+                        // if data income on request "check new data" send it again for new check
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("{} - Device {} Repeat CHECKNEWDATA command", toString(), device.getKey());
+                        }
+                        // send new request immediately and without "force all data as new"
+                        data = SimpleBinaryProtocol.compileNewDataFrame(device.getKey(), false);
+                    }
+                } while (device.getValue().receivedMessage == SimpleBinaryMessageType.DATA);
+
+                if (device.getValue().receivedMessage == SimpleBinaryMessageType.UNKNOWN) {
+                    continue;
                 }
+                // send commands
+                sendDeviceCommands(device.getValue());
             }
         }
-
-        processCommandQueue();
 
         long diff;
         if ((diff = (System.currentTimeMillis() - metricsStart)) >= 5000 || metricsStart == 0) {
@@ -766,6 +491,33 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 onUpdate.onMetricsUpdated(requests, bytes);
             }
         }
+    }
+
+    /**
+     * @param device
+     * @return
+     */
+    protected boolean sendDeviceCommands(SimpleBinaryDevice device) {
+        while (!device.getCommandQueue().isEmpty()) {
+            var channel = device.getCommandQueue().peek();
+            if (logger.isDebugEnabled()) {
+                logger.debug("{} - Device {} send command item {}", toString(),
+                        channel.getCommandAddress().getDeviceId(), channel.getCommandAddress().getAddress());
+            }
+            SimpleBinaryItemData data;
+            try {
+                data = SimpleBinaryProtocol.compileDataFrame(channel, charset);
+            } catch (Exception ex) {
+                logger.error("{} - {}", this.toString(), ex.getMessage());
+                continue;
+            }
+
+            if (!sendWait(device, data)) {
+                return false;
+            }
+            device.getCommandQueue().poll();
+        }
+        return true;
     }
 
     protected int getDeviceID(SimpleBinaryByteBuffer inBuffer) {
@@ -850,7 +602,6 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      * @return Return device ID or error code when lower than 0
      */
     protected int processData(SimpleBinaryByteBuffer inBuffer, SimpleBinaryItemData lastSentData, Byte forcedDeviceId) {
-
         int receivedID = 0;
 
         try {
@@ -875,13 +626,20 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             // is decompiled
             if (itemData != null) {
                 // process data
-                processDecompiledData(itemData, lastSentData);
+                SimpleBinaryMessageType mt = processDecompiledData(itemData, lastSentData);
 
                 readed.incrementAndGet();
                 readedBytes.addAndGet(datasize - inBuffer.remaining());
 
                 // compact buffer
                 inBuffer.compact();
+
+                if (devices.containsKey(receivedID)) {
+                    synchronized (devices.get(receivedID)) {
+                        devices.get(receivedID).receivedMessage = mt;
+                        devices.get(receivedID).notify();
+                    }
+                }
 
                 return receivedID;
             } else {
@@ -930,14 +688,15 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 logger.error(e.getMessage());
             }
 
-            try {
-                resendData(lastSentData);
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-            }
-
             // set state
             setDeviceState(receivedID, DeviceStates.RESPONSE_ERROR);
+
+            if (devices.containsKey(receivedID)) {
+                synchronized (devices.get(receivedID)) {
+                    devices.get(receivedID).receivedMessage = SimpleBinaryMessageType.RESEND;
+                    devices.get(receivedID).notify();
+                }
+            }
 
             return ProcessDataResult.INVALID_CRC;
 
@@ -1013,12 +772,24 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     }
 
     /**
-     * @param itemData
-     * @throws Exception
      *
+     * @param itemData
+     * @param lastSentData
+     * @return
+     * @throws Exception
      */
-    protected void processDecompiledData(SimpleBinaryMessage itemData, SimpleBinaryItemData lastSentData)
-            throws Exception {
+    protected SimpleBinaryMessageType processDecompiledData(SimpleBinaryMessage itemData,
+            SimpleBinaryItemData lastSentData) throws Exception {
+        int deviceId = itemData.getDeviceId();
+        // get device state
+        DeviceStates devstate = devices.getDeviceState(deviceId);
+        if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
+                || devstate == DeviceStates.RESPONSE_ERROR || itemData.getMessageType() == SimpleBinaryMessageType.HI
+                || itemData.getMessageType() == SimpleBinaryMessageType.WANT_EVERYTHING) {
+            sendAllItemsCommands();
+        }
+        // set state
+        setDeviceState(deviceId, DeviceStates.CONNECTED);
         // message type control
         if (itemData instanceof SimpleBinaryItem) {
             /*
@@ -1026,17 +797,6 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
              * logger.trace("{} - Incoming data", toString());
              * }
              */
-
-            int deviceId = ((SimpleBinaryItem) itemData).getDeviceId();
-
-            // get device state
-            DeviceStates devstate = devices.getDeviceState(deviceId);
-            if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
-                    || devstate == DeviceStates.RESPONSE_ERROR) {
-                sendAllItemsCommands();
-            }
-            // set state
-            setDeviceState(deviceId, DeviceStates.CONNECTED);
 
             try {
                 State state = ((SimpleBinaryItem) itemData).getState();
@@ -1050,49 +810,9 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                     }
 
                     ((SimpleBinaryItem) itemData).getConfig().setState(state);
-
-                    /*
-                     * // send data to other binded devices
-                     * if (((SimpleBinaryItem) itemData).getConfig().devices.size() > 1) {
-                     * logger.debug("{} - Resend received data to other devices(count={})", toString(),
-                     * ((SimpleBinaryItem) itemData).getConfig().devices.size());
-                     * SimpleBinaryBindingConfig cfg = ((SimpleBinaryItem) itemData).getConfig();
-                     * for (DeviceConfig d : cfg.devices) {
-                     * if (d.dataDirection != DataDirectionFlow.INPUT
-                     * && (d.getDeviceAddress() != deviceId || !d.getPortName().equals(this.deviceName))) {
-                     * logger.debug("{} - Resend to device {}", toString(), d);
-                     * SimpleBinaryGenericDevice device = this.configuredDevices.get(d.deviceName);
-                     * try {
-                     * device.sendData(cfg.item.getName(), state, cfg, d);
-                     * } catch (Exception ex) {
-                     * logger.error(
-                     * "{} - Resend received data to other devices failed: line:{}|method:{}|message:{}",
-                     * toString(), ex.getStackTrace()[0].getLineNumber(),
-                     * ex.getStackTrace()[0].getMethodName(), ex.toString());
-                     *
-                     * StringWriter sw = new StringWriter();
-                     * PrintWriter pw = new PrintWriter(sw);
-                     * ex.printStackTrace(pw);
-                     * logger.error(sw.toString());
-                     * }
-                     * }
-                     * }
-                     * }
-                     */
                 }
             } catch (Exception ex) {
-                logger.error("{} - {}", this.toString(), ex);
-            }
-
-            if (lastSentData != null) {
-                // if data income on request "check new data" send it again for new check
-                if (lastSentData.getMessageType() == SimpleBinaryMessageType.CHECKNEWDATA) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("{} - Device {} Repeat CHECKNEWDATA command", toString(), deviceId);
-                    }
-                    // send new request immediately and without "force all data as new"
-                    offerNewDataCheckPriority(lastSentData.deviceId);
-                }
+                logger.error("{} - {}", this.toString(), ex.toString());
             }
         } else if (itemData instanceof SimpleBinaryMessage) {
             if (logger.isDebugEnabled()) {
@@ -1104,22 +824,16 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                         lastSentData.getItemAddress());
             }
 
-            // set state
-            setDeviceState(itemData.getDeviceId(), DeviceStates.CONNECTED);
-
             if (itemData.getMessageType() == SimpleBinaryMessageType.OK) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} - Device {} for item {} report data OK", toString(), itemData.getDeviceId(),
                             (lastSentData != null && lastSentData.getItemAddress() >= 0) ? lastSentData.getItemAddress()
                                     : "???");
                 }
-
             } else if (itemData.getMessageType() == SimpleBinaryMessageType.RESEND) {
                 if (lastSentData != null) {
                     logger.info("{} - Device {} for item {} request resend data", toString(), itemData.getDeviceId(),
                             lastSentData.getItemAddress());
-
-                    resendData(lastSentData);
                 } else {
                     logger.warn("{} - Device {} request resend data. But nothing to resend.", toString(),
                             itemData.getDeviceId());
@@ -1170,16 +884,9 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 // set state
                 setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
             }
-
-            // get device state
-            DeviceStates devstate = devices.getDeviceState(itemData.getDeviceId());
-            if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
-                    || devstate == DeviceStates.RESPONSE_ERROR
-                    || itemData.getMessageType() == SimpleBinaryMessageType.HI
-                    || itemData.getMessageType() == SimpleBinaryMessageType.WANT_EVERYTHING) {
-                sendAllItemsCommands();
-            }
         }
+
+        return itemData.getMessageType();
     }
 
     /**
@@ -1197,13 +904,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
             logger.debug("{} - sendAllItemsCommands() {}/{}", toString(), item.getCommandAddress().getDeviceId(),
                     item.getCommandAddress().getAddress());
-
-            try {
-                offerData(SimpleBinaryProtocol.compileDataFrame(item, item.getCommand(), charset));
-            } catch (Exception ex) {
-                logger.error("{} - sendAllItemsCommands(): line:{}|method:{}", toString(),
-                        ex.getStackTrace()[0].getLineNumber(), ex.getStackTrace()[0].getMethodName());
-            }
+            // add command into device queue
+            addCommand(item);
         }
     }
 
@@ -1244,7 +946,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             return;
         }
         if (onDeviceState != null) {
-            onDeviceState.onDeviceStateUpdated(deviceId, devices.get(deviceId));
+            onDeviceState.onDeviceStateUpdated(deviceId, devices.get(deviceId).getState());
         }
     }
 
@@ -1253,7 +955,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
         if (onDeviceState != null) {
             for (var d : devices.entrySet()) {
-                onDeviceState.onDeviceStateUpdated(d.getKey(), d.getValue());
+                onDeviceState.onDeviceStateUpdated(d.getKey(), d.getValue().getState());
             }
         }
     }
@@ -1266,5 +968,9 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         this.devices.put(devices);
         this.stateItems = stateItems;
         this.commandItems = commandItems;
+    }
+
+    public interface SimpleBinaryICommandAdded {
+        void event(SimpleBinaryDevice device);
     }
 }

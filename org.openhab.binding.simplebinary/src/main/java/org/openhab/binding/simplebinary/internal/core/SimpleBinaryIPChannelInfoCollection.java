@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinaryIPChannelInfo> {
     private static final long serialVersionUID = 8037598025330106665L;
-    private final SimpleBinaryIP device;
+    public final SimpleBinaryIP device;
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryIPChannelInfoCollection.class);
 

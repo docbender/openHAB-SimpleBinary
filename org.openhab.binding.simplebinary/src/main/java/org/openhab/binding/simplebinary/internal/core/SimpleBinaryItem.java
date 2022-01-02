@@ -114,8 +114,8 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
                         + item.getStateAddress().getType() + ". Data length > 2");
             }
         } else if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_COLOR)) {
-            //logger.debug("Color data = {},{},{},{}", itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF,
-            //        itemData[3] & 0xFF);
+            logger.debug("Color data = {},{},{},{}", itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF,
+                    itemData[3] & 0xFF);
             if (item.getStateAddress().getType() == SimpleBinaryTypes.HSB) {
                 return new HSBType(new DecimalType((itemData[0] & 0xFF) + ((itemData[1] & 0xFF) << 8)),
                         new PercentType(Math.max((itemData[2] & 0xFF), 100)),

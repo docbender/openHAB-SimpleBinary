@@ -33,4 +33,24 @@ public class SimpleBinaryTcpConfiguration {
      * String data code page
      */
     public String charset = "";
+
+    /**
+     * Response timeout
+     */
+    public int timeout = 1000;
+
+    /**
+     * Number of retries before device is set into degrade mode
+     */
+    public int retryCount = 0;
+
+    /**
+     * Device in degrade mode spend time (ms)
+     */
+    public int degradeTime = 5000;
+
+    /**
+     * Commands for offline device will be discarded
+     */
+    public boolean discardCommands = false;
 }

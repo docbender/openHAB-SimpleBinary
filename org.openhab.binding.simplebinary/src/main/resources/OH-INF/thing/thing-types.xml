@@ -61,7 +61,7 @@
                  <default>1000</default>
                  <advanced>true</advanced>
              </parameter>             
-             <parameter name="retryCount" type="integer" min="0" required="true">
+             <parameter name="degradeMaxFailuresCount" type="integer" min="0" required="true">
                  <label>Timeout to degrade device</label>
                  <description>How many attempts to establish connection before device is put off-scan. Zero means no off-scan.</description>
                  <default>0</default>
@@ -117,7 +117,7 @@
                 <default>1000</default>
                 <advanced>true</advanced>
             </parameter>             
-            <parameter name="retryCount" type="integer" min="0" required="true">
+            <parameter name="degradeMaxFailuresCount" type="integer" min="0" required="true">
                  <label>Timeout to degrade device</label>
                  <description>How many attempts to establish connection before device is put off-scan. Zero means no off-scan.</description>
                  <default>0</default>

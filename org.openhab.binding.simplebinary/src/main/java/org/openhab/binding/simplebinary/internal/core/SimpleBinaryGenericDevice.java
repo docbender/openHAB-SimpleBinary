@@ -86,7 +86,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     /** poll rate */
     protected final int pollRate;
     /** no response count before device is mark as degraded */
-    protected final int retryCount;
+    protected final int degradeMaxFailuresCount;
     /** time as degraded device */
     protected final int degradeTime;
     /** command discarded by offline device */
@@ -130,18 +130,18 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      * @param pollRate
      * @param charset
      * @param timeout
-     * @param retryCount
+     * @param degradeMaxFailuresCount
      * @param degradeTime
      * @param discardCommand
      */
     public SimpleBinaryGenericDevice(String deviceID, SimpleBinaryPollControl simpleBinaryPoolControl, int pollRate,
-            Charset charset, int timeout, int retryCount, int degradeTime, boolean discardCommand) {
+            Charset charset, int timeout, int degradeMaxFailuresCount, int degradeTime, boolean discardCommand) {
         this.deviceID = deviceID;
         this.pollControl = simpleBinaryPoolControl;
         this.devices = new SimpleBinaryDeviceCollection();
         this.timeout = pollRate;
         this.pollRate = pollRate;
-        this.retryCount = retryCount;
+        this.degradeMaxFailuresCount = degradeMaxFailuresCount;
         this.degradeTime = degradeTime;
         this.discardCommand = discardCommand;
 
@@ -347,8 +347,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     protected boolean sendWait(SimpleBinaryDevice device, SimpleBinaryItemData data) {
         device.receivedMessage = SimpleBinaryMessageType.UNKNOWN;
         if (!sendDataOut(data)) {
-            if (device.unresponsive(retryCount)) {
-                logger.info("{} - device={} is set off-scan", toString(), data.getDeviceId());
+            if (device.unresponsive(degradeMaxFailuresCount)) {
+                logger.info("{} - Device {} is set off-scan", toString(), data.getDeviceId());
             }
             return false;
         }
@@ -357,10 +357,10 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             try {
                 device.wait(timeout);
             } catch (InterruptedException ex) {
-                logger.error("{} - checkNewData() device.wait() interrupted", toString());
+                logger.debug("{} - device.wait() interrupted", toString());
                 return false;
             } catch (Exception ex) {
-                logger.error("{} - checkNewData() device.wait() error", toString(), ex);
+                logger.error("{} - device.wait() error", toString(), ex);
                 return false;
             }
         }
@@ -368,8 +368,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             logger.debug("{} - Device {} notify message {}", toString(), data.getDeviceId(), device.receivedMessage);
         }
         if (device.receivedMessage == SimpleBinaryMessageType.UNKNOWN) {
-            if (device.unresponsive(retryCount)) {
-                logger.info("{} - device={} is set off-scan", toString(), data.getDeviceId());
+            if (device.unresponsive(degradeMaxFailuresCount)) {
+                logger.info("{} - Device {} is set off-scan", toString(), data.getDeviceId());
             }
             return false;
         } else if (device.receivedMessage == SimpleBinaryMessageType.RESEND) {
@@ -410,11 +410,11 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                     var device = devices.get(item.getCommandAddress().getDeviceId());
                     if (device.isDegraded()) {
                         if (device.stillDegraded(degradeTime)) {
-                            logger.debug("{} - device={} is off-scan. Skip...", toString(),
+                            logger.debug("{} - Device {} is off-scan. Skip...", toString(),
                                     item.getCommandAddress().getDeviceId());
                             continue;
                         } else {
-                            logger.info("{} - device={} is back in-scan", toString(),
+                            logger.info("{} - Device {} is back in-scan", toString(),
                                     item.getCommandAddress().getDeviceId());
                         }
                     }
@@ -435,14 +435,14 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 // still degrade (off-scan) -> get next
                 if (device.getValue().isDegraded()) {
                     if (device.getValue().stillDegraded(degradeTime)) {
-                        logger.debug("{} - device={} is off-scan. Skip...", toString(), device.getKey());
+                        logger.debug("{} - Device {} is off-scan. Skip...", toString(), device.getKey());
                         continue;
                     } else {
-                        logger.info("{} - device={} is back in-scan", toString(), device.getKey());
+                        logger.info("{} - Device {} is back in-scan", toString(), device.getKey());
                     }
                 }
                 if (!canSend(device.getKey())) {
-                    logger.debug("{} - device={} can not send data", toString(), device.getKey());
+                    logger.debug("{} - Device {} can not send data", toString(), device.getKey());
                     continue;
                 }
                 // not responding -> force
@@ -451,7 +451,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                         || state == DeviceStates.RESPONSE_ERROR;
 
                 if (logger.isDebugEnabled()) {
-                    logger.debug("{} - device={} force={}", toString(), device.getKey(), forceAllValues);
+                    logger.debug("{} - Device {} force={}", toString(), device.getKey(), forceAllValues);
                 }
                 // send "new data"
                 SimpleBinaryItemData data = SimpleBinaryProtocol.compileNewDataFrame(device.getKey(), forceAllValues);

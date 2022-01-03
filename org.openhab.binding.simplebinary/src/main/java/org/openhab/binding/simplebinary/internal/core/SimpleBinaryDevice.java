@@ -12,10 +12,8 @@
  */
 package org.openhab.binding.simplebinary.internal.core;
 
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The {@link SimpleBinaryDevice} class with device informations
@@ -26,18 +24,11 @@ public class SimpleBinaryDevice {
     private final SimpleBinaryDeviceState state;
     private boolean isDegraded = false;
     private long degradeTime = 0;
-    private int retryCounter = 0;
-
+    private int failuresCounter = 0;
+    /** received message type */
     protected volatile SimpleBinaryMessageType receivedMessage = SimpleBinaryMessageType.UNKNOWN;
-
-    /** timer measuring answer timeout */
-    protected final Timer timer = new Timer();
-    protected TimeoutTask timeoutTask = null;
-    /** flag waiting */
-    protected final AtomicBoolean waitingForAnswer = new AtomicBoolean(false);
-    protected SimpleBinaryIRequestTimeouted requestTimeouted;
     /** queue for commands */
-    protected final ConcurrentLinkedDeque<SimpleBinaryChannel> commandQueue = new ConcurrentLinkedDeque<SimpleBinaryChannel>();
+    private final ConcurrentLinkedDeque<SimpleBinaryChannel> commandQueue = new ConcurrentLinkedDeque<SimpleBinaryChannel>();
 
     public ConcurrentLinkedDeque<SimpleBinaryChannel> getCommandQueue() {
         return commandQueue;
@@ -57,16 +48,6 @@ public class SimpleBinaryDevice {
      */
     public SimpleBinaryDevice() {
         this.state = new SimpleBinaryDeviceState();
-    }
-
-    /**
-     * Construct device
-     *
-     * @param timeoutEvent
-     */
-    public SimpleBinaryDevice(SimpleBinaryIRequestTimeouted timeoutEvent) {
-        this();
-        this.requestTimeouted = timeoutEvent;
     }
 
     /**
@@ -90,7 +71,7 @@ public class SimpleBinaryDevice {
         }
         if (isDegraded) {
             isDegraded = false;
-            retryCounter = 0;
+            failuresCounter = 0;
         }
         return false;
     }
@@ -98,18 +79,21 @@ public class SimpleBinaryDevice {
     /**
      * Check if device is unresponsive
      *
-     * @param maxRetry Max retry count
+     * @param maxFailures Max failure count
      */
-    public boolean unresponsive(int maxRetry) {
+    public boolean unresponsive(int maxFailures) {
+        // 0 -> off-scan mode disabled
+        if (maxFailures == 0) {
+            return false;
+        }
         if (isDegraded) {
             return true;
         }
-        if (retryCounter >= maxRetry) {
+        if (++failuresCounter >= maxFailures) {
             isDegraded = true;
             degradeTime = System.currentTimeMillis();
             return true;
         } else {
-            retryCounter++;
             return false;
         }
     }

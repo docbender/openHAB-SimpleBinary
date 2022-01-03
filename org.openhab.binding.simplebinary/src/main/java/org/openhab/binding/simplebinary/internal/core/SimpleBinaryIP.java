@@ -56,13 +56,13 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
      * @param port
      * @param charset
      * @param timeout
-     * @param retryCount
+     * @param degradeMaxFailuresCount
      * @param degradeTime
      * @param discardCommand
      */
-    public SimpleBinaryIP(String ip, int port, Charset charset, int timeout, int retryCount, int degradeTime,
+    public SimpleBinaryIP(String ip, int port, Charset charset, int timeout, int degradeMaxFailuresCount, int degradeTime,
             boolean discardCommand) {
-        super("TCPserver", SimpleBinaryPollControl.NONE, 1000, charset, timeout, retryCount, degradeTime,
+        super("TCPserver", SimpleBinaryPollControl.NONE, 1000, charset, timeout, degradeMaxFailuresCount, degradeTime,
                 discardCommand);
 
         this.bindAddress = ip;

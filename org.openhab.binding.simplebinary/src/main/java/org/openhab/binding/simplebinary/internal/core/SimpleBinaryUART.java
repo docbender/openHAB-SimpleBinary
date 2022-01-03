@@ -94,14 +94,15 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      * @param forceRTS
      * @param invertedRTS
      * @param timeout
-     * @param retryCount
+     * @param degradeMaxFailuresCount
      * @param degradeTime
      * @param discardCommand
      */
     public SimpleBinaryUART(SerialPortManager serialPortManager, String port, int baud,
             SimpleBinaryPollControl simpleBinaryPollControl, boolean forceRTS, boolean invertedRTS, int pollRate,
-            Charset charset, int timeout, int retryCount, int degradeTime, boolean discardCommand) {
-        super(port, simpleBinaryPollControl, pollRate, charset, timeout, retryCount, degradeTime, discardCommand);
+            Charset charset, int timeout, int degradeMaxFailuresCount, int degradeTime, boolean discardCommand) {
+        super(port, simpleBinaryPollControl, pollRate, charset, timeout, degradeMaxFailuresCount, degradeTime,
+                discardCommand);
 
         this.baud = baud;
         // IFDEF_OH3.0 //
@@ -546,16 +547,6 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     @Override
     public void checkNewData() {
-        // FIXME: Is it useful now?
-        /*
-         * if (!isConnected()) {
-         * logger.debug("{} - Port is closed. Try to reopen.");
-         * if (!this.open()) {
-         * return;
-         * }
-         * }
-         */
-
         super.checkNewData();
     }
 

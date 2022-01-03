@@ -46,9 +46,9 @@ public class SimpleBinaryTcpBridgeHandler extends SimpleBinaryBridgeHandler {
         config = getConfigAs(SimpleBinaryTcpConfiguration.class);
 
         logger.debug(
-                "{} - Bridge configuration: Host/IP={},Port={},Charset={},Timeout={},RetryCount={},DegradeTime={},DiscardCommand={}",
-                getThing().getLabel(), config.address, config.port, config.charset, config.timeout, config.retryCount,
-                config.degradeTime, config.discardCommands);
+                "{} - Bridge configuration: Host/IP={},Port={},Charset={},Timeout={},DegradeMaxFailuresCount={},DegradeTime={},DiscardCommand={}",
+                getThing().getLabel(), config.address, config.port, config.charset, config.timeout,
+                config.degradeMaxFailuresCount, config.degradeTime, config.discardCommands);
 
         // configuration validation
         boolean valid = true;
@@ -78,8 +78,8 @@ public class SimpleBinaryTcpBridgeHandler extends SimpleBinaryBridgeHandler {
                     config.address, config.port, config.charset);
         }
 
-        connection = new SimpleBinaryIP(config.address, config.port, charset, config.timeout, config.retryCount,
-                config.degradeTime, config.discardCommands);
+        connection = new SimpleBinaryIP(config.address, config.port, charset, config.timeout,
+                config.degradeMaxFailuresCount, config.degradeTime, config.discardCommands);
 
         super.initialize();
     }

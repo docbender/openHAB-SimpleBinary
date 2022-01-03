@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Iterator;
+import java.util.Timer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
@@ -47,6 +48,12 @@ public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
 
     /** flag write ready */
     protected AtomicBoolean writeReady = new AtomicBoolean(false);
+    /** flag waiting */
+    protected final AtomicBoolean waitingForAnswer = new AtomicBoolean(false);
+    /** timer measuring answer timeout */
+    protected final Timer timer = new Timer();
+    protected TimeoutTask timeoutTask = null;
+    protected SimpleBinaryIRequestTimeouted requestTimeouted;
 
     /**
      * Constructor to add new channel after connect
@@ -58,8 +65,9 @@ public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
      */
     public SimpleBinaryIPChannelInfo(AsynchronousSocketChannel channel, ByteBuffer buffer,
             SimpleBinaryIPChannelInfoCollection collection, SimpleBinaryIRequestTimeouted timeoutEvent) {
-        super(timeoutEvent);
+        super();
         this.collection = collection;
+        this.requestTimeouted = timeoutEvent;
 
         assignChannel(channel, buffer, timeoutEvent);
 

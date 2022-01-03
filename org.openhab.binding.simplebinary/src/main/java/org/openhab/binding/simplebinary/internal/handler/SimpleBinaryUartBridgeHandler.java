@@ -52,9 +52,9 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
         config = getConfigAs(SimpleBinaryUartConfiguration.class);
 
         logger.debug(
-                "{} - Bridge configuration: Port={},BaudRate={},PollControl={},ForceRTS={},InvertedRTS={},Charset={},Timeout={},PollRate={},RetryCount={},DegradeTime={},DiscardCommand={}",
+                "{} - Bridge configuration: Port={},BaudRate={},PollControl={},ForceRTS={},InvertedRTS={},Charset={},Timeout={},PollRate={},DegradeMaxFailuresCount={},DegradeTime={},DiscardCommand={}",
                 getThing().getLabel(), config.port, config.baudRate, config.pollControl, config.forceRTS,
-                config.invertedRTS, config.charset, config.timeout, config.pollRate, config.retryCount,
+                config.invertedRTS, config.charset, config.timeout, config.pollRate, config.degradeMaxFailuresCount,
                 config.degradeTime, config.discardCommands);
 
         // configuration validation
@@ -98,8 +98,8 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
 
         logger.info("{} - Current charset {}", getThing().getLabel(), charset.name());
 
-        if (config.retryCount < 0) {
-            config.retryCount = 0;
+        if (config.degradeMaxFailuresCount < 0) {
+            config.degradeMaxFailuresCount = 0;
         }
 
         if (config.degradeTime < 0) {
@@ -116,7 +116,7 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
 
         connection = new SimpleBinaryUART(serialPortManager, config.port, config.baudRate,
                 SimpleBinaryPollControl.valueOf(config.pollControl), config.forceRTS, config.invertedRTS,
-                config.pollRate, charset, config.timeout, config.retryCount, config.degradeTime,
+                config.pollRate, charset, config.timeout, config.degradeMaxFailuresCount, config.degradeTime,
                 config.discardCommands);
 
         super.initialize();

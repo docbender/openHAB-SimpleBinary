@@ -141,6 +141,9 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         });
 
         connection.onMetricsUpdated((requests, bytes) -> {
+            if (disposed) {
+                return;
+            }
             updateState(chRequests, new DecimalType(requests));
             updateState(chBytes, new DecimalType(bytes));
         });

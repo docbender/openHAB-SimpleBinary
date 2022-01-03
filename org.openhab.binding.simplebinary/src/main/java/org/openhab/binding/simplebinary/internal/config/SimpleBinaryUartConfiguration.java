@@ -62,7 +62,7 @@ public class SimpleBinaryUartConfiguration {
     /**
      * Number of retries before device is set into degrade mode
      */
-    public int retryCount = 0;
+    public int degradeMaxFailuresCount = 0;
 
     /**
      * Device in degrade mode spend time (ms)

@@ -39,9 +39,9 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
      * @param devices
      *            Device list
      */
-    public void put(ArrayList<Integer> devices) {
+    public void put(ArrayList<SimpleBinaryDevice> devices) {
         for (var i : devices) {
-            put(i, new SimpleBinaryDevice());
+            put(i.getDeviceId(), i);
         }
     }
 
@@ -55,7 +55,7 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
      */
     public boolean setDeviceState(Integer deviceAddress, SimpleBinaryDeviceState.DeviceStates state) {
         if (!this.containsKey(deviceAddress)) {
-            this.put(deviceAddress, new SimpleBinaryDevice());
+            this.put(deviceAddress, new SimpleBinaryDevice(deviceAddress));
         }
         // set internal state
         return this.get(deviceAddress).getState().setState(state);

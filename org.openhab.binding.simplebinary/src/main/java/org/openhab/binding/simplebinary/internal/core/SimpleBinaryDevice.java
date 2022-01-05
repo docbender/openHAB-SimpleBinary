@@ -12,8 +12,11 @@
  */
 package org.openhab.binding.simplebinary.internal.core;
 
+import java.util.ArrayList;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedDeque;
+
+import org.openhab.binding.simplebinary.internal.handler.SimpleBinaryGenericHandler;
 
 /**
  * The {@link SimpleBinaryDevice} class with device informations
@@ -21,17 +24,37 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * @author VitaTucek - Initial contribution
  */
 public class SimpleBinaryDevice {
+    private final int deviceId;
     private final SimpleBinaryDeviceState state;
     private boolean isDegraded = false;
     private long degradeTime = 0;
     private int failuresCounter = 0;
     /** received message type */
     protected volatile SimpleBinaryMessageType receivedMessage = SimpleBinaryMessageType.UNKNOWN;
+    /** things */
+    private final ArrayList<SimpleBinaryGenericHandler> things = new ArrayList<SimpleBinaryGenericHandler>();
     /** queue for commands */
     private final ConcurrentLinkedDeque<SimpleBinaryChannel> commandQueue = new ConcurrentLinkedDeque<SimpleBinaryChannel>();
 
     public ConcurrentLinkedDeque<SimpleBinaryChannel> getCommandQueue() {
         return commandQueue;
+    }
+
+    /**
+     * Construct device
+     */
+    public SimpleBinaryDevice(int id) {
+        deviceId = id;
+        state = new SimpleBinaryDeviceState();
+    }
+
+    /**
+     * Return device ID
+     *
+     * @return
+     */
+    public int getDeviceId() {
+        return deviceId;
     }
 
     /**
@@ -44,10 +67,12 @@ public class SimpleBinaryDevice {
     }
 
     /**
-     * Construct device
+     * Return things
+     *
+     * @return
      */
-    public SimpleBinaryDevice() {
-        this.state = new SimpleBinaryDeviceState();
+    public ArrayList<SimpleBinaryGenericHandler> getThingHandlers() {
+        return things;
     }
 
     /**
@@ -115,6 +140,18 @@ public class SimpleBinaryDevice {
         }
         // add command into queue
         commandQueue.add(command);
+    }
+
+    /**
+     * Add device specific thing
+     *
+     * @param thing
+     */
+    public SimpleBinaryDevice addThingHandler(SimpleBinaryGenericHandler thing) {
+        if (!things.contains(thing)) {
+            things.add(thing);
+        }
+        return this;
     }
 
     /**

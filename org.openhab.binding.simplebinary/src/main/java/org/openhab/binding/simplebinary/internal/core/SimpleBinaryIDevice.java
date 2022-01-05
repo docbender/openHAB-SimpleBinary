@@ -72,7 +72,7 @@ public interface SimpleBinaryIDevice {
      * Set read write areas
      *
      */
-    public void setDataAreas(@NonNull ArrayList<Integer> devices,
+    public void setDataAreas(@NonNull SimpleBinaryDeviceCollection devices,
             @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems,
             @NonNull ArrayList<@NonNull SimpleBinaryChannel> commandItems);
 

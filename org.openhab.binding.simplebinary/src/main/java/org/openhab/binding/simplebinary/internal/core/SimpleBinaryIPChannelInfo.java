@@ -65,7 +65,7 @@ public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
      */
     public SimpleBinaryIPChannelInfo(AsynchronousSocketChannel channel, ByteBuffer buffer,
             SimpleBinaryIPChannelInfoCollection collection, SimpleBinaryIRequestTimeouted timeoutEvent) {
-        super();
+        super(-1);
         this.collection = collection;
         this.requestTimeouted = timeoutEvent;
 
@@ -87,6 +87,7 @@ public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
      */
     public SimpleBinaryIPChannelInfo(int deviceID, String ipAddress, boolean isIpLocked,
             SimpleBinaryIPChannelInfoCollection collection) {
+        super(deviceID);
         this.collection = collection;
 
         this.configuredDeviceID = deviceID;
@@ -165,6 +166,7 @@ public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
         }
     }
 
+    @Override
     public int getDeviceId() {
         if (!isIpLocked && receivedDeviceID >= 0) {
             return receivedDeviceID;

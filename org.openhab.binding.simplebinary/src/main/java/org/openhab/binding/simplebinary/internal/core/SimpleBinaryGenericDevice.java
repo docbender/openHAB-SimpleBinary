@@ -24,6 +24,8 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
 import org.openhab.core.common.ThreadPoolManager;
+import org.openhab.core.thing.ThingStatus;
+import org.openhab.core.thing.ThingStatusDetail;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.slf4j.Logger;
@@ -953,19 +955,33 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     protected void setStateToAllConfiguredDevices(SimpleBinaryDeviceState.DeviceStates state) {
         devices.setStateToAllConfiguredDevices(state);
 
-        if (onDeviceState != null) {
-            for (var d : devices.entrySet()) {
+        for (var d : devices.entrySet()) {
+            if (onDeviceState != null) {
                 onDeviceState.onDeviceStateUpdated(d.getKey(), d.getValue().getState());
             }
+
+            d.getValue().getThingHandlers().forEach(x -> {
+                if (state == DeviceStates.CONNECTED) {
+                    x.updateStatus(ThingStatus.ONLINE);
+                } else if (state == DeviceStates.NOT_RESPONDING) {
+                    x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Not responding");
+                } else if (state == DeviceStates.DATA_ERROR) {
+                    x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Data error");
+                } else if (state == DeviceStates.RESPONSE_ERROR) {
+                    x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                            "Response error (wrong CRC)");
+                } else {
+                    x.updateStatus(ThingStatus.UNKNOWN);
+                }
+            });
         }
     }
 
     @Override
-    public void setDataAreas(@NonNull ArrayList<Integer> devices,
+    public void setDataAreas(@NonNull SimpleBinaryDeviceCollection devices,
             @NonNull ArrayList<@NonNull SimpleBinaryChannel> stateItems,
             @NonNull ArrayList<@NonNull SimpleBinaryChannel> commandItems) {
-        this.devices.clear();
-        this.devices.put(devices);
+        this.devices = devices;
         this.stateItems = stateItems;
         this.commandItems = commandItems;
     }

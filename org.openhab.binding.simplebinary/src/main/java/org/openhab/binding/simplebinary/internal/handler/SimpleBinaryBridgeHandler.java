@@ -159,6 +159,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             }
 
             for (var ch : channels) {
+                logger.debug("State update ch={},type={},id={}", ch.channelId, ch.channelType.getId(), ch.deviceId);
                 if (ch.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_STATE_CURRENT)) {
                     ch.setState(new StringType(state.getState().toString()));
                 } else if (ch.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_STATE_PREVIOUS)) {

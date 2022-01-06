@@ -19,6 +19,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryChannel;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericDevice;
+import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
@@ -113,6 +114,12 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         channels.clear();
         connection = null;
         logger.debug("{} - device dispose", getThing().getLabel());
+
+        Bridge bridge = getBridge();
+        BridgeHandler handler;
+        if (bridge != null && (handler = bridge.getHandler()) != null) {
+            ((SimpleBinaryBridgeHandler) handler).updateConfig();
+        }
     }
 
     /**

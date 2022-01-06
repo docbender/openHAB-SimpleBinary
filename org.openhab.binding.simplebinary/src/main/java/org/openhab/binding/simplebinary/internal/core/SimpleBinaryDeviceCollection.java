@@ -11,6 +11,9 @@ package org.openhab.binding.simplebinary.internal.core;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
+import org.openhab.core.thing.ThingStatus;
+import org.openhab.core.thing.ThingStatusDetail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +60,21 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
         if (!this.containsKey(deviceAddress)) {
             this.put(deviceAddress, new SimpleBinaryDevice(deviceAddress));
         }
+        // set OH state
+        this.get(deviceAddress).getThingHandlers().forEach(x -> {
+            if (state == DeviceStates.CONNECTED) {
+                x.updateStatus(ThingStatus.ONLINE);
+            } else if (state == DeviceStates.NOT_RESPONDING) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Not responding");
+            } else if (state == DeviceStates.DATA_ERROR) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Data error");
+            } else if (state == DeviceStates.RESPONSE_ERROR) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        "Response error (wrong CRC)");
+            } else {
+                x.updateStatus(ThingStatus.UNKNOWN);
+            }
+        });
         // set internal state
         return this.get(deviceAddress).getState().setState(state);
     }

@@ -711,8 +711,12 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 logger.error(e.getMessage());
             }
 
-            // set state
-            // setDeviceState(receivedID, DeviceStates.DATA_ERROR);
+            if (devices.containsKey(receivedID)) {
+                synchronized (devices.get(receivedID)) {
+                    devices.get(receivedID).receivedMessage = SimpleBinaryMessageType.DATA;
+                    devices.get(receivedID).notify();
+                }
+            }
 
             return ProcessDataResult.BAD_CONFIG;
 

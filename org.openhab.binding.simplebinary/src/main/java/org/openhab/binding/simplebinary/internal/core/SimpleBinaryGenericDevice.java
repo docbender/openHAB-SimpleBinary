@@ -274,7 +274,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         }
         devices.get(addr.getDeviceId()).addCommand(data);
         if (this.eventCommandAdded != null) {
-            this.eventCommandAdded.event(devices.get(devices.get(addr.getDeviceId())));
+            this.eventCommandAdded.event(devices.get(addr.getDeviceId()));
         }
     }
 

@@ -214,7 +214,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         errorSetTime = System.currentTimeMillis();
         var st = getThing().getStatusInfo();
         if (st.getStatus() == ThingStatus.OFFLINE && st.getStatusDetail() == ThingStatusDetail.COMMUNICATION_ERROR
-                && st.getDescription() != null && st.getDescription().equals(message)) {
+                && message.equals(st.getDescription())) {
             return;
         }
 

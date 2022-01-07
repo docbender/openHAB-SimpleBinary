@@ -14,8 +14,6 @@ import java.util.HashMap;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Device status collection
@@ -25,8 +23,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryDevice> {
     private static final long serialVersionUID = -6637691081696263746L;
-
-    private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryDeviceCollection.class);
 
     /**
      * Device collection constructor

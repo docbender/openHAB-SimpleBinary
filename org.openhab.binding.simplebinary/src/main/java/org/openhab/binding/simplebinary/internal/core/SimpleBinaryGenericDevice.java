@@ -785,11 +785,12 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     protected SimpleBinaryMessageType processDecompiledData(SimpleBinaryMessage itemData,
             SimpleBinaryItemData lastSentData) throws Exception {
         int deviceId = itemData.getDeviceId();
-        // get device state
-        DeviceStates devstate = devices.getDeviceState(deviceId);
-        if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
-                || devstate == DeviceStates.RESPONSE_ERROR || itemData.getMessageType() == SimpleBinaryMessageType.HI
-                || itemData.getMessageType() == SimpleBinaryMessageType.WANT_EVERYTHING) {
+        // // get device state
+        // DeviceStates devstate = devices.getDeviceState(deviceId);
+        // if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
+        // || devstate == DeviceStates.RESPONSE_ERROR || itemData.getMessageType() == SimpleBinaryMessageType.HI
+        // send all commands only if device asked for that (prevent unwanted situations)
+        if (itemData.getMessageType() == SimpleBinaryMessageType.WANT_EVERYTHING) {
             sendAllItemsCommands();
         }
         // set state

@@ -11,7 +11,7 @@ Used protocol is easy to implement. Implementation examples for [Arduino](https:
 
 Compiled binding is inserted into release branch: https://github.com/docbender/openHAB-SimpleBinary/releases
 
-Binding is working with openHAB 3.0.
+Binding is working with openHAB 3.2.
 
 ## Serial port
 It is possible to configure several ports not only one. At one line it is possible to connect several devices (ready for RS422/RS485).
@@ -48,9 +48,14 @@ Basic bridge configuration requires to know serial port name and communication s
   <tr><td>baudRate</td><td>Yes</td><td>Communication speed [bits/s].</td></tr>
   <tr><td>pollControl</td><td>No</td><td>Communication mode. OnChange(default) or OnScan.</td></tr>
   <tr><td>pollRate</td><td>No</td><td>Read period [ms]. Default is 1000ms.</td></tr>
-  <tr><td>forceRTS</td><td>No</td><td>Communication port force RTS pin activation. <b>Does not work with OH3 now.</b></td></tr>
-  <tr><td>invertedRTS</td><td>No</td><td>Invert RTS pin state. <b>Does not work with OH3 now.</b></td></tr>
+  <tr><td>forceRTS</td><td>No</td><td>Communication port force RTS pin activation. Since OH3.2</td></tr>
+  <tr><td>invertedRTS</td><td>No</td><td>Invert RTS pin state. Since OH3.2</td></tr>
   <tr><td>charset</td><td>No</td><td>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used. Used code page is printed into log file as INFO.</td></tr>
+  <tr><td>timeout</td><td>No</td><td>Time to wait for answer [ms].</td></tr>
+  <tr><td>degradeMaxFailuresCount</td><td>No</td><td>Number of failures that lead to off-scan of the device. Zero means scan every period.</td></tr>
+  <tr><td>degradeTime</td><td>No</td><td>Determine time in off-scan before next connection attempt.</td></tr>
+  <tr><td>discardCommand</td><td>No</td><td>If is set to true, commands for offline device will be discarded.</td></tr>
+  <tr><td>syncCommand</td><td>No</td><td>If is set to true, previously published commands will be resent to the device.</td></tr>
 </table>
 
 Bridge definition together with things can be defined in text files. See [generic bridge configuration](https://www.openhab.org/docs/configuration/things.html#defining-bridges-using-files) for details. In short text files .things are located in ${OPENHAB_CONF}/things folder. Basic bridge configuration with required parameters looks like this:
@@ -69,6 +74,11 @@ Basic bridge is very simple. No parameters are required.
   <tr><td>address</td><td>No</td><td>IP address to listen. Empty or 0.0.0.0 means listen for client from everywhere.</td></tr>
   <tr><td>port</td><td>No</td><td>TCP port number. Default 43243.</td></tr>
   <tr><td>charset</td><td>No</td><td>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used. Used code page is printed into log file as INFO.</td></tr>
+  <tr><td>timeout</td><td>No</td><td>Time to wait for answer [ms].</td></tr>
+  <tr><td>degradeMaxFailuresCount</td><td>No</td><td>Number of failures that lead to off-scan of the device. Zero means scan every period.</td></tr>
+  <tr><td>degradeTime</td><td>No</td><td>Determine time in off-scan before next connection attempt.</td></tr>
+  <tr><td>discardCommand</td><td>No</td><td>If is set to true, commands for offline device will be discarded.</td></tr>
+  <tr><td>syncCommand</td><td>No</td><td>If is set to true, previously published commands will be resent to the device.</td></tr>  
 </table>
 
 Bridge definition together with things can be defined in text files. See [generic bridge configuration](https://www.openhab.org/docs/configuration/things.html#defining-bridges-using-files) for details. In short text files .things are located in ${OPENHAB_CONF}/things folder. Basic bridge configuration with required parameters looks like this:

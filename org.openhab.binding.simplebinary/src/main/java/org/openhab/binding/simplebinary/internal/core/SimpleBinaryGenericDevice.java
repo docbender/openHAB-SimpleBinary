@@ -977,4 +977,13 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     public interface SimpleBinaryICommandAdded {
         void event(SimpleBinaryDevice device);
     }
+
+    public boolean getDiscardCommand() {
+        return discardCommand;
+    }
+
+    @Nullable
+    public SimpleBinaryDeviceCollection getDevices() {
+        return devices;
+    }
 }

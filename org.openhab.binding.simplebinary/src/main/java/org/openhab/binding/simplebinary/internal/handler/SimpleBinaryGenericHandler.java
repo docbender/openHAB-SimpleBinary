@@ -18,6 +18,7 @@ import java.util.Map;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryChannel;
+import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericDevice;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Channel;
@@ -190,6 +191,14 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
                         thing.getLabel(), channelUID);
             }
             return;
+        }
+
+        // discard command when device not responding
+        if (connection.getDiscardCommand()) {
+            var device = connection.getDevices().get(channel.getCommandAddress().getDeviceId());
+            if (device != null && device.getState().getState() == SimpleBinaryDeviceState.DeviceStates.NOT_RESPONDING) {
+                return;
+            }
         }
 
         connection.sendData(channel, command);

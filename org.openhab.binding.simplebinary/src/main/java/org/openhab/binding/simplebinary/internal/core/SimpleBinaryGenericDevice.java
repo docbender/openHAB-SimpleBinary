@@ -91,6 +91,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     protected final int degradeTime;
     /** command discarded by offline device */
     protected final boolean discardCommand;
+    /** command sync when get online */
+    protected final boolean syncCommand;
     /** execute() call time */
     private long lastExecTime = 0;
     /** Used pool control ex.: OnChange, OnScan */
@@ -133,9 +135,11 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      * @param degradeMaxFailuresCount
      * @param degradeTime
      * @param discardCommand
+     * @param syncCommand
      */
     public SimpleBinaryGenericDevice(String deviceID, SimpleBinaryPollControl simpleBinaryPoolControl, int pollRate,
-            Charset charset, int timeout, int degradeMaxFailuresCount, int degradeTime, boolean discardCommand) {
+            Charset charset, int timeout, int degradeMaxFailuresCount, int degradeTime, boolean discardCommand,
+            boolean syncCommand) {
         this.deviceID = deviceID;
         this.pollControl = simpleBinaryPoolControl;
         this.devices = new SimpleBinaryDeviceCollection();
@@ -144,6 +148,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         this.degradeMaxFailuresCount = degradeMaxFailuresCount;
         this.degradeTime = degradeTime;
         this.discardCommand = discardCommand;
+        this.syncCommand = syncCommand;
 
         this.charset = charset;
 
@@ -785,13 +790,17 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     protected SimpleBinaryMessageType processDecompiledData(SimpleBinaryMessage itemData,
             SimpleBinaryItemData lastSentData) throws Exception {
         int deviceId = itemData.getDeviceId();
-        // // get device state
-        // DeviceStates devstate = devices.getDeviceState(deviceId);
-        // if (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
-        // || devstate == DeviceStates.RESPONSE_ERROR || itemData.getMessageType() == SimpleBinaryMessageType.HI
-        // send all commands only if device asked for that (prevent unwanted situations)
+        // send all commands if device asked for that
         if (itemData.getMessageType() == SimpleBinaryMessageType.WANT_EVERYTHING) {
             sendAllItemsCommands();
+            // send all commands if device get online
+        } else if (syncCommand) {
+            // get device state
+            var devstate = devices.getDeviceState(deviceId);
+            if (devstate != null && (devstate == DeviceStates.UNKNOWN || devstate == DeviceStates.NOT_RESPONDING
+                    || itemData.getMessageType() == SimpleBinaryMessageType.HI)) {
+                sendAllItemsCommands();
+            }
         }
         // set state
         setDeviceState(deviceId, DeviceStates.CONNECTED);

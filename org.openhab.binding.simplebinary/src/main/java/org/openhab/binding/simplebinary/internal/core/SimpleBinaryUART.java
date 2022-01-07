@@ -97,12 +97,14 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      * @param degradeMaxFailuresCount
      * @param degradeTime
      * @param discardCommand
+     * @param syncCommand
      */
     public SimpleBinaryUART(SerialPortManager serialPortManager, String port, int baud,
             SimpleBinaryPollControl simpleBinaryPollControl, boolean forceRTS, boolean invertedRTS, int pollRate,
-            Charset charset, int timeout, int degradeMaxFailuresCount, int degradeTime, boolean discardCommand) {
+            Charset charset, int timeout, int degradeMaxFailuresCount, int degradeTime, boolean discardCommand,
+            boolean syncCommand) {
         super(port, simpleBinaryPollControl, pollRate, charset, timeout, degradeMaxFailuresCount, degradeTime,
-                discardCommand);
+                discardCommand, syncCommand);
 
         this.baud = baud;
         // IFDEF_OH3.0 //

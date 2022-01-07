@@ -52,5 +52,10 @@ public class SimpleBinaryTcpConfiguration {
     /**
      * Commands for offline device will be discarded
      */
-    public boolean discardCommands = false;
+    public boolean discardCommand = false;
+
+    /**
+     * Sync commands for device that get online
+     */
+    public boolean syncCommand = false;
 }

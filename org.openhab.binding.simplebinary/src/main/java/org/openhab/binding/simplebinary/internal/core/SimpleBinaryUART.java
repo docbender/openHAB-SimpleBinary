@@ -576,7 +576,13 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                 }
             };
 
-            timer.schedule(timeoutTask, timeout);
+            try {
+                timer.schedule(timeoutTask, timeout);
+            } catch (IllegalStateException ex) {
+                logger.debug("{} - Cannot create timeout task. Task throw IllegalStateException. Thread={}",
+                        this.toString(), Thread.currentThread().getId());
+                return false;
+            }
 
             return true;
         } else {

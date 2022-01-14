@@ -683,7 +683,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             return ProcessDataResult.PROCESSING_ERROR;
 
         } catch (NoValidCRCException ex) {
-            logger.error("{} - ", this.toString(), ex.getMessage());
+            logger.error("{} - {}", this.toString(), ex.getMessage());
             // print details
             printCommunicationInfo(inBuffer, lastSentData);
             // compact buffer

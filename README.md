@@ -192,7 +192,7 @@ On this packet master expecting as answer "data" packet or "invalid address" pac
 
 ### Data packet for data type byte
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
-Answer from slave should "done" when everything was right. 
+Answer from the slave should be "done" when everything is right. 
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
   <tr><td>0</td><td>0xXX</td><td>Device slave address</td></tr>
@@ -205,7 +205,7 @@ Answer from slave should "done" when everything was right.
 
 ### Data packet for data type word
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
-Answer from slave should "done" when everything was right.
+Answer from the slave should be "done" when everything is right.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
   <tr><td>0</td><td>0xXX</td><td>Device slave address</td></tr>
@@ -219,7 +219,7 @@ Answer from slave should "done" when everything was right.
 
 ### Data packet for data type dword
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
-Answer from slave should "done" when everything was right.
+Answer from the slave should be "done" when everything is right.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
   <tr><td>0</td><td>0xXX</td><td>Device slave address</td></tr>
@@ -235,7 +235,7 @@ Answer from slave should "done" when everything was right.
 
 ### Data packet for type HSB, RGB, RGBW
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
-Answer from slave should "done" when everything was right.
+Answer from the slave should be "done" when everything is right.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
   <tr><td>0</td><td>0xXX</td><td>Device slave address</td></tr>
@@ -251,7 +251,7 @@ Answer from slave should "done" when everything was right.
 
 ### Data packet for type array
 This "data" packet could be send by master to write data into slave or by slave as answer for data request.
-Answer from slave should "done" when everything was right.
+Answer from the slave should be "done" when everything is right.
 <table>
   <tr><td><b>Byte</b></td><td><b>Value</b></td><td><b>Description</b></td></tr>
   <tr><td>0</td><td>0xXX</td><td>Device slave address</td></tr>

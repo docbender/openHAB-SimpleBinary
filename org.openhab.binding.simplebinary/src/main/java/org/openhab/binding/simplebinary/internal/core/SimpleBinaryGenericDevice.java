@@ -738,7 +738,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 logger.warn("{} - Income unknown message: input buffer cleared", this.toString());
 
                 // set state
-                setDeviceState(receivedID, DeviceStates.DATA_ERROR);
+                setDeviceState(receivedID, DeviceStates.DATA_ERROR_UNKNOWN_MSG);
 
                 return ProcessDataResult.UNKNOWN_MESSAGE;
             } else {
@@ -864,7 +864,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                             SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
                 }
                 // set state
-                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR_UNKNOWN_DATA);
             } else if (itemData.getMessageType() == SimpleBinaryMessageType.UNKNOWN_ADDRESS) {
                 logger.warn("{} - Device {} for item {} report unknown address", toString(), itemData.getDeviceId(),
                         (lastSentData != null && lastSentData.getItemAddress() >= 0) ? lastSentData.getItemAddress()
@@ -875,7 +875,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                             SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
                 }
                 // set state
-                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR_UNKNOWN_ADDRESS);
             } else if (itemData.getMessageType() == SimpleBinaryMessageType.SAVING_ERROR) {
                 logger.warn("{} - Device {} for item {} report saving data error", toString(), itemData.getDeviceId(),
                         (lastSentData != null && lastSentData.getItemAddress() >= 0) ? lastSentData.getItemAddress()
@@ -886,7 +886,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                             SimpleBinaryProtocol.arrayToString(lastSentData.getData(), lastSentData.getData().length));
                 }
                 // set state
-                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR_SAVE);
             } else if (itemData.getMessageType() == SimpleBinaryMessageType.HI) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} - Device {} says Hi", toString(), itemData.getDeviceId());
@@ -896,7 +896,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                         itemData.getDeviceId(), itemData.getMessageType().toString());
 
                 // set state
-                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR);
+                setDeviceState(itemData.getDeviceId(), DeviceStates.DATA_ERROR_UNSUPPORTED_MSG);
             }
         }
 

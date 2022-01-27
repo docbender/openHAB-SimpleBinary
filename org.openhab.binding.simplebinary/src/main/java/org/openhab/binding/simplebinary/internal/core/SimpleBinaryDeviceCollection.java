@@ -63,10 +63,26 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
             } else if (state == DeviceStates.NOT_RESPONDING) {
                 x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Not responding");
             } else if (state == DeviceStates.DATA_ERROR) {
-                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Data error");
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Data error (see log)");
             } else if (state == DeviceStates.RESPONSE_ERROR) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "CRC error (see log)");
+            } else if (state == DeviceStates.DATA_ERROR_ADDRESS) {
                 x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-                        "Response error (wrong CRC)");
+                        "Received and sent address are different");
+            } else if (state == DeviceStates.DATA_ERROR_SAVE) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Device cannot save data");
+            } else if (state == DeviceStates.DATA_ERROR_UNKNOWN_ADDRESS) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        "Device does not know item address");
+            } else if (state == DeviceStates.DATA_ERROR_UNKNOWN_DATA) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        "Unknown message received by device");
+            } else if (state == DeviceStates.DATA_ERROR_UNKNOWN_MSG) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        "Unknown message received from device");
+            } else if (state == DeviceStates.DATA_ERROR_UNSUPPORTED_MSG) {
+                x.updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
+                        "Unsupported message received");
             } else {
                 x.updateStatus(ThingStatus.UNKNOWN);
             }

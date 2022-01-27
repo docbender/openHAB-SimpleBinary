@@ -468,7 +468,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                             logger.warn("{} - Address not valid: input buffer cleared", this.toString());
 
                             // set state
-                            setDeviceState(getLastSentData().getDeviceId(), DeviceStates.DATA_ERROR);
+                            setDeviceState(getLastSentData().getDeviceId(), DeviceStates.DATA_ERROR_ADDRESS);
 
                             return;
                         }

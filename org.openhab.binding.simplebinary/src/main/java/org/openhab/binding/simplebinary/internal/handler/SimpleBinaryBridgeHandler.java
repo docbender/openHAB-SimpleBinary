@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -60,9 +61,11 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
     /** device status channels */
     public final Map<ChannelUID, SimpleBinaryChannelStatus> statusChannels = new LinkedHashMap<ChannelUID, SimpleBinaryChannelStatus>();
     /** bridge channels */
-    protected @Nullable ChannelUID chVersion, chTagCount, chRequests, chBytes;
+    protected @Nullable ChannelUID chVersion, chTagCount, chRequests, chBytes, chCycleTime;
     /** channels count */
     private int channelCount = 0;
+    /** Initial scheduler delay */
+    private static final long INIT_SECONDS = 5;
 
     public SimpleBinaryBridgeHandler(Bridge bridge) {
         super(bridge);
@@ -77,6 +80,8 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
                 chRequests = channel.getUID();
             } else if (channel.getChannelTypeUID().equals(SimpleBinaryBindingConstants.CHANNEL_TYPE_BYTES)) {
                 chBytes = channel.getUID();
+            } else if (channel.getChannelTypeUID().equals(SimpleBinaryBindingConstants.CHANNEL_TYPE_CYCLE_TIME)) {
+                chCycleTime = channel.getUID();
             }
         });
     }
@@ -150,6 +155,13 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             updateState(chBytes, new DecimalType(bytes));
         });
 
+        connection.onCycleTimeUpdated((duration) -> {
+            if (disposed) {
+                return;
+            }
+            updateState(chCycleTime, new DecimalType(duration));
+        });
+
         connection.onDeviceStateUpdated((deviceId, state) -> {
             Set<SimpleBinaryChannelStatus> channels = statusChannels.values().stream()
                     .filter(p -> p.deviceId == deviceId).collect(Collectors.toSet());
@@ -178,7 +190,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         updateStatus(ThingStatus.UNKNOWN);
 
         // background initialization
-        scheduler.execute(() -> {
+        scheduler.schedule(() -> {
             try {
                 Thread.sleep(1000);
                 if (!disposed && connection != null) {
@@ -187,7 +199,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             } catch (InterruptedException e) {
                 logger.error("{}.", getThing().getLabel(), e);
             }
-        });
+        }, INIT_SECONDS, TimeUnit.SECONDS);
     }
 
     @Override

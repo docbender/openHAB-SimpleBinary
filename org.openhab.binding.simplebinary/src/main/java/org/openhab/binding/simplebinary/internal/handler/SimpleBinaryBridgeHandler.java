@@ -151,15 +151,15 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             if (disposed) {
                 return;
             }
-            updateState(chRequests, new DecimalType(requests));
-            updateState(chBytes, new DecimalType(bytes));
+            updateState(chRequests, new DecimalType((Number) requests));
+            updateState(chBytes, new DecimalType((Number) bytes));
         });
 
         connection.onCycleTimeUpdated((duration) -> {
             if (disposed) {
                 return;
             }
-            updateState(chCycleTime, new DecimalType(duration));
+            updateState(chCycleTime, new DecimalType((Number) duration));
         });
 
         connection.onDeviceStateUpdated((deviceId, state) -> {
@@ -179,7 +179,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
                 } else if (ch.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_STATE_CHANGED)) {
                     ch.setState(new DateTimeType(state.getChangeDate()));
                 } else if (ch.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_PACKET_LOST)) {
-                    ch.setState(new DecimalType(state.getPacketLost()));
+                    ch.setState(new DecimalType((Number) state.getPacketLost()));
                 } else if (ch.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_LAST_COMMUNICATION)) {
                     ch.setState(new DateTimeType(state.getLastCommunication()));
                 }
@@ -233,7 +233,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             if (channelUID.equals(chVersion)) {
                 updateState(channelUID, new StringType(SimpleBinaryBindingConstants.VERSION));
             } else if (channelUID.equals(chTagCount)) {
-                updateState(channelUID, new DecimalType(channelCount));
+                updateState(channelUID, new DecimalType((Number) channelCount));
             } else {
                 SimpleBinaryChannelStatus channel = statusChannels.get(channelUID);
                 if (channel == null) {
@@ -316,7 +316,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             c.setDataAreas(devices, stateItems, commandItems);
         }
 
-        updateState(chTagCount, new DecimalType(channelCount));
+        updateState(chTagCount, new DecimalType((Number) channelCount));
 
         logger.debug("{} - updating {} channels({} read)", getThing().getLabel(), channelCount, stateChannelCount);
     }

@@ -54,6 +54,7 @@ public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
     protected final Timer timer = new Timer();
     protected TimeoutTask timeoutTask = null;
     protected SimpleBinaryIRequestTimeouted requestTimeouted;
+    protected boolean disposed = false;
 
     /**
      * Constructor to add new channel after connect
@@ -94,6 +95,16 @@ public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
         this.configuredDeviceIP = ipAddress;
 
         this.isIpLocked = isIpLocked;
+    }
+
+    public void dispose() {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
+
+        logger.debug("{} - Disposing...", toString());
+        timer.cancel();
     }
 
     public void assignChannel(AsynchronousSocketChannel channel, ByteBuffer buffer,
@@ -216,8 +227,11 @@ public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
         lastSentData = null;
         receivedDeviceID = -1;
 
-        if (!hasIdConfigured() && collection != null) {
-            collection.remove(this);
+        if (!hasIdConfigured()) {
+            dispose();
+            if (collection != null) {
+                collection.remove(this);
+            }
         }
     }
 

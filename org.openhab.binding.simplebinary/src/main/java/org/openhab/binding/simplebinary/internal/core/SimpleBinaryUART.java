@@ -73,7 +73,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     protected final int timeout;
 
     /** timer measuring answer timeout */
-    protected Timer timer = new Timer();
+    protected final Timer timer = new Timer();
     protected TimerTask timeoutTask = null;
 
     /** flag waiting */
@@ -115,6 +115,17 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         this.serialPortManager = serialPortManager;
     }
 
+    @Override
+    public void dispose() {
+        if (disposed) {
+            return;
+        }
+
+        super.dispose();
+
+        timer.cancel();
+    }
+
     /**
      * Return port hardware name
      *
@@ -144,7 +155,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         setStateToAllConfiguredDevices(DeviceStates.NOT_RESPONDING);
         // reset connected state
         // setConnected(false, null);
-        resetWaitingForAnswer();
+        cancelWaitingForAnswer();
 
         portId = null;
 
@@ -221,9 +232,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
             // IFDEF_OH3.0
         }
 
-        try
-
-        {
+        try {
             // set port parameters
             serialPort.setSerialPortParams(baud, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
             serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
@@ -477,11 +486,8 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
                         if (r > 0 || r == ProcessDataResult.INVALID_CRC || r == ProcessDataResult.BAD_CONFIG
                                 || r == ProcessDataResult.NO_VALID_ADDRESS || r == ProcessDataResult.UNKNOWN_MESSAGE) {
-                            // waiting for answer?
-                            if (waitingForAnswer.get()) {
-                                // stop block sent
-                                resetWaitingForAnswer();
-                            }
+                            // waiting for answer and send block
+                            cancelWaitingForAnswer();
                         } else if (r == ProcessDataResult.DATA_NOT_COMPLETED
                                 || r == ProcessDataResult.PROCESSING_ERROR) {
                             break;
@@ -564,14 +570,9 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      */
     protected boolean compareAndSetWaitingForAnswer() {
         if (waitingForAnswer.compareAndSet(false, true)) {
-            if (timeoutTask != null) {
-                timeoutTask.cancel();
-            }
-
             timeoutTask = new TimerTask() {
                 @Override
                 public void run() {
-                    timeoutTask = null;
                     dataTimeouted();
                 }
             };
@@ -579,7 +580,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
             try {
                 timer.schedule(timeoutTask, timeout);
             } catch (IllegalStateException ex) {
-                logger.debug("{} - Cannot create timeout task. Task throw IllegalStateException. Thread={}",
+                logger.warn("{} - Cannot create timeout task. Task throw IllegalStateException. Thread={}",
                         this.toString(), Thread.currentThread().getId());
                 return false;
             }
@@ -591,15 +592,19 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
     }
 
     /**
-     * Set / reset waiting task for answer for slave device
+     * Cancel waiting task for answer from slave device
      */
-    protected void resetWaitingForAnswer() {
-        waitingForAnswer.set(false);
+    protected void cancelWaitingForAnswer() {
+        if (!waitingForAnswer.get()) {
+            return;
+        }
 
         if (timeoutTask != null) {
             timeoutTask.cancel();
             timeoutTask = null;
         }
+
+        waitingForAnswer.set(false);
     }
 
     /**
@@ -640,6 +645,6 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
         inBuffer.clear();
 
-        resetWaitingForAnswer();
+        waitingForAnswer.set(false);
     }
 }

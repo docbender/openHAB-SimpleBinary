@@ -9,6 +9,7 @@
             <channel id="ChannelTagCount" typeId="chTagCountTypeID"/>
             <channel id="ChannelRequests" typeId="chRequestsTypeID"/>
             <channel id="ChannelBytes" typeId="chBytesTypeID"/>
+            <channel id="ChannelCycleTime" typeId="chCycleTimeTypeID"/>
         </channels>
 		<config-description>
 			<parameter name="port" type="text" required="true">
@@ -96,6 +97,7 @@
             <channel id="ChannelTagCount" typeId="chTagCountTypeID"/>
             <channel id="ChannelRequests" typeId="chRequestsTypeID"/>
             <channel id="ChannelBytes" typeId="chBytesTypeID"/>
+            <channel id="ChannelCycleTime" typeId="chCycleTimeTypeID"/>
         </channels>
 		<config-description>
             <parameter name="address" type="text" required="false">
@@ -188,6 +190,12 @@
         <label>Bytes/s</label>
         <description>Bytes per second grabbed from devices</description>
         <state pattern="%d B/s" readOnly="true"/>
+    </channel-type>
+    <channel-type id="chCycleTimeTypeID">
+        <item-type>Number</item-type>
+        <label>Cycle time</label>
+        <description>Data reading duration</description>
+        <state pattern="%d ms" readOnly="true"/>
     </channel-type>
     <channel-type id="devState">
         <item-type>String</item-type>

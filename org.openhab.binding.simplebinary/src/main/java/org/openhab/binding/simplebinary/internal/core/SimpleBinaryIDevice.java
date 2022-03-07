@@ -29,6 +29,10 @@ public interface SimpleBinaryIDevice {
         public void onMetricsUpdated(long requests, long bytes);
     }
 
+    public interface CycleTimeUpdated {
+        public void onCycleTimeUpdated(long duration);
+    }
+
     public interface DeviceStateUpdated {
         public void onDeviceStateUpdated(int deviceId, SimpleBinaryDeviceState state);
     }
@@ -91,6 +95,11 @@ public interface SimpleBinaryIDevice {
      * Set method provided on update metrics
      */
     public void onMetricsUpdated(MetricsUpdated onUpdateMethod);
+
+    /**
+     * Set method provided on update cycle time
+     */
+    public void onCycleTimeUpdated(CycleTimeUpdated onCycleTimeMethod);
 
     /**
      * Set method provided on update single device state

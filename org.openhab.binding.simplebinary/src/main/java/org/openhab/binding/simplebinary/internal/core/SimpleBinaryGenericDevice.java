@@ -121,7 +121,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
     AtomicLong readed = new AtomicLong(0);
     AtomicLong readedBytes = new AtomicLong(0);
-    long metricsStart = 0;
+    long metricsStart = 0, diff, sessionStart, sessionEnd, lastDuration = 0;
     private final SimpleBinaryICommandAdded eventCommandAdded;
 
     /**
@@ -290,14 +290,14 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      * @throws InterruptedException
      */
     private boolean sendReadData(SimpleBinaryChannel item) {
-        if (!devices.containsKey(item.getCommandAddress().getDeviceId())) {
+        if (!devices.containsKey(item.getStateAddress().getDeviceId())) {
             logger.error("{} - No device for command channelId={}", this.toString(), item.channelId);
             return false;
         }
 
         SimpleBinaryItemData data = SimpleBinaryProtocol.compileReadDataFrame(item.getStateAddress());
 
-        return sendWait(devices.get(item.getCommandAddress().getDeviceId()), data);
+        return sendWait(devices.get(item.getStateAddress().getDeviceId()), data);
     }
 
     protected boolean canSend() {
@@ -406,21 +406,23 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             logger.debug("{} - checkNewData() in mode {} is called", toString(), pollControl);
         }
 
+        sessionStart = System.currentTimeMillis();
+
         if (pollControl == SimpleBinaryPollControl.ONSCAN) {
             for (SimpleBinaryChannel item : stateItems) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} - checkNewData() onscan channelId={}", toString(), item.channelId);
                 }
-                if (devices.containsKey(item.getCommandAddress().getDeviceId())) {
-                    var device = devices.get(item.getCommandAddress().getDeviceId());
+                if (devices.containsKey(item.getStateAddress().getDeviceId())) {
+                    var device = devices.get(item.getStateAddress().getDeviceId());
                     if (device.isDegraded()) {
                         if (device.stillDegraded(degradeTime)) {
                             logger.debug("{} - Device {} is off-scan. Skip...", toString(),
-                                    item.getCommandAddress().getDeviceId());
+                                    item.getStateAddress().getDeviceId());
                             continue;
                         } else {
                             logger.info("{} - Device {} is back in-scan", toString(),
-                                    item.getCommandAddress().getDeviceId());
+                                    item.getStateAddress().getDeviceId());
                         }
                     }
                 }
@@ -483,12 +485,20 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             }
         }
 
-        long diff;
-        if ((diff = (System.currentTimeMillis() - metricsStart)) >= 5000 || metricsStart == 0) {
+        sessionEnd = System.currentTimeMillis();
+
+        if (sessionEnd - sessionStart != lastDuration) {
+            lastDuration = sessionEnd - sessionStart;
+            if (onCycleTime != null) {
+                onCycleTime.onCycleTimeUpdated(lastDuration);
+            }
+        }
+
+        if ((diff = (sessionEnd - metricsStart)) >= 5000 || metricsStart == 0) {
             long requests = (long) Math.ceil(readed.get() * 1000.0 / diff);
             long bytes = (long) Math.ceil(readedBytes.get() * 1000.0 / diff);
 
-            metricsStart = System.currentTimeMillis();
+            metricsStart = sessionEnd;
             readed.set(0);
             readedBytes.set(0);
 
@@ -946,6 +956,13 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     @Override
     public void onMetricsUpdated(MetricsUpdated onUpdateMethod) {
         onUpdate = onUpdateMethod;
+    }
+
+    private CycleTimeUpdated onCycleTime = null;
+
+    @Override
+    public void onCycleTimeUpdated(CycleTimeUpdated onCycleTimeMethod) {
+        onCycleTime = onCycleTimeMethod;
     }
 
     private DeviceStateUpdated onDeviceState = null;

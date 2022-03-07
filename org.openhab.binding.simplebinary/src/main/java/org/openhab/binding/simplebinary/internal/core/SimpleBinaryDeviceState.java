@@ -44,10 +44,33 @@ public class SimpleBinaryDeviceState {
          */
         RESPONSE_ERROR,
         /**
-         * Device communicates but there is same problem with data (unknown address, not supported telegram, error
-         * during save data in slave, ...)
+         * Device communicates but there is same problem with data
          */
-        DATA_ERROR
+        DATA_ERROR,
+        /**
+         * Received unknown message ID
+         */
+        DATA_ERROR_UNKNOWN_MSG,
+        /**
+         * Device reported unknown data message type
+         */
+        DATA_ERROR_UNKNOWN_DATA,
+        /**
+         * Device reported unknown address
+         */
+        DATA_ERROR_UNKNOWN_ADDRESS,
+        /**
+         * Received unsupported message type
+         */
+        DATA_ERROR_UNSUPPORTED_MSG,
+        /**
+         * Device cannot save data
+         */
+        DATA_ERROR_SAVE,
+        /**
+         * Received differ from sent
+         */
+        DATA_ERROR_ADDRESS
     }
 
     private DeviceStates state = DeviceStates.UNKNOWN;

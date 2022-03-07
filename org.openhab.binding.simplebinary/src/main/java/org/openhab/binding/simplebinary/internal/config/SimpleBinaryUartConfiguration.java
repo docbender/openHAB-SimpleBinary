@@ -53,4 +53,29 @@ public class SimpleBinaryUartConfiguration {
      * Device poll rate
      */
     public int pollRate = 1000;
+
+    /**
+     * Response timeout
+     */
+    public int timeout = 1000;
+
+    /**
+     * Number of retries before device is set into degrade mode
+     */
+    public int degradeMaxFailuresCount = 0;
+
+    /**
+     * Device in degrade mode spend time (ms)
+     */
+    public int degradeTime = 5000;
+
+    /**
+     * Commands for offline device will be discarded
+     */
+    public boolean discardCommand = false;
+
+    /**
+     * Sync commands for device that get online
+     */
+    public boolean syncCommand = false;
 }

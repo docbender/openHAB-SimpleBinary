@@ -118,13 +118,11 @@ public class SimpleBinaryProtocol {
      * Compile command data for specific item
      *
      * @param channel
-     * @param command
      * @return
      * @throws Exception
      */
-    public static SimpleBinaryItem compileDataFrame(SimpleBinaryChannel channel, Type command, Charset charset)
-            throws Exception {
-        byte[] data = compileDataFrameEx(channel, command, charset);
+    public static SimpleBinaryItem compileDataFrame(SimpleBinaryChannel channel, Charset charset) throws Exception {
+        byte[] data = compileDataFrameEx(channel, channel.getCommand(), charset);
 
         if (data == null) {
             return null;
@@ -284,18 +282,13 @@ public class SimpleBinaryProtocol {
                 if (onOffCmd == OnOffType.OFF) {
                     hsbVal = HSBType.BLACK;
                 } else {
-                    if (hsbVal == null) {
-                        hsbVal = HSBType.WHITE;
-                    }
+                    hsbVal = HSBType.WHITE;
                 }
             } else if (command instanceof IncreaseDecreaseType) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("IncreaseDecreaseType");
                 }
-
-                if (hsbVal == null) {
-                    hsbVal = HSBType.BLACK;
-                }
+                hsbVal = HSBType.BLACK;
                 int brightness = hsbVal.getBrightness().intValue();
 
                 IncreaseDecreaseType upDownCmd = (IncreaseDecreaseType) command;
@@ -324,9 +317,7 @@ public class SimpleBinaryProtocol {
                 if (logger.isDebugEnabled()) {
                     logger.debug("PercentType");
                 }
-                if (hsbVal == null) {
-                    hsbVal = HSBType.WHITE;
-                }
+                hsbVal = HSBType.WHITE;
                 hsbVal = new HSBType(hsbVal.getHue(), hsbVal.getSaturation(), (PercentType) command);
             } else {
                 logger.error("Unsupported command type {} for target datatype {}. Command={}.",
@@ -334,85 +325,83 @@ public class SimpleBinaryProtocol {
                 return null;
             }
 
-            if (hsbVal != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Channel {}: Red={} Green={} Blue={}", channel.channelId, hsbVal.getRed(),
+                        hsbVal.getGreen(), hsbVal.getBlue());
+                logger.debug("         Hue={} Sat={} Bri={}", hsbVal.getHue(), hsbVal.getSaturation(),
+                        hsbVal.getBrightness());
+                logger.debug("         AddressType={}", address.getType());
+            }
+
+            HSBType cmd = hsbVal;
+
+            if (address.getType() == SimpleBinaryTypes.HSB) {
+                data[4] = (byte) (cmd.getHue().shortValue() & 0xFF);
+                data[5] = (byte) ((cmd.getHue().shortValue() >> 8) & 0xFF);
+                data[6] = cmd.getSaturation().byteValue();
+                data[7] = cmd.getBrightness().byteValue();
+            } else if (address.getType() == SimpleBinaryTypes.RGB) {
+                long red = Math.round((cmd.getRed().doubleValue() * 2.55));
+                long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
+                long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
+
+                if (red > 255) {
+                    red = 255;
+                }
+                if (green > 255) {
+                    green = 255;
+                }
+                if (blue > 255) {
+                    blue = 255;
+                }
+
                 if (logger.isDebugEnabled()) {
-                    logger.debug("Channel {}: Red={} Green={} Blue={}", channel.channelId, hsbVal.getRed(),
-                            hsbVal.getGreen(), hsbVal.getBlue());
-                    logger.debug("         Hue={} Sat={} Bri={}", hsbVal.getHue(), hsbVal.getSaturation(),
-                            hsbVal.getBrightness());
-                    logger.debug("         AddressType={}", address.getType());
+                    logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
                 }
 
-                HSBType cmd = hsbVal;
+                data[4] = (byte) (red & 0xFF);
+                data[5] = (byte) (green & 0xFF);
+                data[6] = (byte) (blue & 0xFF);
+                data[7] = 0x0;
+            } else if (address.getType() == SimpleBinaryTypes.RGBW) {
+                long red = Math.round((cmd.getRed().doubleValue() * 2.55));
+                long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
+                long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
+                byte white;
 
-                if (address.getType() == SimpleBinaryTypes.HSB) {
-                    data[4] = (byte) (cmd.getHue().shortValue() & 0xFF);
-                    data[5] = (byte) ((cmd.getHue().shortValue() >> 8) & 0xFF);
-                    data[6] = cmd.getSaturation().byteValue();
-                    data[7] = cmd.getBrightness().byteValue();
-                } else if (address.getType() == SimpleBinaryTypes.RGB) {
-                    long red = Math.round((cmd.getRed().doubleValue() * 2.55));
-                    long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
-                    long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
-
-                    if (red > 255) {
-                        red = 255;
-                    }
-                    if (green > 255) {
-                        green = 255;
-                    }
-                    if (blue > 255) {
-                        blue = 255;
-                    }
-
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
-                    }
-
-                    data[4] = (byte) (red & 0xFF);
-                    data[5] = (byte) (green & 0xFF);
-                    data[6] = (byte) (blue & 0xFF);
-                    data[7] = 0x0;
-                } else if (address.getType() == SimpleBinaryTypes.RGBW) {
-                    long red = Math.round((cmd.getRed().doubleValue() * 2.55));
-                    long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
-                    long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
-                    byte white;
-
-                    if (red > 255) {
-                        red = 255;
-                    }
-                    if (green > 255) {
-                        green = 255;
-                    }
-                    if (blue > 255) {
-                        blue = 255;
-                    }
-
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
-                    }
-
-                    byte[] rgbw = calcWhite(red, green, blue);
-                    red = rgbw[0];
-                    green = rgbw[1];
-                    blue = rgbw[2];
-                    white = rgbw[3];
-
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("         Converted to RGBW: Red={} Green={} Blue={} White={}", red & 0xFF,
-                                green & 0xFF, blue & 0xFF, white & 0xFF);
-                    }
-
-                    data[4] = (byte) (red & 0xFF);
-                    data[5] = (byte) (green & 0xFF);
-                    data[6] = (byte) (blue & 0xFF);
-                    data[7] = white;
-                } else {
-                    throw new Exception(
-                            String.format("Cannot create WriteDataFrame. Command %s for ChannelType=%s not implemented",
-                                    command.getClass(), channel.channelType.getId()));
+                if (red > 255) {
+                    red = 255;
                 }
+                if (green > 255) {
+                    green = 255;
+                }
+                if (blue > 255) {
+                    blue = 255;
+                }
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("         Converted to 0-255: Red={} Green={} Blue={}", red, green, blue);
+                }
+
+                byte[] rgbw = calcWhite(red, green, blue);
+                red = rgbw[0];
+                green = rgbw[1];
+                blue = rgbw[2];
+                white = rgbw[3];
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("         Converted to RGBW: Red={} Green={} Blue={} White={}", red & 0xFF,
+                            green & 0xFF, blue & 0xFF, white & 0xFF);
+                }
+
+                data[4] = (byte) (red & 0xFF);
+                data[5] = (byte) (green & 0xFF);
+                data[6] = (byte) (blue & 0xFF);
+                data[7] = white;
+            } else {
+                throw new Exception(
+                        String.format("Cannot create WriteDataFrame. Command %s for ChannelType=%s not implemented",
+                                command.getClass(), channel.channelType.getId()));
             }
         } else if (channel.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_DIMMER)) {
             if (command instanceof PercentType) {

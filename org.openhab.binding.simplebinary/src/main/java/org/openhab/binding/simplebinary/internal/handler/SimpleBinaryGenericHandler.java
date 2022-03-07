@@ -18,7 +18,9 @@ import java.util.Map;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryChannel;
+import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericDevice;
+import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
@@ -113,6 +115,12 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         channels.clear();
         connection = null;
         logger.debug("{} - device dispose", getThing().getLabel());
+
+        Bridge bridge = getBridge();
+        BridgeHandler handler;
+        if (bridge != null && (handler = bridge.getHandler()) != null) {
+            ((SimpleBinaryBridgeHandler) handler).updateConfig();
+        }
     }
 
     /**
@@ -185,6 +193,14 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             return;
         }
 
+        // discard command when device not responding
+        if (connection.getDiscardCommand()) {
+            var device = connection.getDevices().get(channel.getCommandAddress().getDeviceId());
+            if (device != null && device.getState().getState() == SimpleBinaryDeviceState.DeviceStates.NOT_RESPONDING) {
+                return;
+            }
+        }
+
         connection.sendData(channel, command);
     }
 
@@ -207,7 +223,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         errorSetTime = System.currentTimeMillis();
         var st = getThing().getStatusInfo();
         if (st.getStatus() == ThingStatus.OFFLINE && st.getStatusDetail() == ThingStatusDetail.COMMUNICATION_ERROR
-                && st.getDescription() != null && st.getDescription().equals(message)) {
+                && message.equals(st.getDescription())) {
             return;
         }
 

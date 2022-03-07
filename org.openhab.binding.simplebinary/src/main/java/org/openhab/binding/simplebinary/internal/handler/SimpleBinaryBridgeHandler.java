@@ -24,6 +24,8 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryBindingConstants;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryChannel;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryChannelStatus;
+import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDevice;
+import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceCollection;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryGenericDevice;
 import org.openhab.core.library.types.DateTimeType;
 import org.openhab.core.library.types.DecimalType;
@@ -141,6 +143,9 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         });
 
         connection.onMetricsUpdated((requests, bytes) -> {
+            if (disposed) {
+                return;
+            }
             updateState(chRequests, new DecimalType(requests));
             updateState(chBytes, new DecimalType(bytes));
         });
@@ -154,6 +159,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             }
 
             for (var ch : channels) {
+                logger.debug("State update ch={},type={},id={}", ch.channelId, ch.channelType.getId(), ch.deviceId);
                 if (ch.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_STATE_CURRENT)) {
                     ch.setState(new StringType(state.getState().toString()));
                 } else if (ch.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_STATE_PREVIOUS)) {
@@ -258,7 +264,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
 
         var stateItems = new ArrayList<@NonNull SimpleBinaryChannel>(stateChannelCount);
         var commandItems = new ArrayList<@NonNull SimpleBinaryChannel>(commandChannelCount);
-        var devices = new ArrayList<Integer>();
+        var devices = new SimpleBinaryDeviceCollection();
 
         for (Thing th : getThing().getThings()) {
             var h = ((SimpleBinaryGenericHandler) th.getHandler());
@@ -268,22 +274,28 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             for (SimpleBinaryChannel ch : h.channels.values()) {
                 if (ch.getStateAddress() != null) {
                     stateItems.add(ch);
-                    if (!devices.contains(ch.getStateAddress().getDeviceId())) {
-                        devices.add(ch.getStateAddress().getDeviceId());
+                    if (!devices.containsKey(ch.getStateAddress().getDeviceId())) {
+                        devices.put(ch.getStateAddress().getDeviceId(),
+                                new SimpleBinaryDevice(ch.getStateAddress().getDeviceId()).addThingHandler(h));
+                    } else {
+                        devices.get(ch.getStateAddress().getDeviceId()).addThingHandler(h);
                     }
                 }
                 if (ch.getCommandAddress() != null) {
                     commandItems.add(ch);
-                    if (!devices.contains(ch.getCommandAddress().getDeviceId())) {
-                        devices.add(ch.getCommandAddress().getDeviceId());
+                    if (!devices.containsKey(ch.getCommandAddress().getDeviceId())) {
+                        devices.put(ch.getCommandAddress().getDeviceId(),
+                                new SimpleBinaryDevice(ch.getStateAddress().getDeviceId()).addThingHandler(h));
+                    } else {
+                        devices.get(ch.getCommandAddress().getDeviceId()).addThingHandler(h);
                     }
                 }
             }
         }
 
         for (var s : statusChannels.values()) {
-            if (!devices.contains(s.deviceId)) {
-                devices.add(s.deviceId);
+            if (!devices.containsKey(s.deviceId)) {
+                devices.put(s.deviceId, new SimpleBinaryDevice(s.deviceId));
             }
         }
 

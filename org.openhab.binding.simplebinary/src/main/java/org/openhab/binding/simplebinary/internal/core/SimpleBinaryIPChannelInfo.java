@@ -1,10 +1,14 @@
 /**
- * Copyright (c) 2010-2016, openHAB.org and others.
+ * Copyright (c) 2010-2021 Contributors to the openHAB project
  *
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * See the NOTICE file(s) distributed with this work for additional
+ * information.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
  */
 package org.openhab.binding.simplebinary.internal.core;
 
@@ -15,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.Iterator;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
@@ -27,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * @author Vita Tucek
  * @since 1.9.0
  */
-public class SimpleBinaryIPChannelInfo {
+public class SimpleBinaryIPChannelInfo extends SimpleBinaryDevice {
     private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryIPChannelInfo.class);
 
     private AsynchronousSocketChannel channel = null;
@@ -43,15 +46,14 @@ public class SimpleBinaryIPChannelInfo {
 
     private final boolean isIpLocked;
 
-    /** timer measuring answer timeout */
-    protected Timer timer = new Timer();
-    protected TimeoutTask timeoutTask = null;
-    /** flag waiting */
-    protected AtomicBoolean waitingForAnswer = new AtomicBoolean(false);
     /** flag write ready */
     protected AtomicBoolean writeReady = new AtomicBoolean(false);
-
-    private SimpleBinaryIRequestTimeouted requestTimeouted;
+    /** flag waiting */
+    protected final AtomicBoolean waitingForAnswer = new AtomicBoolean(false);
+    /** timer measuring answer timeout */
+    protected final Timer timer = new Timer();
+    protected TimeoutTask timeoutTask = null;
+    protected SimpleBinaryIRequestTimeouted requestTimeouted;
 
     /**
      * Constructor to add new channel after connect
@@ -63,7 +65,7 @@ public class SimpleBinaryIPChannelInfo {
      */
     public SimpleBinaryIPChannelInfo(AsynchronousSocketChannel channel, ByteBuffer buffer,
             SimpleBinaryIPChannelInfoCollection collection, SimpleBinaryIRequestTimeouted timeoutEvent) {
-
+        super(-1);
         this.collection = collection;
         this.requestTimeouted = timeoutEvent;
 
@@ -85,6 +87,7 @@ public class SimpleBinaryIPChannelInfo {
      */
     public SimpleBinaryIPChannelInfo(int deviceID, String ipAddress, boolean isIpLocked,
             SimpleBinaryIPChannelInfoCollection collection) {
+        super(deviceID);
         this.collection = collection;
 
         this.configuredDeviceID = deviceID;
@@ -163,6 +166,7 @@ public class SimpleBinaryIPChannelInfo {
         }
     }
 
+    @Override
     public int getDeviceId() {
         if (!isIpLocked && receivedDeviceID >= 0) {
             return receivedDeviceID;
@@ -264,14 +268,14 @@ public class SimpleBinaryIPChannelInfo {
                     timeoutTask = null;
                     // dataTimeouted
                     if (this.event != null) {
-                        this.event.timeoutEvent(this.chInfo);
+                        this.event.timeoutEvent(this.device);
                     }
 
                     clearWaitingForAnswer();
                 }
             };
 
-            timer.schedule(timeoutTask, TimeoutTask.TIMEOUT);
+            timer.schedule(timeoutTask, collection.device.timeout);
         } else {
             if (timeoutTask != null) {
                 timeoutTask.cancel();
@@ -428,31 +432,5 @@ public class SimpleBinaryIPChannelInfo {
         }
 
         return false;
-    }
-
-    /**
-     * TimerTask for timeout event
-     *
-     * @author Vita Tucek
-     * @since 1.9.0
-     *
-     */
-    class TimeoutTask extends TimerTask {
-
-        /** Timeout for receiving data [ms] **/
-        public static final int TIMEOUT = 2000;
-        /** Channel info **/
-        public final SimpleBinaryIPChannelInfo chInfo;
-        /** Event **/
-        public final SimpleBinaryIRequestTimeouted event;
-
-        TimeoutTask(SimpleBinaryIPChannelInfo chInfo, SimpleBinaryIRequestTimeouted event) {
-            this.chInfo = chInfo;
-            this.event = event;
-        }
-
-        @Override
-        public void run() {
-        }
     }
 }

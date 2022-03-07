@@ -15,5 +15,5 @@ package org.openhab.binding.simplebinary.internal.core;
  * @since 1.9.0
  */
 public interface SimpleBinaryIRequestTimeouted {
-    void timeoutEvent(SimpleBinaryIPChannelInfo chInfo);
+    void timeoutEvent(SimpleBinaryDevice device);
 }

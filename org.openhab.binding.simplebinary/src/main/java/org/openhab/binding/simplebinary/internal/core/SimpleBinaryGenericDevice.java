@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -47,19 +48,20 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     public final int MAX_RESEND_COUNT = 2;
 
     /** item config */
-    protected volatile SimpleBinaryDeviceCollection devices;
+    protected SimpleBinaryDeviceCollection devices;
     protected ArrayList<@NonNull SimpleBinaryChannel> stateItems;
     protected ArrayList<@NonNull SimpleBinaryChannel> commandItems;
-
     /** flag that device is connected */
-    private volatile boolean connected = false;
+    private final AtomicBoolean connected = new AtomicBoolean();
+    /** flag waiting */
+    protected final AtomicBoolean waitingForAnswer = new AtomicBoolean();
 
-    protected synchronized void setConnected(boolean connected) {
+    protected void setConnected(boolean connected) {
         setConnected(connected, null);
     }
 
     protected synchronized void setConnected(boolean connected, String reason) {
-        this.connected = connected;
+        this.connected.set(connected);
 
         if (onChange != null) {
             try {
@@ -77,8 +79,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      *
      * @return
      */
-    public synchronized boolean isConnected() {
-        return connected;
+    public boolean isConnected() {
+        return connected.get();
     }
 
     /** response timeout [ms] */
@@ -119,8 +121,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     // protected final Lock processLock = new ReentrantLock();
     protected final Lock execLock = new ReentrantLock();
 
-    AtomicLong readed = new AtomicLong(0);
-    AtomicLong readedBytes = new AtomicLong(0);
+    final AtomicLong readed = new AtomicLong(0);
+    final AtomicLong readedBytes = new AtomicLong(0);
     long metricsStart = 0, diff, sessionStart, sessionEnd, lastDuration = 0;
     private final SimpleBinaryICommandAdded eventCommandAdded;
 
@@ -350,7 +352,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     }
 
     protected boolean sendWait(SimpleBinaryDevice device, SimpleBinaryItemData data) {
-        device.receivedMessage = SimpleBinaryMessageType.UNKNOWN;
+        device.receivedMessage.set(SimpleBinaryMessageType.UNKNOWN);
         if (!sendDataOut(data)) {
             if (device.unresponsive(degradeMaxFailuresCount)) {
                 logger.info("{} - Device {} is set off-scan", toString(), data.getDeviceId());
@@ -360,7 +362,9 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         // wait for answer
         synchronized (device) {
             try {
-                device.wait(timeout);
+                while (waitingForAnswer.get()) {
+                    device.wait();
+                }
             } catch (InterruptedException ex) {
                 logger.debug("{} - device.wait() interrupted", toString());
                 return false;
@@ -369,15 +373,18 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 return false;
             }
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("{} - Device {} notify message {}", toString(), data.getDeviceId(), device.receivedMessage);
-        }
-        if (device.receivedMessage == SimpleBinaryMessageType.UNKNOWN) {
+
+        if (device.receivedMessage.get() == SimpleBinaryMessageType.UNKNOWN) {
+            logger.info("{} - Device {} not responding", toString(), data.getDeviceId());
             if (device.unresponsive(degradeMaxFailuresCount)) {
                 logger.info("{} - Device {} is set off-scan", toString(), data.getDeviceId());
             }
             return false;
-        } else if (device.receivedMessage == SimpleBinaryMessageType.RESEND) {
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} - Device {} notify message {}", toString(), data.getDeviceId(), device.receivedMessage);
+        }
+        if (device.receivedMessage.get() == SimpleBinaryMessageType.RESEND) {
             if (data.getResendCounter() < MAX_RESEND_COUNT) {
                 data.incrementResendCounter();
                 logger.debug("{} - Device {} - Resend data for {}. time", this.toString(), data.getDeviceId(),
@@ -467,7 +474,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                         break;
                     }
 
-                    if (device.getValue().receivedMessage == SimpleBinaryMessageType.DATA) {
+                    if (device.getValue().receivedMessage.get() == SimpleBinaryMessageType.DATA) {
                         // if data income on request "check new data" send it again for new check
                         if (logger.isDebugEnabled()) {
                             logger.debug("{} - Device {} Repeat CHECKNEWDATA command", toString(), device.getKey());
@@ -475,9 +482,9 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                         // send new request immediately and without "force all data as new"
                         data = SimpleBinaryProtocol.compileNewDataFrame(device.getKey(), false);
                     }
-                } while (device.getValue().receivedMessage == SimpleBinaryMessageType.DATA);
+                } while (device.getValue().receivedMessage.get() == SimpleBinaryMessageType.DATA);
 
-                if (device.getValue().receivedMessage == SimpleBinaryMessageType.UNKNOWN) {
+                if (device.getValue().receivedMessage.get() == SimpleBinaryMessageType.UNKNOWN) {
                     continue;
                 }
                 // send commands
@@ -642,19 +649,13 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             if (itemData != null) {
                 // process data
                 SimpleBinaryMessageType mt = processDecompiledData(itemData, lastSentData);
+                devices.get(receivedID).receivedMessage.set(mt);
 
                 readed.incrementAndGet();
                 readedBytes.addAndGet(datasize - inBuffer.remaining());
 
                 // compact buffer
                 inBuffer.compact();
-
-                if (devices.containsKey(receivedID)) {
-                    synchronized (devices.get(receivedID)) {
-                        devices.get(receivedID).receivedMessage = mt;
-                        devices.get(receivedID).notify();
-                    }
-                }
 
                 return receivedID;
             } else {
@@ -705,13 +706,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
             // set state
             setDeviceState(receivedID, DeviceStates.RESPONSE_ERROR);
-
-            if (devices.containsKey(receivedID)) {
-                synchronized (devices.get(receivedID)) {
-                    devices.get(receivedID).receivedMessage = SimpleBinaryMessageType.RESEND;
-                    devices.get(receivedID).notify();
-                }
-            }
+            //
+            devices.get(receivedID).receivedMessage.set(SimpleBinaryMessageType.RESEND);
 
             return ProcessDataResult.INVALID_CRC;
 
@@ -725,13 +721,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             } catch (ModeChangeException e) {
                 logger.error(e.getMessage());
             }
-
-            if (devices.containsKey(receivedID)) {
-                synchronized (devices.get(receivedID)) {
-                    devices.get(receivedID).receivedMessage = SimpleBinaryMessageType.DATA;
-                    devices.get(receivedID).notify();
-                }
-            }
+            // inform about data received
+            devices.get(receivedID).receivedMessage.set(SimpleBinaryMessageType.DATA);
 
             return ProcessDataResult.BAD_CONFIG;
 

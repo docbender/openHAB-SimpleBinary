@@ -15,6 +15,7 @@ package org.openhab.binding.simplebinary.internal.core;
 import java.util.ArrayList;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.openhab.binding.simplebinary.internal.handler.SimpleBinaryGenericHandler;
 
@@ -30,7 +31,7 @@ public class SimpleBinaryDevice {
     private long degradeTime = 0;
     private int failuresCounter = 0;
     /** received message type */
-    protected volatile SimpleBinaryMessageType receivedMessage = SimpleBinaryMessageType.UNKNOWN;
+    protected final AtomicReference<SimpleBinaryMessageType> receivedMessage = new AtomicReference<SimpleBinaryMessageType>();
     /** things */
     private final ArrayList<SimpleBinaryGenericHandler> things = new ArrayList<SimpleBinaryGenericHandler>();
     /** queue for commands */
@@ -46,6 +47,7 @@ public class SimpleBinaryDevice {
     public SimpleBinaryDevice(int id) {
         deviceId = id;
         state = new SimpleBinaryDeviceState();
+        receivedMessage.set(SimpleBinaryMessageType.UNKNOWN);
     }
 
     /**

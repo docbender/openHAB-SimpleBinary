@@ -126,6 +126,15 @@ public class SimpleBinaryDevice {
     }
 
     /**
+     * Mark online device
+     */
+    public void alive() {
+        if (failuresCounter != 0) {
+            failuresCounter = 0;
+        }
+    }
+
+    /**
      * Add command into device queue
      *
      * @param command

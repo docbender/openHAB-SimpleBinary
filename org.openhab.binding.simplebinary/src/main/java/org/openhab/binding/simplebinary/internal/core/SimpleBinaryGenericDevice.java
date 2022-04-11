@@ -363,6 +363,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         synchronized (device) {
             try {
                 while (waitingForAnswer.get()) {
+                    logger.debug("{} - Device {} waiting for answer now.", toString(), data.getDeviceId());
                     device.wait();
                 }
             } catch (InterruptedException ex) {
@@ -397,6 +398,8 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 return false;
             }
         }
+        // device responding
+        device.alive();
         return true;
     }
 

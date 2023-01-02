@@ -79,21 +79,21 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
 
                     logger.trace("FLOAT value converted: {}", value);
 
-                    return item.hasUnit() ? new QuantityType<>(value, item.getUnit()) : new DecimalType(value);
+                    return item.hasUnit() ? new QuantityType<>(value, item.getUnit()) : new DecimalType((Number) value);
                 }
             } else {
                 if (itemData.length == 1) {
                     return item.hasUnit() ? new QuantityType<>(itemData[0], item.getUnit())
-                            : new DecimalType(itemData[0]);
+                            : new DecimalType((Number) itemData[0]);
                 } else if (itemData.length == 2) {
                     return item.hasUnit()
                             ? new QuantityType<>(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8))), item.getUnit())
-                            : new DecimalType(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8))));
+                            : new DecimalType((Number) ((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8))));
                 } else if (itemData.length == 4) {
                     return item.hasUnit()
                             ? new QuantityType<>(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8)
                                     | ((itemData[2] & 0xFF) << 16) | ((itemData[3] & 0xFF) << 24))), item.getUnit())
-                            : new DecimalType(((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8)
+                            : new DecimalType((Number) ((itemData[0] & 0xFF | ((itemData[1] & 0xFF) << 8)
                                     | ((itemData[2] & 0xFF) << 16) | ((itemData[3] & 0xFF) << 24))));
                 } else {
                     throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
@@ -117,7 +117,7 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             logger.debug("Color data = {},{},{},{}", itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF,
                     itemData[3] & 0xFF);
             if (item.getStateAddress().getType() == SimpleBinaryTypes.HSB) {
-                return new HSBType(new DecimalType(Math.min((itemData[0] & 0xFF) + ((itemData[1] & 0xFF) << 8), 359)),
+                return new HSBType(new DecimalType((Number)Math.min((itemData[0] & 0xFF) + ((itemData[1] & 0xFF) << 8), 359)),
                         new PercentType(Math.min((itemData[2] & 0xFF), 100)),
                         new PercentType(Math.min((itemData[3] & 0xFF), 100)));
             } else if (item.getStateAddress().getType() == SimpleBinaryTypes.RGB) {

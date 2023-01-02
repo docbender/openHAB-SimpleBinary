@@ -34,7 +34,7 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
 
     private SimpleBinaryChannel item;
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryProtocol.class);
+    private static final Logger logger = LoggerFactory.getLogger(SimpleBinaryItem.class);
 
     /**
      * Constructor for items
@@ -108,7 +108,7 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             }
         } else if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_DIMMER)) {
             if (itemData.length < 3) {
-                return new PercentType(Math.max(itemData[0] & 0xFF, 100));
+                return new PercentType(Math.min(itemData[0] & 0xFF, 100));
             } else {
                 throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
                         + item.getStateAddress().getType() + ". Data length > 2");
@@ -117,9 +117,9 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             logger.debug("Color data = {},{},{},{}", itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF,
                     itemData[3] & 0xFF);
             if (item.getStateAddress().getType() == SimpleBinaryTypes.HSB) {
-                return new HSBType(new DecimalType((Number) ((itemData[0] & 0xFF) + ((itemData[1] & 0xFF) << 8))),
-                        new PercentType(Math.max((itemData[2] & 0xFF), 100)),
-                        new PercentType(Math.max((itemData[3] & 0xFF), 100)));
+                return new HSBType(new DecimalType((Number)Math.min((itemData[0] & 0xFF) + ((itemData[1] & 0xFF) << 8), 359)),
+                        new PercentType(Math.min((itemData[2] & 0xFF), 100)),
+                        new PercentType(Math.min((itemData[3] & 0xFF), 100)));
             } else if (item.getStateAddress().getType() == SimpleBinaryTypes.RGB) {
                 return HSBType.fromRGB(itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF);
             } else if (item.getStateAddress().getType() == SimpleBinaryTypes.RGBW) {
@@ -139,7 +139,7 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             }
         } else if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_ROLLERSHUTTER)) {
             if (itemData.length < 3) {
-                return new PercentType(Math.max(itemData[0] & 0xFF, 100));
+                return new PercentType(Math.min(itemData[0] & 0xFF, 100));
             } else {
                 throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
                         + item.getStateAddress().getType() + ". Data length > 2");

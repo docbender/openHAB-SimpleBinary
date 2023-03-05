@@ -205,6 +205,11 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
     }
 
     @Override
+    public void handleRemoval() {
+        super.handleRemoval();
+    }
+
+    @Override
     public void updateState(ChannelUID channelUID, State state) {
         super.updateState(channelUID, state);
     }
@@ -223,13 +228,16 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         errorSetTime = System.currentTimeMillis();
         var st = getThing().getStatusInfo();
         if (st.getStatus() == ThingStatus.OFFLINE && st.getStatusDetail() == ThingStatusDetail.COMMUNICATION_ERROR
-                && message.equals(st.getDescription())) {
+                && st.getDescription() != null && message.equals(st.getDescription())) {
             return;
         }
 
         updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, message);
     }
 
+    /**
+     * Clear thing error if necessary
+     */
     public void clearError() {
         // no error
         if (getThing().getStatus() == ThingStatus.ONLINE) {

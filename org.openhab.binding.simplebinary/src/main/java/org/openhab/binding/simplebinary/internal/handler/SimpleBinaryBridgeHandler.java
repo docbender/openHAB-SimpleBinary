@@ -297,7 +297,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
                     commandItems.add(ch);
                     if (!devices.containsKey(ch.getCommandAddress().getDeviceId())) {
                         devices.put(ch.getCommandAddress().getDeviceId(),
-                                new SimpleBinaryDevice(ch.getStateAddress().getDeviceId()).addThingHandler(h));
+                                new SimpleBinaryDevice(ch.getCommandAddress().getDeviceId()).addThingHandler(h));
                     } else {
                         devices.get(ch.getCommandAddress().getDeviceId()).addThingHandler(h);
                     }

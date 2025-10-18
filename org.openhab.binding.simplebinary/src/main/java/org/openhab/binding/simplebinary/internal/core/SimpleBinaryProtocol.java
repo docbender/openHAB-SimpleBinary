@@ -21,6 +21,7 @@ import org.openhab.core.library.types.StopMoveType;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.library.types.UpDownType;
 import org.openhab.core.types.Type;
+import org.openhab.core.util.ColorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -341,9 +342,10 @@ public class SimpleBinaryProtocol {
                 data[6] = cmd.getSaturation().byteValue();
                 data[7] = cmd.getBrightness().byteValue();
             } else if (address.getType() == SimpleBinaryTypes.RGB) {
-                long red = Math.round((cmd.getRed().doubleValue() * 2.55));
-                long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
-                long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
+                int[] rgb = ColorUtil.hsbToRgb((HSBType) cmd);
+                int red = rgb[0];
+                int green = rgb[1];
+                int blue = rgb[2];                
 
                 if (red > 255) {
                     red = 255;
@@ -364,9 +366,10 @@ public class SimpleBinaryProtocol {
                 data[6] = (byte) (blue & 0xFF);
                 data[7] = 0x0;
             } else if (address.getType() == SimpleBinaryTypes.RGBW) {
-                long red = Math.round((cmd.getRed().doubleValue() * 2.55));
-                long green = Math.round((cmd.getGreen().doubleValue() * 2.55));
-                long blue = Math.round((cmd.getBlue().doubleValue() * 2.55));
+                int[] rgb = ColorUtil.hsbToRgb((HSBType) cmd);
+                int red = rgb[0];
+                int green = rgb[1];
+                int blue = rgb[2]; 
                 byte white;
 
                 if (red > 255) {

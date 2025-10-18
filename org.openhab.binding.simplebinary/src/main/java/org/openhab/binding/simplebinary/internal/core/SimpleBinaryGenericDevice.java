@@ -635,7 +635,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
             if (logger.isDebugEnabled()) {
                 logger.debug("{} - Reading input buffer, lenght={} bytes. Thread={}", toString(), inBuffer.limit(),
-                        Thread.currentThread().getId());
+                        Thread.currentThread().threadId());
             }
 
             if (inBuffer.limit() == 0) {
@@ -762,7 +762,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
 
         } catch (ModeChangeException ex) {
             logger.error("{} - Bad operation: {}. Thread={}", this.toString(), ex.getMessage(),
-                    Thread.currentThread().getId());
+                    Thread.currentThread().threadId());
 
             inBuffer.initialize();
 

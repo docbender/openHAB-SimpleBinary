@@ -2,7 +2,7 @@
 
 This binding for openHAB has ability to connect directly DIY devices (based on Arduino or whatever else). Binding uses serial communication or network communication over implemented TCP server. 
 
-[![openHAB](/.github/openHAB30.svg)](https://github.com/openhab)
+[![openHAB](/.github/openHAB50.svg)](https://github.com/openhab)
 [![Version](https://img.shields.io/github/v/release/docbender/openHAB-SimpleBinary?include_prereleases)](https://github.com/docbender/openHAB-SimpleBinary/releases)
 [![Download](https://img.shields.io/github/downloads/docbender/openHAB-SimpleBinary/total.svg)](https://github.com/docbender/openHAB-SimpleBinary/releases)
 [![Issues](https://img.shields.io/github/issues/docbender/openHAB-SimpleBinary)](https://github.com/docbender/openHAB-SimpleBinary/issues)
@@ -11,7 +11,7 @@ Used protocol is easy to implement. Implementation examples for [Arduino](https:
 
 Compiled binding is inserted into release branch: https://github.com/docbender/openHAB-SimpleBinary/releases
 
-Binding is working with openHAB 3.2.
+Binding is working with openHAB 5.0.
 
 ## Serial port
 It is possible to configure several ports not only one. At one line it is possible to connect several devices (ready for RS422/RS485).

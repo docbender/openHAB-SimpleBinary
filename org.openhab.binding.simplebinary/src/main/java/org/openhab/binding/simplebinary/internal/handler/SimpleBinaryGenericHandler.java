@@ -15,7 +15,6 @@ package org.openhab.binding.simplebinary.internal.handler;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryChannel;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState;
@@ -36,13 +35,14 @@ import org.openhab.core.types.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.micrometer.common.lang.NonNull;
+
 /**
  * The {@link simplebinaryHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
  * @author VitaTucek - Initial contribution
  */
-@NonNullByDefault
 public class SimpleBinaryGenericHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryGenericHandler.class);
@@ -128,9 +128,8 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
      *
      * @param bridgeStatusInfo Current bridge status
      */
-    @SuppressWarnings("null")
     @Override
-    public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
+    public void bridgeStatusChanged(@NonNull ThingStatusInfo bridgeStatusInfo) {
         if (bridgeStatusInfo.getStatus() == ThingStatus.OFFLINE) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
             connection = null;
@@ -142,22 +141,23 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             return;
         }
 
-        SimpleBinaryBridgeHandler b = (SimpleBinaryBridgeHandler) (getBridge().getHandler());
-        if (b == null) {
-            logger.error("BridgeHandler is null");
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_UNINITIALIZED);
-            return;
+        var bridge = getBridge();
+        if(bridge!=null){
+            SimpleBinaryBridgeHandler b = (SimpleBinaryBridgeHandler) (bridge.getHandler());
+            if (b == null) {
+                logger.error("BridgeHandler is null");
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_UNINITIALIZED);
+                return;
+            }
+            // bridge is online take his connection
+            connection = b.connection;
         }
-
-        // bridge is online take his connection
-        connection = b.connection;
 
         updateStatus(ThingStatus.ONLINE);
     }
 
-    @SuppressWarnings({ "unused", "null" })
     @Override
-    public void handleCommand(ChannelUID channelUID, Command command) {
+    public void handleCommand(@NonNull ChannelUID channelUID, @NonNull Command command) {
         logger.debug("{} - Command {}({}) for channel {}", thing.getLabel(), command, command.getClass(), channelUID);
 
         // get cached values
@@ -174,6 +174,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             return;
         }
 
+        var connection = this.connection;
         if (connection == null) {
             return;
         }
@@ -183,7 +184,9 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             return;
         }
         SimpleBinaryChannel channel = channels.get(channelUID);
-
+        if(channel==null){
+            return;
+        }
         if (channel.getCommandAddress() == null) {
             if (!channel.isMissingCommandReported()) {
                 logger.warn(
@@ -195,7 +198,14 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
 
         // discard command when device not responding
         if (connection.getDiscardCommand()) {
-            var device = connection.getDevices().get(channel.getCommandAddress().getDeviceId());
+            var address = channel.getCommandAddress();
+            if(address==null)
+                return;
+            var devices = connection.getDevices();
+            if(devices==null){
+                return;
+            }
+            var device = devices.get(address.getDeviceId());
             if (device != null && device.getState().getState() == SimpleBinaryDeviceState.DeviceStates.NOT_RESPONDING) {
                 return;
             }

@@ -10,6 +10,7 @@ package org.openhab.binding.simplebinary.internal.core;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -196,7 +197,8 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
             this.close();
             portState.setState(PortStates.NOT_AVAILABLE);
 
-            var msg = String.format("%s is in use. Owner is {}", this.toString(), portId.getCurrentOwner());
+            var msg = String.format("%s is in use. Owner is %s", this.toString(), 
+                Optional.ofNullable(portId.getCurrentOwner()).orElse("unknown"));
             logger.error(msg);
             setConnected(false, msg);
 
@@ -493,8 +495,11 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                             cancelWaitingForAnswer();
                             // notify device
                             if (devices.containsKey(getLastSentData().getDeviceId())) {
-                                synchronized (devices.get(getLastSentData().getDeviceId())) {
-                                    devices.get(getLastSentData().getDeviceId()).notify();
+                                SimpleBinaryDevice device = devices.get(getLastSentData().getDeviceId());
+                                if(device!=null){
+                                    synchronized (device) {
+                                        device.notify();
+                                    }
                                 }
                             }
                         } else if (r == ProcessDataResult.DATA_NOT_COMPLETED
@@ -674,8 +679,11 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
         inBuffer.clear();
 
         if (devices.containsKey(getLastSentData().getDeviceId())) {
-            synchronized (devices.get(getLastSentData().getDeviceId())) {
-                devices.get(getLastSentData().getDeviceId()).notify();
+            SimpleBinaryDevice device = devices.get(getLastSentData().getDeviceId());
+            if(device!=null){
+                synchronized (device) {
+                    device.notify();
+                }
             }
         }
     }

@@ -81,7 +81,7 @@
                  <advanced>true</advanced>
              </parameter>
              <parameter name="syncCommand" type="boolean">
-                 <label>Discard command of offline device</label>
+                 <label>Synchronize commands for device that get online</label>
                  <description>If is set to true, previously published commands will be resent to the device.</description>
                  <default>false</default>
                  <advanced>true</advanced>
@@ -144,7 +144,7 @@
                  <advanced>true</advanced>
              </parameter>
              <parameter name="syncCommand" type="boolean">
-                 <label>Discard command of offline device</label>
+                 <label>Synchronize commands for device that get online</label>
                  <description>If is set to true, previously published commands will be resent to the device.</description>
                  <default>false</default>
                  <advanced>true</advanced>

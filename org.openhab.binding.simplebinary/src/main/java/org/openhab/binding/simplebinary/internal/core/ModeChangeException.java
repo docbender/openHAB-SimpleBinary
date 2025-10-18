@@ -8,6 +8,7 @@
  */
 package org.openhab.binding.simplebinary.internal.core;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryByteBuffer.BufferMode;
 
 /**
@@ -16,6 +17,7 @@ import org.openhab.binding.simplebinary.internal.core.SimpleBinaryByteBuffer.Buf
  * @author Vita Tucek
  * @since 1.9.0
  */
+@NonNullByDefault
 public class ModeChangeException extends Exception {
     private static final long serialVersionUID = -2494344117743188391L;
 

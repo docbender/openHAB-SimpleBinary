@@ -15,6 +15,7 @@ package org.openhab.binding.simplebinary.internal.handler;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryChannel;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState;
@@ -35,14 +36,13 @@ import org.openhab.core.types.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.micrometer.common.lang.NonNull;
-
 /**
  * The {@link simplebinaryHandler} is responsible for handling commands, which are
  * sent to one of the channels.
  *
  * @author VitaTucek - Initial contribution
  */
+@NonNullByDefault
 public class SimpleBinaryGenericHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryGenericHandler.class);
@@ -129,7 +129,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
      * @param bridgeStatusInfo Current bridge status
      */
     @Override
-    public void bridgeStatusChanged(@NonNull ThingStatusInfo bridgeStatusInfo) {
+    public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
         if (bridgeStatusInfo.getStatus() == ThingStatus.OFFLINE) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE);
             connection = null;
@@ -142,7 +142,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         }
 
         var bridge = getBridge();
-        if(bridge!=null){
+        if (bridge != null) {
             SimpleBinaryBridgeHandler b = (SimpleBinaryBridgeHandler) (bridge.getHandler());
             if (b == null) {
                 logger.error("BridgeHandler is null");
@@ -157,11 +157,12 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
     }
 
     @Override
-    public void handleCommand(@NonNull ChannelUID channelUID, @NonNull Command command) {
+    public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("{} - Command {}({}) for channel {}", thing.getLabel(), command, command.getClass(), channelUID);
 
         // get cached values
         if (command instanceof RefreshType) {
+            @Nullable
             SimpleBinaryChannel channel = channels.get(channelUID);
             if (channel == null) {
                 logger.warn("{} - cannot get value to refresh. Channel {} not found.", thing.getLabel(), channelUID);
@@ -183,8 +184,9 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             logger.error("{} - command: Channel does not exists. ChannelUID={}", thing.getLabel(), channelUID);
             return;
         }
+        @Nullable
         SimpleBinaryChannel channel = channels.get(channelUID);
-        if(channel==null){
+        if (channel == null) {
             return;
         }
         if (channel.getCommandAddress() == null) {
@@ -199,10 +201,10 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
         // discard command when device not responding
         if (connection.getDiscardCommand()) {
             var address = channel.getCommandAddress();
-            if(address==null)
+            if (address == null)
                 return;
             var devices = connection.getDevices();
-            if(devices==null){
+            if (devices == null) {
                 return;
             }
             var device = devices.get(address.getDeviceId());

@@ -10,17 +10,18 @@ package org.openhab.binding.simplebinary.internal.core;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Optional;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TooManyListenersException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryDeviceState.DeviceStates;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPortState.PortStates;
 import org.openhab.core.io.transport.serial.PortInUseException;
@@ -99,6 +100,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
      * @param discardCommand
      * @param syncCommand
      */
+    @NonNullByDefault
     public SimpleBinaryUART(SerialPortManager serialPortManager, String port, int baud,
             SimpleBinaryPollControl simpleBinaryPollControl, boolean forceRTS, boolean invertedRTS, int pollRate,
             Charset charset, int timeout, int degradeMaxFailuresCount, int degradeTime, boolean discardCommand,
@@ -197,8 +199,8 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
             this.close();
             portState.setState(PortStates.NOT_AVAILABLE);
 
-            var msg = String.format("%s is in use. Owner is %s", this.toString(), 
-                Optional.ofNullable(portId.getCurrentOwner()).orElse("unknown"));
+            var msg = String.format("%s is in use. Owner is %s", this.toString(),
+                    Optional.ofNullable(portId.getCurrentOwner()).orElse("unknown"));
             logger.error(msg);
             setConnected(false, msg);
 
@@ -496,7 +498,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
                             // notify device
                             if (devices.containsKey(getLastSentData().getDeviceId())) {
                                 SimpleBinaryDevice device = devices.get(getLastSentData().getDeviceId());
-                                if(device!=null){
+                                if (device != null) {
                                     synchronized (device) {
                                         device.notify();
                                     }
@@ -680,7 +682,7 @@ public class SimpleBinaryUART extends SimpleBinaryGenericDevice implements Seria
 
         if (devices.containsKey(getLastSentData().getDeviceId())) {
             SimpleBinaryDevice device = devices.get(getLastSentData().getDeviceId());
-            if(device!=null){
+            if (device != null) {
                 synchronized (device) {
                     device.notify();
                 }

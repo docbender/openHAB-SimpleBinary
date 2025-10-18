@@ -72,5 +72,4 @@ public class SimpleBinaryChannelStatus {
     public int hashCode() {
         return channelId.hashCode();
     }
-
 }

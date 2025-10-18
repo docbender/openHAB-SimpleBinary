@@ -12,11 +12,14 @@
  */
 package org.openhab.binding.simplebinary.internal.config;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+
 /**
  * The {@link SimpleBinaryTcpConfiguration} class contains fields mapping thing configuration parameters.
  *
  * @author VitaTucek - Initial contribution
  */
+@NonNullByDefault
 public class SimpleBinaryTcpConfiguration {
 
     /**

@@ -14,6 +14,7 @@ package org.openhab.binding.simplebinary.internal.handler;
 
 import java.nio.charset.Charset;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.simplebinary.internal.config.SimpleBinaryUartConfiguration;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPollControl;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryUART;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author VitaTucek - Initial contribution
  */
+@NonNullByDefault
 public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryUartBridgeHandler.class);

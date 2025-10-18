@@ -1,5 +1,8 @@
 package org.openhab.binding.simplebinary.internal.core;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+
+@NonNullByDefault
 public class SimpleBinaryAddress {
 
     private final int deviceId;

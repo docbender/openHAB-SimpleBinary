@@ -281,7 +281,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             return;
         }
         var device = devices.get(addr.getDeviceId());
-        if(device!=null) {
+        if (device != null) {
             device.addCommand(data);
             if (this.eventCommandAdded != null) {
                 this.eventCommandAdded.event(device);
@@ -297,7 +297,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
      */
     private boolean sendReadData(SimpleBinaryChannel item) {
         var stateAddress = item.getStateAddress();
-        if(stateAddress==null)
+        if (stateAddress == null)
             return false;
         if (!devices.containsKey(stateAddress.getDeviceId())) {
             logger.error("{} - No device for command channelId={}", this.toString(), item.channelId);
@@ -431,17 +431,16 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                     logger.debug("{} - checkNewData() onscan channelId={}", toString(), item.channelId);
                 }
                 var stateAddress = item.getStateAddress();
-                if(stateAddress != null){
+                if (stateAddress != null) {
                     if (devices.containsKey(stateAddress.getDeviceId())) {
                         var device = devices.get(stateAddress.getDeviceId());
-                        if (device!=null && device.isDegraded()) {
+                        if (device != null && device.isDegraded()) {
                             if (device.stillDegraded(degradeTime)) {
                                 logger.debug("{} - Device {} is off-scan. Skip...", toString(),
                                         stateAddress.getDeviceId());
                                 continue;
                             } else {
-                                logger.info("{} - Device {} is back in-scan", toString(),
-                                        stateAddress.getDeviceId());
+                                logger.info("{} - Device {} is back in-scan", toString(), stateAddress.getDeviceId());
                             }
                         }
                     }
@@ -535,13 +534,13 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
     protected boolean sendDeviceCommands(SimpleBinaryDevice device) {
         while (!device.getCommandQueue().isEmpty()) {
             var channel = device.getCommandQueue().peek();
-            if(channel == null)
+            if (channel == null)
                 continue;
             if (logger.isDebugEnabled()) {
                 SimpleBinaryAddress address = channel.getCommandAddress();
-                if(address!=null){
-                    logger.debug("{} - Device {} send command item {}", toString(),
-                            address.getDeviceId(), address.getAddress());
+                if (address != null) {
+                    logger.debug("{} - Device {} send command item {}", toString(), address.getDeviceId(),
+                            address.getAddress());
                 }
             }
             SimpleBinaryItemData data;
@@ -669,7 +668,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 // process data
                 SimpleBinaryMessageType mt = processDecompiledData(itemData, lastSentData);
                 SimpleBinaryDevice device = devices.get(receivedID);
-                if(device!=null)
+                if (device != null)
                     device.receivedMessage.set(mt);
 
                 readed.incrementAndGet();
@@ -729,7 +728,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             setDeviceState(receivedID, DeviceStates.RESPONSE_ERROR);
             //
             SimpleBinaryDevice device = devices.get(receivedID);
-            if(device!=null)
+            if (device != null)
                 device.receivedMessage.set(SimpleBinaryMessageType.RESEND);
 
             return ProcessDataResult.INVALID_CRC;
@@ -746,7 +745,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
             }
             // inform about data received
             SimpleBinaryDevice device = devices.get(receivedID);
-            if(device!=null)
+            if (device != null)
                 device.receivedMessage.set(SimpleBinaryMessageType.DATA);
 
             return ProcessDataResult.BAD_CONFIG;
@@ -943,8 +942,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
                 continue;
             }
 
-            logger.debug("{} - sendAllItemsCommands() {}/{}", toString(), address.getDeviceId(),
-                    address.getAddress());
+            logger.debug("{} - sendAllItemsCommands() {}/{}", toString(), address.getDeviceId(), address.getAddress());
             // add command into device queue
             addCommand(item);
         }
@@ -995,7 +993,7 @@ public class SimpleBinaryGenericDevice implements SimpleBinaryIDevice {
         }
         if (onDeviceState != null) {
             SimpleBinaryDevice device = devices.get(deviceId);
-            if(device!=null)
+            if (device != null)
                 onDeviceState.onDeviceStateUpdated(deviceId, device.getState());
         }
     }

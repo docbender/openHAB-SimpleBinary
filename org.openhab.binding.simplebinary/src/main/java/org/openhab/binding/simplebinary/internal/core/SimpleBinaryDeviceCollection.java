@@ -58,7 +58,7 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
         }
         // set OH state
         var device = this.get(deviceAddress);
-        if(device == null)
+        if (device == null)
             return false;
         device.getThingHandlers().forEach(x -> {
             if (state == DeviceStates.CONNECTED) {
@@ -117,7 +117,7 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
     public SimpleBinaryDeviceState.DeviceStates getDeviceState(Integer deviceAddress) {
         // retrieve device
         var address = this.get(deviceAddress);
-        if(address == null){
+        if (address == null) {
             return SimpleBinaryDeviceState.DeviceStates.UNKNOWN;
         }
         SimpleBinaryDeviceState deviceState = address.getState();
@@ -125,6 +125,6 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
             return SimpleBinaryDeviceState.DeviceStates.UNKNOWN;
         }
         // return device state
-        return deviceState.getState();       
+        return deviceState.getState();
     }
 }

@@ -64,9 +64,9 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
         logger.trace("Item {}, address={}, deviceID={}, messageID=0x{}, datalenght={}", item.channelId,
                 this.itemAddress, this.deviceId, Integer.toHexString(this.messageId & 0xFF), this.itemData.length);
 
-        SimpleBinaryAddress address = item.getStateAddress();                
-        if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_NUMBER)) {            
-            if(address==null){
+        SimpleBinaryAddress address = item.getStateAddress();
+        if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_NUMBER)) {
+            if (address == null) {
                 return null;
             }
             if (address.getType() == SimpleBinaryTypes.FLOAT) {
@@ -114,20 +114,21 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             if (itemData.length < 3) {
                 return new PercentType(Math.min(itemData[0] & 0xFF, 100));
             } else {
-                if(address==null){
+                if (address == null) {
                     return null;
                 }
-                throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
-                        + address.getType() + ". Data length > 2");
+                throw new Exception("getState(): cannot convert to item " + item.channelId + " to " + address.getType()
+                        + ". Data length > 2");
             }
         } else if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_COLOR)) {
             logger.debug("Color data = {},{},{},{}", itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF,
                     itemData[3] & 0xFF);
-            if(address==null){
+            if (address == null) {
                 throw new Exception("getState(): cannot convert to item " + item.channelId + ".");
             }
             if (address.getType() == SimpleBinaryTypes.HSB) {
-                return new HSBType(new DecimalType((Number)Math.min((itemData[0] & 0xFF) + ((itemData[1] & 0xFF) << 8), 359)),
+                return new HSBType(
+                        new DecimalType((Number) Math.min((itemData[0] & 0xFF) + ((itemData[1] & 0xFF) << 8), 359)),
                         new PercentType(Math.min((itemData[2] & 0xFF), 100)),
                         new PercentType(Math.min((itemData[3] & 0xFF), 100)));
             } else if (address.getType() == SimpleBinaryTypes.RGB) {
@@ -135,8 +136,8 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             } else if (address.getType() == SimpleBinaryTypes.RGBW) {
                 return HSBType.fromRGB(itemData[0] & 0xFF, itemData[1] & 0xFF, itemData[2] & 0xFF);
             } else {
-                throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
-                        + address.getType() + ".");
+                throw new Exception(
+                        "getState(): cannot convert to item " + item.channelId + " to " + address.getType() + ".");
             }
         } else if (item.channelType.getId().equals(SimpleBinaryBindingConstants.CHANNEL_STRING)) {
             String str = new String(itemData);
@@ -151,19 +152,19 @@ public class SimpleBinaryItem extends SimpleBinaryItemData {
             if (itemData.length < 3) {
                 return new PercentType(Math.min(itemData[0] & 0xFF, 100));
             } else {
-                if(address==null){
+                if (address == null) {
                     throw new Exception("getState(): cannot convert to item " + item.channelId + ". Data length > 2");
                 }
-                throw new Exception("getState(): cannot convert to item " + item.channelId + " to "
-                        + address.getType() + ". Data length > 2");
+                throw new Exception("getState(): cannot convert to item " + item.channelId + " to " + address.getType()
+                        + ". Data length > 2");
             }
         } else {
-            if(address==null){
-                throw new Exception("getState(): cannot convert to item " + item.channelId 
+            if (address == null) {
+                throw new Exception("getState(): cannot convert to item " + item.channelId
+                        + ". Unsupported channel type: " + item.channelType.getId());
+            }
+            throw new Exception("getState(): cannot convert channel " + item.channelId + " to " + address.getType()
                     + ". Unsupported channel type: " + item.channelType.getId());
-            }            
-            throw new Exception("getState(): cannot convert channel " + item.channelId + " to "
-                    + address.getType() + ". Unsupported channel type: " + item.channelType.getId());
         }
     }
 

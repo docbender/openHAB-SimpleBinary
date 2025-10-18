@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryBindingConstants;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryAddress;
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author VitaTucek - Initial contribution
  */
+@NonNullByDefault
 public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryBridgeHandler.class);
@@ -72,9 +74,9 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         // retrieve bridge channels
         getThing().getChannels().forEach((channel) -> {
             var chUId = channel.getChannelTypeUID();
-            if(chUId==null)
+            if (chUId == null)
                 return;
-                
+
             if (chUId.equals(SimpleBinaryBindingConstants.CHANNEL_TYPE_VERSION)) {
                 chVersion = channel.getUID();
             } else if (chUId.equals(SimpleBinaryBindingConstants.CHANNEL_TYPE_TAG_COUNT)) {
@@ -205,7 +207,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
     }
 
     @Override
-    public void updateState(@Nullable ChannelUID channel, @NonNull State state) {
+    public void updateState(@Nullable ChannelUID channel, State state) {
         if (channel == null) {
             logger.debug("{} - updateState(...) channelID is null for state={}", getThing().getLabel(), state);
             return;
@@ -237,11 +239,11 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             } else if (channelUID.equals(chTagCount)) {
                 updateState(channelUID, new DecimalType((Number) channelCount));
             } else {
-                SimpleBinaryChannelStatus channel = statusChannels.get(channelUID);
-                if (channel == null) {
+                if (!statusChannels.containsKey(channelUID)) {
                     logger.warn("{} - cannot get value to refresh. Channel {} not found.", thing.getLabel(),
                             channelUID);
                 } else {
+                    SimpleBinaryChannelStatus channel = statusChannels.get(channelUID);
                     State s = channel.getState();
                     if (s != null) {
                         updateState(channelUID, s);
@@ -275,8 +277,8 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
             }
         }
 
-        var stateItems = new ArrayList<@NonNull SimpleBinaryChannel>(stateChannelCount);
-        var commandItems = new ArrayList<@NonNull SimpleBinaryChannel>(commandChannelCount);
+        var stateItems = new ArrayList<SimpleBinaryChannel>(stateChannelCount);
+        var commandItems = new ArrayList<SimpleBinaryChannel>(commandChannelCount);
         var devices = new SimpleBinaryDeviceCollection();
 
         for (Thing th : getThing().getThings()) {
@@ -293,7 +295,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
                                 new SimpleBinaryDevice(stateaddress.getDeviceId()).addThingHandler(h));
                     } else {
                         SimpleBinaryDevice device = devices.get(stateaddress.getDeviceId());
-                        if(device!=null)
+                        if (device != null)
                             device.addThingHandler(h);
                     }
                 }
@@ -305,8 +307,8 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
                                 new SimpleBinaryDevice(commandaddress.getDeviceId()).addThingHandler(h));
                     } else {
                         SimpleBinaryDevice device = devices.get(commandaddress.getDeviceId());
-                        if(device!=null)
-                            device.addThingHandler(h);                        
+                        if (device != null)
+                            device.addThingHandler(h);
                     }
                 }
             }
@@ -319,7 +321,7 @@ public class SimpleBinaryBridgeHandler extends BaseBridgeHandler {
         }
 
         var c = connection;
-        if (c != null) {            
+        if (c != null) {
             c.setDataAreas(devices, stateItems, commandItems);
         }
 

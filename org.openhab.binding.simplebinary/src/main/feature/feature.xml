@@ -18,7 +18,7 @@
 
 	<feature name="openhab-binding-simplebinary" description="SimpleBinary Binding" version="${project.version}">
 		<feature>openhab-runtime-base</feature>
-      <feature>openhab-transport-serial</feature> 
+		<feature>openhab-transport-serial</feature>
 		<bundle start-level="80">mvn:org.openhab.addons.bundles/org.openhab.binding.simplebinary/${project.version}</bundle>
 	</feature>
 </features>

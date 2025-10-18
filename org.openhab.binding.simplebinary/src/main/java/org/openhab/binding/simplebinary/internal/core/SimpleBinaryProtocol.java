@@ -11,6 +11,7 @@ package org.openhab.binding.simplebinary.internal.core;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.openhab.binding.simplebinary.internal.SimpleBinaryBindingConstants;
 import org.openhab.core.library.types.HSBType;
 import org.openhab.core.library.types.IncreaseDecreaseType;
@@ -24,8 +25,6 @@ import org.openhab.core.types.Type;
 import org.openhab.core.util.ColorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.eclipse.jdt.annotation.NonNull;
 
 /**
  * Class of protocol
@@ -128,12 +127,11 @@ public class SimpleBinaryProtocol {
         byte[] data = compileDataFrameEx(channel, channel.getCommand(), charset);
         SimpleBinaryAddress address = channel.getCommandAddress();
 
-        if (data == null || address==null) {
+        if (data == null || address == null) {
             return null;
         }
 
-        return new SimpleBinaryItem(channel, data[1], address.getDeviceId(),
-                address.getAddress(), data);
+        return new SimpleBinaryItem(channel, data[1], address.getDeviceId(), address.getAddress(), data);
     }
 
     /**
@@ -150,11 +148,11 @@ public class SimpleBinaryProtocol {
         byte[] data;
         var address = channel.getCommandAddress();
 
-        if(address==null){
+        if (address == null) {
             throw new Exception("CommandAddress is null");
         }
 
-        if (logger.isDebugEnabled() ) {
+        if (logger.isDebugEnabled()) {
             logger.debug("compileDataFrame(): channel:{}|datatype:{}", channel.channelId, address.getType());
         }
 
@@ -337,9 +335,8 @@ public class SimpleBinaryProtocol {
                 int[] rgb = ColorUtil.hsbToRgb(hsbVal);
                 int red = rgb[0];
                 int green = rgb[1];
-                int blue = rgb[2];                 
-                logger.debug("Channel {}: Red={} Green={} Blue={}", channel.channelId, red,
-                        green, blue);
+                int blue = rgb[2];
+                logger.debug("Channel {}: Red={} Green={} Blue={}", channel.channelId, red, green, blue);
                 logger.debug("         Hue={} Sat={} Bri={}", hsbVal.getHue(), hsbVal.getSaturation(),
                         hsbVal.getBrightness());
                 logger.debug("         AddressType={}", address.getType());
@@ -356,7 +353,7 @@ public class SimpleBinaryProtocol {
                 int[] rgb = ColorUtil.hsbToRgb((HSBType) cmd);
                 int red = rgb[0];
                 int green = rgb[1];
-                int blue = rgb[2];                
+                int blue = rgb[2];
 
                 if (red > 255) {
                     red = 255;
@@ -380,7 +377,7 @@ public class SimpleBinaryProtocol {
                 int[] rgb = ColorUtil.hsbToRgb((HSBType) cmd);
                 int red = rgb[0];
                 int green = rgb[1];
-                int blue = rgb[2]; 
+                int blue = rgb[2];
                 byte white;
 
                 if (red > 255) {
@@ -515,7 +512,8 @@ public class SimpleBinaryProtocol {
      * @throws UnknownMessageException
      * @throws ModeChangeException
      */
-    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<@NonNull SimpleBinaryChannel> items)
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
+            ArrayList<@NonNull SimpleBinaryChannel> items)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
 
         return decompileData(data, items, null, false);
@@ -533,8 +531,8 @@ public class SimpleBinaryProtocol {
      * @throws UnknownMessageException
      * @throws ModeChangeException
      */
-    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<@NonNull SimpleBinaryChannel> items,
-            Byte forcedDeviceId)
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
+            ArrayList<@NonNull SimpleBinaryChannel> items, Byte forcedDeviceId)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
 
         return decompileData(data, items, forcedDeviceId, false);
@@ -552,8 +550,8 @@ public class SimpleBinaryProtocol {
      * @throws UnknownMessageException
      * @throws ModeChangeException
      */
-    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<@NonNull SimpleBinaryChannel> items,
-            boolean letDataInBuffer)
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
+            ArrayList<@NonNull SimpleBinaryChannel> items, boolean letDataInBuffer)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
 
         return decompileData(data, items, null, letDataInBuffer);
@@ -573,8 +571,8 @@ public class SimpleBinaryProtocol {
      * @throws ModeChangeException
      */
     @SuppressWarnings({ "null", "unused" })
-    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data, ArrayList<@NonNull SimpleBinaryChannel> items,
-            Byte forcedDeviceId, boolean letDataInBuffer)
+    public static SimpleBinaryMessage decompileData(SimpleBinaryByteBuffer data,
+            ArrayList<@NonNull SimpleBinaryChannel> items, Byte forcedDeviceId, boolean letDataInBuffer)
             throws NoValidCRCException, NoValidItemInConfig, UnknownMessageException, ModeChangeException {
         byte devId = data.get();
         if (forcedDeviceId != null) {

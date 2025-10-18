@@ -15,7 +15,6 @@ package org.openhab.binding.simplebinary.internal.handler;
 import java.nio.charset.Charset;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.config.SimpleBinaryTcpConfiguration;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryIP;
 import org.openhab.core.thing.Bridge;
@@ -35,15 +34,13 @@ public class SimpleBinaryTcpBridgeHandler extends SimpleBinaryBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryTcpBridgeHandler.class);
 
-    private @Nullable SimpleBinaryTcpConfiguration config;
-
     public SimpleBinaryTcpBridgeHandler(Bridge bridge) {
         super(bridge);
     }
 
     @Override
     public void initialize() {
-        config = getConfigAs(SimpleBinaryTcpConfiguration.class);
+        SimpleBinaryTcpConfiguration config = getConfigAs(SimpleBinaryTcpConfiguration.class);
 
         logger.debug(
                 "{} - Bridge configuration: Host/IP={},Port={},Charset={},Timeout={},DegradeMaxFailuresCount={},DegradeTime={},DiscardCommand={},SyncCommand={}",

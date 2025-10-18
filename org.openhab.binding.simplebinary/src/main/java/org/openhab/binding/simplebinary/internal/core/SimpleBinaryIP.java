@@ -153,7 +153,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                                         public void timeoutEvent(SimpleBinaryDevice chInfo) {
                                             logger.warn("TCP server - Device{} - Receiving data timeouted. Thread={}",
                                                     ((SimpleBinaryIPChannelInfo) chInfo).getDeviceId(),
-                                                    Thread.currentThread().getId());
+                                                    Thread.currentThread().threadId());
 
                                             closeChannel((SimpleBinaryIPChannelInfo) chInfo);
                                         }
@@ -162,7 +162,7 @@ public class SimpleBinaryIP extends SimpleBinaryGenericDevice {
                             chInfo.writeReady.set(true);
 
                             logger.info("TCP server - New device connected. IP={}. Thread={}", chInfo.getIp(),
-                                    Thread.currentThread().getId());
+                                    Thread.currentThread().threadId());
 
                             // callback read
                             channel.read(buffer, chInfo, new CompletionHandler<Integer, SimpleBinaryIPChannelInfo>() {

@@ -13,7 +13,6 @@ public class SimpleBinaryChannelStatus {
     private State value;
     private String error;
     private SimpleBinaryBridgeHandler bridge;
-    private long valueUpdateTime = 0;
 
     @Override
     public String toString() {
@@ -59,7 +58,6 @@ public class SimpleBinaryChannelStatus {
             return;
         }
         bridge.updateState(channelId, state);
-        valueUpdateTime = System.currentTimeMillis();
     }
 
     public @Nullable State getState() {
@@ -74,5 +72,4 @@ public class SimpleBinaryChannelStatus {
     public int hashCode() {
         return channelId.hashCode();
     }
-
 }

@@ -57,7 +57,10 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
             this.put(deviceAddress, new SimpleBinaryDevice(deviceAddress));
         }
         // set OH state
-        this.get(deviceAddress).getThingHandlers().forEach(x -> {
+        var device = this.get(deviceAddress);
+        if (device == null)
+            return false;
+        device.getThingHandlers().forEach(x -> {
             if (state == DeviceStates.CONNECTED) {
                 x.updateStatus(ThingStatus.ONLINE);
             } else if (state == DeviceStates.NOT_RESPONDING) {
@@ -88,7 +91,7 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
             }
         });
         // set internal state
-        return this.get(deviceAddress).getState().setState(state);
+        return device.getState().setState(state);
     }
 
     /**
@@ -113,12 +116,14 @@ public class SimpleBinaryDeviceCollection extends HashMap<Integer, SimpleBinaryD
      */
     public SimpleBinaryDeviceState.DeviceStates getDeviceState(Integer deviceAddress) {
         // retrieve device
-        SimpleBinaryDeviceState deviceState = this.get(deviceAddress).getState();
-
-        if (deviceState == null) {
-            return null;
+        var address = this.get(deviceAddress);
+        if (address == null) {
+            return SimpleBinaryDeviceState.DeviceStates.UNKNOWN;
         }
-
+        SimpleBinaryDeviceState deviceState = address.getState();
+        if (deviceState == null) {
+            return SimpleBinaryDeviceState.DeviceStates.UNKNOWN;
+        }
         // return device state
         return deviceState.getState();
     }

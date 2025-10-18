@@ -8,13 +8,15 @@
  */
 package org.openhab.binding.simplebinary.internal.core;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+
 /**
  * Exception class for no valid crc
  *
  * @author Vita Tucek
  * @since 1.9.0
  */
-
+@NonNullByDefault
 public class NoValidCRCException extends Exception {
     private static final long serialVersionUID = -4524739106640114564L;
 

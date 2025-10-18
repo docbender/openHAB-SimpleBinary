@@ -56,8 +56,6 @@ public class SimpleBinaryChannel {
     private SimpleBinaryAddress commandAddressEx;
     /** Associated thing */
     private SimpleBinaryGenericHandler thing;
-    /** Last value update */
-    private long valueUpdateTime = 0;
     private boolean missingCommandReported = false;
     /** Defined unit */
     private Unit<?> unitInstance = null;
@@ -268,7 +266,6 @@ public class SimpleBinaryChannel {
             return;
         }
         thing.updateState(channelId, state);
-        valueUpdateTime = System.currentTimeMillis();
         clearError();
     }
 

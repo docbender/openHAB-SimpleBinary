@@ -8,13 +8,15 @@
  */
 package org.openhab.binding.simplebinary.internal.core;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+
 /**
  * Exception class for item not found in configuration (device or address)
  *
  * @author Vita Tucek
  * @since 1.9.0
  */
-
+@NonNullByDefault
 public class NoValidItemInConfig extends Exception {
     private static final long serialVersionUID = 4901413826466898609L;
 

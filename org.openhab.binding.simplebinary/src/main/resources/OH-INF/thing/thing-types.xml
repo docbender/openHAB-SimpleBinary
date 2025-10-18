@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<thing:thing-descriptions bindingId="simplebinary" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0" xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+<thing:thing-descriptions bindingId="simplebinary"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 	<!-- SimpleBinary UART bridge -->
-	<bridge-type id="uart_bridge" extensible="devState,devPreviousState,devStateChanged,devPacketLost,devLastCommunication">
+	<bridge-type id="uart_bridge"
+		extensible="devState,devPreviousState,devStateChanged,devPacketLost,devLastCommunication">
 		<label>SimpleBinary UART Bridge</label>
 		<description>Represent gateway for devices connected through UART interface.</description>
 		<channels>
-		    <channel id="ChannelVersion" typeId="chVersionTypeID"/>
-            <channel id="ChannelTagCount" typeId="chTagCountTypeID"/>
-            <channel id="ChannelRequests" typeId="chRequestsTypeID"/>
-            <channel id="ChannelBytes" typeId="chBytesTypeID"/>
-            <channel id="ChannelCycleTime" typeId="chCycleTimeTypeID"/>
-        </channels>
+			<channel id="ChannelVersion" typeId="chVersionTypeID"/>
+			<channel id="ChannelTagCount" typeId="chTagCountTypeID"/>
+			<channel id="ChannelRequests" typeId="chRequestsTypeID"/>
+			<channel id="ChannelBytes" typeId="chBytesTypeID"/>
+			<channel id="ChannelCycleTime" typeId="chCycleTimeTypeID"/>
+		</channels>
 		<config-description>
 			<parameter name="port" type="text" required="true">
 				<label>Port</label>
@@ -22,133 +26,136 @@
 				<description>Communication speed [bits/s]</description>
 				<default>9600</default>
 			</parameter>
-            <parameter name="pollControl"  type="text" pattern="^(ONCHANGE)|(ONSCAN)$" required="true">
-                <label>Poll control</label>
-                <description>Communication type. In OnScan mode all data are reading cyclically. In OnChange mode only new data are sent to openHAB (default).</description>
-                <default>ONCHANGE</default>
-                <options>
-                   <option value="ONCHANGE">OnChange</option>
-                   <option value="ONSCAN">OnScan</option>
-                </options>
-                <advanced>true</advanced>
-            </parameter>
+			<parameter name="pollControl" type="text" pattern="^(ONCHANGE)|(ONSCAN)$" required="true">
+				<label>Poll control</label>
+				<description>Communication type. In OnScan mode all data are reading cyclically. In OnChange mode only new data are
+					sent to openHAB (default).</description>
+				<default>ONCHANGE</default>
+				<options>
+					<option value="ONCHANGE">OnChange</option>
+					<option value="ONSCAN">OnScan</option>
+				</options>
+				<advanced>true</advanced>
+			</parameter>
 			<parameter name="pollRate" type="integer" min="0" required="true">
-                 <label>Poll rate [ms]</label>
-                 <description>Determine period of data read from device. </description>
-                 <default>1000</default>
-                 <advanced>true</advanced>
-             </parameter>
-    			<parameter name="forceRTS" type="boolean">
-                 <label>Force RTS</label>
-                 <description>Communication port force RTS pin activation</description>
-                 <default>false</default>
-                 <advanced>true</advanced>
-             </parameter>
-             <parameter name="invertedRTS" type="boolean">
-                 <label>Invert RTS</label>
-                 <description>Invert RTS pin state</description>
-                 <default>false</default>
-                 <advanced>true</advanced>
-             </parameter>
-             <parameter name="charset" type="text">
-                 <label>Code page</label>
-                 <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
-                 <default></default>
-                 <advanced>true</advanced>
-             </parameter>
-             <parameter name="timeout" type="integer" min="10" required="true">
-                 <label>Response timeout [ms]</label>
-                 <description>How many miliseconds should wait for answer.</description>
-                 <default>1000</default>
-                 <advanced>true</advanced>
-             </parameter>             
-             <parameter name="degradeMaxFailuresCount" type="integer" min="0" required="true">
-                 <label>Timeout to degrade device</label>
-                 <description>How many attempts to establish connection before device is put off-scan. Zero means no off-scan.</description>
-                 <default>0</default>
-                 <advanced>true</advanced>
-             </parameter>
-             <parameter name="degradeTime" type="integer" min="0" required="true">
-                 <label>Degrade time [ms]</label>
-                 <description>Determine time in off-scan before next connection attempt.</description>
-                 <default>5000</default>
-                 <advanced>true</advanced>
-             </parameter>
-             <parameter name="discardCommand" type="boolean">
-                 <label>Discard command of offline device</label>
-                 <description>If is set to true, commands for offline device will be discarded.</description>
-                 <default>false</default>
-                 <advanced>true</advanced>
-             </parameter>
-             <parameter name="syncCommand" type="boolean">
-                 <label>Discard command of offline device</label>
-                 <description>If is set to true, previously published commands will be resent to the device.</description>
-                 <default>false</default>
-                 <advanced>true</advanced>
-             </parameter>                              
+				<label>Poll rate [ms]</label>
+				<description>Determine period of data read from device. </description>
+				<default>1000</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="forceRTS" type="boolean">
+				<label>Force RTS</label>
+				<description>Communication port force RTS pin activation</description>
+				<default>false</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="invertedRTS" type="boolean">
+				<label>Invert RTS</label>
+				<description>Invert RTS pin state</description>
+				<default>false</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="charset" type="text">
+				<label>Code page</label>
+				<description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is
+					defined, system code page is used.</description>
+				<default></default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="timeout" type="integer" min="10" required="true">
+				<label>Response timeout [ms]</label>
+				<description>How many miliseconds should wait for answer.</description>
+				<default>1000</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="degradeMaxFailuresCount" type="integer" min="0" required="true">
+				<label>Timeout to degrade device</label>
+				<description>How many attempts to establish connection before device is put off-scan. Zero means no off-scan.</description>
+				<default>0</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="degradeTime" type="integer" min="0" required="true">
+				<label>Degrade time [ms]</label>
+				<description>Determine time in off-scan before next connection attempt.</description>
+				<default>5000</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="discardCommand" type="boolean">
+				<label>Discard command of offline device</label>
+				<description>If is set to true, commands for offline device will be discarded.</description>
+				<default>false</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="syncCommand" type="boolean">
+				<label>Synchronize commands for device that get online</label>
+				<description>If is set to true, previously published commands will be resent to the device.</description>
+				<default>false</default>
+				<advanced>true</advanced>
+			</parameter>
 		</config-description>
 	</bridge-type>
-   <!-- SimpleBinary TCP bridge -->
+	<!-- SimpleBinary TCP bridge -->
 	<bridge-type id="tcp_bridge">
 		<label>SimpleBinary TCP Bridge</label>
 		<description>Represent gateway for devices connected via Ethernet</description>
 		<channels>
-		    <channel id="ChannelVersion" typeId="chVersionTypeID"/>
-            <channel id="ChannelTagCount" typeId="chTagCountTypeID"/>
-            <channel id="ChannelRequests" typeId="chRequestsTypeID"/>
-            <channel id="ChannelBytes" typeId="chBytesTypeID"/>
-            <channel id="ChannelCycleTime" typeId="chCycleTimeTypeID"/>
-        </channels>
+			<channel id="ChannelVersion" typeId="chVersionTypeID"/>
+			<channel id="ChannelTagCount" typeId="chTagCountTypeID"/>
+			<channel id="ChannelRequests" typeId="chRequestsTypeID"/>
+			<channel id="ChannelBytes" typeId="chBytesTypeID"/>
+			<channel id="ChannelCycleTime" typeId="chCycleTimeTypeID"/>
+		</channels>
 		<config-description>
-            <parameter name="address" type="text" required="false">
-                <label>Bind address</label>
-                <description>IP address to listen. Empty or 0.0.0.0 means listen for client from everywhere.</description>
-                <default></default>
-                <context>network-address</context>
-                <advanced>true</advanced>
-            </parameter>
+			<parameter name="address" type="text" required="false">
+				<label>Bind address</label>
+				<description>IP address to listen. Empty or 0.0.0.0 means listen for client from everywhere.</description>
+				<default></default>
+				<context>network-address</context>
+				<advanced>true</advanced>
+			</parameter>
 			<parameter name="port" type="integer" min="1" max="65535" required="true">
 				<label>Port number</label>
 				<description>TCP port number</description>
 				<default>43243</default>
-                <advanced>true</advanced>
+				<advanced>true</advanced>
 			</parameter>
-            <parameter name="charset" type="text">
-                <label>Code page</label>
-                <description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is defined, system code page is used.</description>
-                <default></default>
-                <advanced>true</advanced>
-            </parameter>
-            <parameter name="timeout" type="integer" min="10" required="true">
-                <label>Response timeout [ms]</label>
-                <description>How many miliseconds should wait for answer.</description>
-                <default>1000</default>
-                <advanced>true</advanced>
-            </parameter>             
-            <parameter name="degradeMaxFailuresCount" type="integer" min="0" required="true">
-                 <label>Timeout to degrade device</label>
-                 <description>How many attempts to establish connection before device is put off-scan. Zero means no off-scan.</description>
-                 <default>0</default>
-                 <advanced>true</advanced>
-             </parameter>
-             <parameter name="degradeTime" type="integer" min="0" required="true">
-                 <label>Degrade time [ms]</label>
-                 <description>Determine time in off-scan before next connection attempt.</description>
-                 <default>5000</default>
-                 <advanced>true</advanced>
-             </parameter>            
-             <parameter name="discardCommand" type="boolean">
-                 <label>Discard command of offline device</label>
-                 <description>If is set to true, commands for offline device will be discarded.</description>
-                 <default>false</default>
-                 <advanced>true</advanced>
-             </parameter>
-             <parameter name="syncCommand" type="boolean">
-                 <label>Discard command of offline device</label>
-                 <description>If is set to true, previously published commands will be resent to the device.</description>
-                 <default>false</default>
-                 <advanced>true</advanced>
-             </parameter>          
+			<parameter name="charset" type="text">
+				<label>Code page</label>
+				<description>Define code page for communicated strings (e.g. ISO-8859-1, cp1250). If blank or wrong code page is
+					defined, system code page is used.</description>
+				<default></default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="timeout" type="integer" min="10" required="true">
+				<label>Response timeout [ms]</label>
+				<description>How many miliseconds should wait for answer.</description>
+				<default>1000</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="degradeMaxFailuresCount" type="integer" min="0" required="true">
+				<label>Timeout to degrade device</label>
+				<description>How many attempts to establish connection before device is put off-scan. Zero means no off-scan.</description>
+				<default>0</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="degradeTime" type="integer" min="0" required="true">
+				<label>Degrade time [ms]</label>
+				<description>Determine time in off-scan before next connection attempt.</description>
+				<default>5000</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="discardCommand" type="boolean">
+				<label>Discard command of offline device</label>
+				<description>If is set to true, commands for offline device will be discarded.</description>
+				<default>false</default>
+				<advanced>true</advanced>
+			</parameter>
+			<parameter name="syncCommand" type="boolean">
+				<label>Synchronize commands for device that get online</label>
+				<description>If is set to true, previously published commands will be resent to the device.</description>
+				<default>false</default>
+				<advanced>true</advanced>
+			</parameter>
 		</config-description>
 	</bridge-type>
 	<!-- Generic Thing Type -->
@@ -156,108 +163,108 @@
 		extensible="chNumber,chColor,chString,chContact,chSwitch,chDimmer,chRollershutter">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="uart_bridge"/>
-            <bridge-type-ref id="tcp_bridge"/>
+			<bridge-type-ref id="tcp_bridge"/>
 		</supported-bridge-type-refs>
 		<label>SimpleBinary Thing</label>
 		<description><![CDATA[
-         Generic SimpleBinary thing.<br/>Thing requires bridge to be defined. Each thing is created from user defined channels. 
+         Generic SimpleBinary thing.<br/>Thing requires bridge to be defined. Each thing is created from user defined channels.
          Many things can be assigned to one device (specified by address). Similarly, one thing can be formed by channels from different devices.
          ]]>
-      </description>
+		</description>
 	</thing-type>
 	<!-- Channels -->
-    <!-- Bridge Channels -->
-    <channel-type id="chVersionTypeID">
-        <item-type>String</item-type>
-        <label>Version</label>
-        <description>Binding version</description>
-        <state readOnly="true"/>
-    </channel-type>
-    <channel-type id="chTagCountTypeID">
-        <item-type>Number</item-type>
-        <label>Channels count</label>
-        <description>Channels count</description>
-        <state readOnly="true"/>
-    </channel-type>
-    <channel-type id="chRequestsTypeID">
-        <item-type>Number</item-type>
-        <label>Request/s</label>
-        <description>Requests per second to all devices</description>
-        <state pattern="%d 1/s" readOnly="true"/>
-    </channel-type>
-    <channel-type id="chBytesTypeID">
-        <item-type>Number</item-type>
-        <label>Bytes/s</label>
-        <description>Bytes per second grabbed from devices</description>
-        <state pattern="%d B/s" readOnly="true"/>
-    </channel-type>
-    <channel-type id="chCycleTimeTypeID">
-        <item-type>Number</item-type>
-        <label>Cycle time</label>
-        <description>Data reading duration</description>
-        <state pattern="%d ms" readOnly="true"/>
-    </channel-type>
-    <channel-type id="devState">
-        <item-type>String</item-type>
-        <label>Device state</label>
-        <description>Connected device current state</description>
-        <state readOnly="true"/>
-        <config-description>
-            <parameter name="deviceId" type="integer" min="0" max="255">
-                <label>Device ID</label>
-                <description>Monitored device address</description>
-            </parameter>
-        </config-description>
-    </channel-type>
-    <channel-type id="devPreviousState">
-        <item-type>String</item-type>
-        <label>Previous state</label>
-        <description>Connected device previous state</description>
-        <state readOnly="true"/>
-        <config-description>
-            <parameter name="deviceId" type="integer" min="0" max="255">
-                <label>Device ID</label>
-                <description>Monitored device address</description>
-            </parameter>
-        </config-description>
-    </channel-type>
-    <channel-type id="devStateChanged">
-        <item-type>DateTime</item-type>
-        <label>State change time</label>
-        <description>Time when state was changed</description>
-        <state readOnly="true"/>
-        <config-description>
-            <parameter name="deviceId" type="integer" min="0" max="255">
-                <label>Device ID</label>
-                <description>Monitored device address</description>
-            </parameter>
-        </config-description>
-    </channel-type>
-    <channel-type id="devPacketLost">
-        <item-type>Number</item-type>
-        <label>Packet lost ratio</label>
-        <description>Give overview about packet lost in last 5 minutes</description>
-        <state readOnly="true"/>
-        <config-description>
-            <parameter name="deviceId" type="integer" min="0" max="255">
-                <label>Device ID</label>
-                <description>Monitored device address</description>
-            </parameter>
-        </config-description>
-    </channel-type>
-    <channel-type id="devLastCommunication">
-        <item-type>DateTime</item-type>
-        <label>Last communication time</label>
-        <description>Time when last packet arrived from device</description>
-        <state readOnly="true"/>
-        <config-description>
-            <parameter name="deviceId" type="integer" min="0" max="255">
-                <label>Device ID</label>
-                <description>Monitored device address</description>
-            </parameter>
-        </config-description>
-    </channel-type>
-    <!-- Thing Channels -->
+	<!-- Bridge Channels -->
+	<channel-type id="chVersionTypeID">
+		<item-type>String</item-type>
+		<label>Version</label>
+		<description>Binding version</description>
+		<state readOnly="true"/>
+	</channel-type>
+	<channel-type id="chTagCountTypeID">
+		<item-type>Number</item-type>
+		<label>Channels count</label>
+		<description>Channels count</description>
+		<state readOnly="true"/>
+	</channel-type>
+	<channel-type id="chRequestsTypeID">
+		<item-type>Number</item-type>
+		<label>Request/s</label>
+		<description>Requests per second to all devices</description>
+		<state pattern="%d 1/s" readOnly="true"/>
+	</channel-type>
+	<channel-type id="chBytesTypeID">
+		<item-type>Number</item-type>
+		<label>Bytes/s</label>
+		<description>Bytes per second grabbed from devices</description>
+		<state pattern="%d B/s" readOnly="true"/>
+	</channel-type>
+	<channel-type id="chCycleTimeTypeID">
+		<item-type>Number</item-type>
+		<label>Cycle time</label>
+		<description>Data reading duration</description>
+		<state pattern="%d ms" readOnly="true"/>
+	</channel-type>
+	<channel-type id="devState">
+		<item-type>String</item-type>
+		<label>Device state</label>
+		<description>Connected device current state</description>
+		<state readOnly="true"/>
+		<config-description>
+			<parameter name="deviceId" type="integer" min="0" max="255">
+				<label>Device ID</label>
+				<description>Monitored device address</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="devPreviousState">
+		<item-type>String</item-type>
+		<label>Previous state</label>
+		<description>Connected device previous state</description>
+		<state readOnly="true"/>
+		<config-description>
+			<parameter name="deviceId" type="integer" min="0" max="255">
+				<label>Device ID</label>
+				<description>Monitored device address</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="devStateChanged">
+		<item-type>DateTime</item-type>
+		<label>State change time</label>
+		<description>Time when state was changed</description>
+		<state readOnly="true"/>
+		<config-description>
+			<parameter name="deviceId" type="integer" min="0" max="255">
+				<label>Device ID</label>
+				<description>Monitored device address</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="devPacketLost">
+		<item-type>Number</item-type>
+		<label>Packet lost ratio</label>
+		<description>Give overview about packet lost in last 5 minutes</description>
+		<state readOnly="true"/>
+		<config-description>
+			<parameter name="deviceId" type="integer" min="0" max="255">
+				<label>Device ID</label>
+				<description>Monitored device address</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<channel-type id="devLastCommunication">
+		<item-type>DateTime</item-type>
+		<label>Last communication time</label>
+		<description>Time when last packet arrived from device</description>
+		<state readOnly="true"/>
+		<config-description>
+			<parameter name="deviceId" type="integer" min="0" max="255">
+				<label>Device ID</label>
+				<description>Monitored device address</description>
+			</parameter>
+		</config-description>
+	</channel-type>
+	<!-- Thing Channels -->
 	<channel-type id="chNumber">
 		<item-type>Number</item-type>
 		<label>Number Value</label>
@@ -265,16 +272,19 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address]:[data type] (e.g. 1:1:byte).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device
+					ID]:[address]:[data type] (e.g. 1:1:byte).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address]:[data type] (e.g. 1:1:byte).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device
+					ID]:[address]:[data type] (e.g. 1:1:byte).</description>
 			</parameter>
 			<parameter name="unit" type="text">
-                <label>Unit</label>
-                <description>Received number unit. If specified, unit is send into openHAB together with new value. No validation against data type is provided.</description>
-            </parameter>
+				<label>Unit</label>
+				<description>Received number unit. If specified, unit is send into openHAB together with new value. No validation
+					against data type is provided.</description>
+			</parameter>
 		</config-description>
 	</channel-type>
 	<channel-type id="chColor">
@@ -284,11 +294,13 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device
+					ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device
+					ID]:[address]:[data type] (e.g. 1:1:rgb).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -299,11 +311,13 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address]:[lenght] (e.g. 1:1:32).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device
+					ID]:[address]:[lenght] (e.g. 1:1:32).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address]:[lenght] (e.g. 1:1:32).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device
+					ID]:[address]:[lenght] (e.g. 1:1:32).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -314,11 +328,13 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device
+					ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device
+					ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -329,11 +345,13 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device
+					ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device
+					ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
@@ -344,31 +362,34 @@
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device
+					ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device
+					ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
 	<channel-type id="chRollershutter">
 		<item-type>Rollershutter</item-type>
 		<label>Rollershutter</label>
-        <description><![CDATA[
+		<description><![CDATA[
               Status data type is Byte or Word for position (0-100%). Command data type is Word.
               Second Byte for Move/Stop/Up/Down (1-Move,2-Stop,4-Up,8-Down) and first Byte for target position (0-100%)]]>
-        </description>
+		</description>
 		<config-description>
 			<parameter name="stateAddress" type="text">
 				<label>State address</label>
-				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to get item state. If empty, no data will be received. Address format [device
+					ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 			<parameter name="commandAddress" type="text">
 				<label>Command address</label>
-				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device ID]:[address] (e.g. 1:1).</description>
+				<description>SimpleBinary address to command item. If empty, no data will be sent. Address format [device
+					ID]:[address] (e.g. 1:1).</description>
 			</parameter>
 		</config-description>
 	</channel-type>
 </thing:thing-descriptions>
-

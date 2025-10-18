@@ -12,6 +12,8 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+
 /**
  * ByteBuffer implementation with possibility to have control over read/write mode
  *
@@ -19,6 +21,7 @@ import java.nio.ByteOrder;
  * @since 1.9.0
  *
  */
+@NonNullByDefault
 public class SimpleBinaryByteBuffer {
 
     public enum BufferMode {
@@ -84,8 +87,8 @@ public class SimpleBinaryByteBuffer {
         if (_mode != BufferMode.READ) {
             _mode = BufferMode.READ;
             _buffer.flip();
-//        } else {
-//            throw new ModeChangeException("flip()", _mode);
+            // } else {
+            // throw new ModeChangeException("flip()", _mode);
         }
 
         return _buffer;
@@ -100,8 +103,8 @@ public class SimpleBinaryByteBuffer {
     public ByteBuffer compact() throws ModeChangeException {
         if (_mode == BufferMode.READ) {
             _mode = BufferMode.WRITE;
-        // } else {
-        // throw new ModeChangeException("compact()", _mode);
+            // } else {
+            // throw new ModeChangeException("compact()", _mode);
         }
         _buffer.compact();
 
@@ -189,10 +192,10 @@ public class SimpleBinaryByteBuffer {
     public Buffer rewind() throws ModeChangeException {
         if (_mode == BufferMode.READ) {
             return _buffer.rewind();
-        //} else {
-        //    throw new ModeChangeException("rewind()", _mode);
+            // } else {
+            // throw new ModeChangeException("rewind()", _mode);
         }
-        
+
         return _buffer;
     }
 

@@ -128,7 +128,6 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
      *
      * @param bridgeStatusInfo Current bridge status
      */
-    @SuppressWarnings("null")
     @Override
     public void bridgeStatusChanged(ThingStatusInfo bridgeStatusInfo) {
         if (bridgeStatusInfo.getStatus() == ThingStatus.OFFLINE) {
@@ -142,26 +141,28 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             return;
         }
 
-        SimpleBinaryBridgeHandler b = (SimpleBinaryBridgeHandler) (getBridge().getHandler());
-        if (b == null) {
-            logger.error("BridgeHandler is null");
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_UNINITIALIZED);
-            return;
+        var bridge = getBridge();
+        if (bridge != null) {
+            SimpleBinaryBridgeHandler b = (SimpleBinaryBridgeHandler) (bridge.getHandler());
+            if (b == null) {
+                logger.error("BridgeHandler is null");
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_UNINITIALIZED);
+                return;
+            }
+            // bridge is online take his connection
+            connection = b.connection;
         }
-
-        // bridge is online take his connection
-        connection = b.connection;
 
         updateStatus(ThingStatus.ONLINE);
     }
 
-    @SuppressWarnings({ "unused", "null" })
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         logger.debug("{} - Command {}({}) for channel {}", thing.getLabel(), command, command.getClass(), channelUID);
 
         // get cached values
         if (command instanceof RefreshType) {
+            @Nullable
             SimpleBinaryChannel channel = channels.get(channelUID);
             if (channel == null) {
                 logger.warn("{} - cannot get value to refresh. Channel {} not found.", thing.getLabel(), channelUID);
@@ -174,6 +175,7 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             return;
         }
 
+        var connection = this.connection;
         if (connection == null) {
             return;
         }
@@ -182,8 +184,11 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
             logger.error("{} - command: Channel does not exists. ChannelUID={}", thing.getLabel(), channelUID);
             return;
         }
+        @Nullable
         SimpleBinaryChannel channel = channels.get(channelUID);
-
+        if (channel == null) {
+            return;
+        }
         if (channel.getCommandAddress() == null) {
             if (!channel.isMissingCommandReported()) {
                 logger.warn(
@@ -195,7 +200,14 @@ public class SimpleBinaryGenericHandler extends BaseThingHandler {
 
         // discard command when device not responding
         if (connection.getDiscardCommand()) {
-            var device = connection.getDevices().get(channel.getCommandAddress().getDeviceId());
+            var address = channel.getCommandAddress();
+            if (address == null)
+                return;
+            var devices = connection.getDevices();
+            if (devices == null) {
+                return;
+            }
+            var device = devices.get(address.getDeviceId());
             if (device != null && device.getState().getState() == SimpleBinaryDeviceState.DeviceStates.NOT_RESPONDING) {
                 return;
             }

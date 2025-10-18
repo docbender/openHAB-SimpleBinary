@@ -15,7 +15,6 @@ package org.openhab.binding.simplebinary.internal.handler;
 import java.nio.charset.Charset;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.simplebinary.internal.config.SimpleBinaryUartConfiguration;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryPollControl;
 import org.openhab.binding.simplebinary.internal.core.SimpleBinaryUART;
@@ -37,9 +36,7 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
 
     private final Logger logger = LoggerFactory.getLogger(SimpleBinaryUartBridgeHandler.class);
 
-    private @Nullable SimpleBinaryUartConfiguration config;
-
-    private @NonNullByDefault({}) SerialPortManager serialPortManager;
+    private SerialPortManager serialPortManager;
 
     public SimpleBinaryUartBridgeHandler(Bridge bridge, SerialPortManager serialPortManager) {
         super(bridge);
@@ -49,7 +46,7 @@ public class SimpleBinaryUartBridgeHandler extends SimpleBinaryBridgeHandler {
 
     @Override
     public void initialize() {
-        config = getConfigAs(SimpleBinaryUartConfiguration.class);
+        var config = getConfigAs(SimpleBinaryUartConfiguration.class);
 
         logger.debug(
                 "{} - Bridge configuration: Port={},BaudRate={},PollControl={},ForceRTS={},InvertedRTS={},Charset={},Timeout={},PollRate={},DegradeMaxFailuresCount={},DegradeTime={},DiscardCommand={},SyncCommand={}",

@@ -97,4 +97,14 @@ public class SimpleBinaryIPChannelInfoCollection extends LinkedList<SimpleBinary
         this.add(new SimpleBinaryIPChannelInfo(deviceID, ipAddress, isIpLocked, this) {
         });
     }
+
+    @Override
+    public SimpleBinaryIPChannelInfoCollection reversed() {
+        SimpleBinaryIPChannelInfoCollection reversedList = new SimpleBinaryIPChannelInfoCollection(device);
+        // Přidejte sem logiku, jak reverzně uložit prvky; např.:
+        for (int i = this.size() - 1; i >= 0; i--) {
+            reversedList.add(this.get(i));
+        }
+        return reversedList;
+    }
 }
